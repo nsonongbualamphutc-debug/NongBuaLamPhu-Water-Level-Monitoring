@@ -380,47 +380,27 @@ footer strong { color: #fff; }
   </div>
 </div>
 
-<!-- Input Form -->
-<div class="input-panel">
-  <div class="input-head">
-    <h2>📝 บันทึกข้อมูลปริมาณน้ำในอ่าง</h2>
-    <span style="font-size:11px;color:var(--muted)">เชื่อมต่อ Google Sheets อัตโนมัติ</span>
+<!-- Notice — บันทึกข้อมูลย้ายไปที่ input.html (ระบบ PIN รายอ่าง) -->
+<div class="input-panel" style="background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);border:1px solid #86efac;">
+  <div class="input-head" style="background:transparent;border-bottom-color:#86efac;">
+    <h2 style="color:#065f46;">📝 บันทึกข้อมูลปริมาณน้ำในอ่าง</h2>
+    <span style="font-size:11px;color:#059669;font-weight:600;">ย้ายไปใช้ระบบ PIN รายอ่าง</span>
   </div>
   <div class="input-body">
-    <div class="form-grid">
-      <div class="form-group">
-        <label>วันที่บันทึก</label>
-        <input type="date" id="fDate"/>
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:8px 0;">
+      <div style="font-size:42px;flex-shrink:0;">🔐</div>
+      <div style="flex:1;min-width:240px;">
+        <div style="font-family:'Kanit',sans-serif;font-size:16px;font-weight:700;color:#065f46;margin-bottom:4px;">
+          บันทึกข้อมูลด้วยระบบ PIN รายอ่างเก็บน้ำ
+        </div>
+        <div style="font-size:13px;color:#047857;line-height:1.6;">
+          เพื่อความปลอดภัย — เจ้าหน้าที่แต่ละอ่างมี PIN ของตัวเองและบันทึกได้เฉพาะอ่างที่ดูแล<br>
+          <span style="font-size:12px;color:#059669;">หากยังไม่มี PIN ติดต่อผู้ดูแลระบบ (Admin) ผ่านหน้า บันทึกข้อมูล → 🔐 Admin</span>
+        </div>
       </div>
-      <div class="form-group">
-        <label>เลือกอ่างเก็บน้ำ</label>
-        <select id="fReservoir">
-          <option value="">— เลือกอ่าง —</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>ปริมาณน้ำปัจจุบัน (ล้าน ลบ.ม.)</label>
-        <input type="number" id="fVolume" step="0.001" min="0" placeholder="เช่น 1.250"/>
-      </div>
-      <div class="form-group">
-        <label>ระดับน้ำ (ม.รทก.) — ถ้ามี</label>
-        <input type="number" id="fLevel" step="0.01" placeholder="ไม่บังคับ"/>
-      </div>
-      <div class="form-group">
-        <label>น้ำไหลเข้า (ล้าน ลบ.ม./วัน) — ถ้ามี</label>
-        <input type="number" id="fInflow" step="0.001" placeholder="ไม่บังคับ"/>
-      </div>
-      <div class="form-group">
-        <label>น้ำระบาย (ล้าน ลบ.ม./วัน) — ถ้ามี</label>
-        <input type="number" id="fOutflow" step="0.001" placeholder="ไม่บังคับ"/>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="btnSave" onclick="saveReservoirData()">💾 บันทึกข้อมูล</button>
-      <div class="save-status" id="saveStatus"></div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:10px;">
-      ⚠️ ต้องตั้งค่า <code>API_URL</code> ในไฟล์นี้ก่อน จึงจะบันทึกไปยัง Google Sheets ได้
+      <a href="input.html" style="background:#059669;color:#fff;padding:14px 22px;border-radius:11px;text-decoration:none;font-family:'Kanit',sans-serif;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:8px;flex-shrink:0;">
+        📝 ไปยังหน้าบันทึก →
+      </a>
     </div>
   </div>
 </div>
@@ -812,97 +792,8 @@ function renderCharts() {
   });
 }
 
-/* INPUT FORM — populate dropdown */
-function initForm() {
-  const sel = document.getElementById("fReservoir");
-  RESERVOIRS.forEach(r => {
-    const opt = document.createElement("option");
-    opt.value = r.id;
-    opt.textContent = `R${String(r.no).padStart(2,"0")} · ${r.name} (${r.amphoe}) — ความจุ ${r.capacity.toFixed(3)} ล้าน ลบ.ม.`;
-    sel.appendChild(opt);
-  });
-  // Set today
-  document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
-}
-
-async function saveReservoirData() {
-  const btn = document.getElementById("btnSave");
-  const status = document.getElementById("saveStatus");
-  const rid   = document.getElementById("fReservoir").value;
-  const date  = document.getElementById("fDate").value;
-  const vol   = document.getElementById("fVolume").value;
-
-  if (!rid)  { alert("กรุณาเลือกอ่างเก็บน้ำ"); return; }
-  if (!date) { alert("กรุณาระบุวันที่"); return; }
-  if (!vol)  { alert("กรุณาระบุปริมาณน้ำ"); return; }
-
-  const r = RESERVOIRS.find(x => x.id === rid);
-  const payload = {
-    action: "savereservoir",
-    pin: sessionStorage.getItem("wat_pin") || "",  // ← Backend บังคับ PIN
-    reservoir_id: rid,
-    reservoir_name: r.name,
-    amphoe: r.amphoe,
-    date:   date,
-    current_volume: parseFloat(vol),
-    level:    document.getElementById("fLevel").value   || "",
-    inflow:   document.getElementById("fInflow").value  || "",
-    outflow:  document.getElementById("fOutflow").value || "",
-    capacity: r.capacity,
-  };
-
-  // อัปเดต local store ทันที
-  resData[rid] = { current: parseFloat(vol) };
-
-  if (!API_URL) {
-    // Demo mode — แสดงว่าบันทึกแล้ว อัปเดต UI
-    status.className = "save-status success";
-    status.style.display = "inline-flex";
-    status.textContent = `✅ บันทึกแล้ว (demo) — ${r.name} ${parseFloat(vol).toFixed(3)} ล้าน ลบ.ม.`;
-    renderAll();
-    setTimeout(() => { status.style.display = "none"; }, 4000);
-    return;
-  }
-
-  // ตรวจสอบ PIN ก่อนยิง
-  if (!payload.pin) {
-    status.className = "save-status error";
-    status.style.display = "inline-flex";
-    status.textContent = "❌ ยังไม่ได้เข้าสู่ระบบ — กรุณาเปิดหน้า input.html ใส่ PIN ก่อน";
-    setTimeout(() => { status.style.display = "none"; }, 5000);
-    return;
-  }
-
-  btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
-  status.style.display = "none";
-  try {
-    // ส่งผ่าน GET query string — เลี่ยง CORS preflight + 302 redirect body-stripping
-    // Code.gs ต้องรับ savereservoir ใน doGet (อัปเดต Code.gs ฉบับใหม่แล้ว)
-    const qs = new URLSearchParams();
-    Object.keys(payload).forEach(k=>{
-      const v = payload[k];
-      if(v===undefined||v===null||v==="") return;
-      qs.append(k, String(v));
-    });
-    const url = API_URL + (API_URL.includes("?")?"&":"?") + qs.toString();
-    const res  = await fetch(url, { method:"GET", redirect:"follow" });
-    const data = await res.json();
-    if (data.ok) {
-      status.className = "save-status success";
-      status.textContent = `✅ ${data.message}`;
-      renderAll();
-    } else {
-      status.className = "save-status error";
-      status.textContent = `❌ ${data.error || "บันทึกไม่สำเร็จ"}`;
-    }
-  } catch(e) {
-    status.className = "save-status error";
-    status.textContent = "❌ เชื่อมต่อ API ไม่ได้: " + e.message;
-  }
-  status.style.display = "inline-flex";
-  btn.disabled = false; btn.textContent = "💾 บันทึกข้อมูล";
-  setTimeout(() => { status.style.display = "none"; }, 5000);
-}
+/* INPUT FORM — ลบออกแล้ว เพราะย้ายไปใช้ระบบ PIN รายอ่างใน input.html
+   หน้านี้แสดงผลและเชื่อมข้อมูลจาก Google Sheets อย่างเดียว */
 
 /* FETCH FROM API */
 async function loadData() {
@@ -933,7 +824,6 @@ function renderAll() {
 
 /* INIT */
 initDemoData();
-initForm();
 initMap();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);

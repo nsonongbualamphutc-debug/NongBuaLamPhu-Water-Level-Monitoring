@@ -285,6 +285,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
     <div class="mode-tabs">
       <button class="mode-tab on" onclick="setMode('water')">💧 บันทึกระดับน้ำ</button>
       <button class="mode-tab" onclick="setMode('rain')">🌧️ บันทึกฝนรายอำเภอ</button>
+      <button class="mode-tab" onclick="setMode('reservoir')">🏞️ บันทึกอ่างเก็บน้ำ</button>
     </div>
 
     <div id="water-list">
@@ -297,6 +298,10 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
         <span class="count">6 อำเภอ</span>
       </div>
       <div class="amphoe-grid" id="amphoe-grid"></div>
+    </div>
+
+    <div id="reservoir-list" class="hidden">
+      <div id="reservoir-groups"><!-- grouped by amphoe --></div>
     </div>
   </div>
 </section>
@@ -457,6 +462,68 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
           <div class="toast" id="r-toast"></div>
         </div>
       </div>
+
+      <!-- RESERVOIR FORM CARD -->
+      <div class="rec-card" id="reservoir-form" style="display:none;">
+        <div class="amphoe-banner" style="background:linear-gradient(135deg,#065f46 0%,#10b981 100%);">
+          <span class="ico">🏞️</span>
+          <div class="l">
+            <div class="code" id="rs-code" style="font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;opacity:.8;letter-spacing:.5px;">—</div>
+            <h3 id="rs-name">—</h3>
+            <div class="sub" id="rs-meta">บันทึกปริมาณน้ำในอ่าง</div>
+          </div>
+          <button class="logout" onclick="logout()">ออกระบบ</button>
+        </div>
+        <div class="rec-body">
+
+          <div class="last-card" id="rs-last" style="display:none;background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);border-color:#86efac;">
+            <span class="ico">💧</span>
+            <div style="flex:1;">
+              <div class="lbl" style="color:#065f46;">บันทึกล่าสุด</div>
+              <div class="val" id="rs-last-val">—</div>
+              <div class="meta" id="rs-last-meta">—</div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg full">
+              <label>วันที่ <span class="req">*</span></label>
+              <input type="date" id="rs-date" />
+            </div>
+            <div class="fg full">
+              <label>ปริมาณน้ำปัจจุบัน (ล้าน ลบ.ม.) <span class="req">*</span></label>
+              <input type="number" id="rs-volume" step="0.001" placeholder="เช่น 0.250" oninput="updateReservoirStatus()" />
+              <div class="status-banner neutral" id="rs-status">
+                <span class="dot"></span>
+                <span class="msg">กรอกปริมาณน้ำเพื่อตรวจสอบสถานะ</span>
+              </div>
+              <span class="hint" id="rs-cap-hint">ความจุอ่าง — ล้าน ลบ.ม.</span>
+            </div>
+            <div class="fg">
+              <label>ระดับน้ำ (ม.รทก.)</label>
+              <input type="number" id="rs-level" step="0.01" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>น้ำไหลเข้า (ล้าน ลบ.ม./วัน)</label>
+              <input type="number" id="rs-inflow" step="0.001" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>น้ำระบาย (ล้าน ลบ.ม./วัน)</label>
+              <input type="number" id="rs-outflow" step="0.001" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>ผู้บันทึก</label>
+              <input type="text" id="rs-recorder" placeholder="ชื่อผู้บันทึก" />
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนอ่าง</button>
+            <button class="btn btn-pri" id="rs-save" onclick="saveReservoir()" style="background:#059669;">💾 บันทึกข้อมูล</button>
+          </div>
+          <div class="toast" id="rs-toast"></div>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT: RECENT RECORDS SIDEBAR -->
@@ -519,6 +586,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
       <div class="admin-tabs">
         <button class="admin-tab on" onclick="setAdminTab('stations')">💧 PIN รายสถานี (ระดับน้ำ)</button>
         <button class="admin-tab" onclick="setAdminTab('amphoes')">🌧️ PIN รายอำเภอ (ฝน)</button>
+        <button class="admin-tab" onclick="setAdminTab('reservoirs')">🏞️ PIN รายอ่าง (อ่างเก็บน้ำ)</button>
       </div>
 
       <div class="admin-body">
@@ -531,6 +599,12 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
         <!-- Amphoe PIN tab -->
         <div id="admin-tab-amphoes" class="hidden">
           <div id="amphoe-pin-content">
+            <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
+          </div>
+        </div>
+        <!-- Reservoir PIN tab -->
+        <div id="admin-tab-reservoirs" class="hidden">
+          <div id="reservoir-pin-content">
             <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
           </div>
         </div>
@@ -550,7 +624,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 /* ============================================================
  *  CONFIG & STATE
  * ============================================================ */
-const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
 let MODE = "water";  // water | rain
 let SELECTED = null; // {kind:"station",id,name,..} or {kind:"amphoe",name,..}
 let SESSION_PIN = ""; // current session PIN for selected entity
@@ -580,6 +654,23 @@ const STATIONS = [
   {id:"PY03",no:3,  name:"บ้านโคกล่าม",       amphoe:"ศรีบุญเรือง",       bank:193.0, warn:192.5, river:"ลำน้ำพวย"},
 ];
 const AMPHOES = ["เมืองหนองบัวลำภู","นากลาง","นาวัง","ศรีบุญเรือง","สุวรรณคูหา","โนนสัง"];
+
+const RESERVOIRS = [
+  {id:"R01", name:"ห้วยยางเงาะ",      amphoe:"เมืองหนองบัวลำภู", capacity:0.400,  type:"เล็ก พระราชดำริ"},
+  {id:"R02", name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",       capacity:0.750,  type:"เล็ก เงินกู้KEW"},
+  {id:"R03", name:"ห้วยเหล่ายาง",      amphoe:"เมืองหนองบัวลำภู", capacity:2.469,  type:"กลาง พระราชดำริ"},
+  {id:"R04", name:"อ่างน้ำบอง",        amphoe:"โนนสัง",            capacity:20.800, type:"กลาง พระราชดำริ"},
+  {id:"R05", name:"ห้วยสนามชัย",       amphoe:"นากลาง",            capacity:0.330,  type:"เล็ก พระราชดำริ"},
+  {id:"R06", name:"ผาวัง",             amphoe:"นาวัง",             capacity:2.122,  type:"เล็ก เงินกู้KEW"},
+  {id:"R07", name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",             capacity:0.842,  type:"เล็ก เงินกู้KEW"},
+  {id:"R08", name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",        capacity:1.430,  type:"เล็ก พระราชดำริ"},
+  {id:"R09", name:"ห้วยไร่ 1",         amphoe:"นากลาง",            capacity:0.200,  type:"โครงการ คจก."},
+  {id:"R10", name:"ห้วยไร่ 2",         amphoe:"นากลาง",            capacity:0.695,  type:"โครงการ คจก."},
+  {id:"R11", name:"ห้วยลำใย",          amphoe:"นากลาง",            capacity:0.450,  type:"โครงการ คจก."},
+  {id:"R12", name:"ห้วยโป่งซาง",       amphoe:"นากลาง",            capacity:0.300,  type:"เล็ก พระราชดำริ"},
+  {id:"R13", name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",        capacity:0.623,  type:"เล็ก พระราชดำริ"},
+  {id:"R14", name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",             capacity:0.085,  type:"เล็ก พระราชดำริ"}
+];
 
 /* ============================================================
  *  API helper — GET via query string (avoid CORS preflight + 302 redirect)
@@ -612,9 +703,12 @@ function showScreen(id) {
 
 function setMode(m) {
   MODE = m;
-  document.querySelectorAll(".mode-tab").forEach((b,i) => b.classList.toggle("on", (m==="water" && i===0) || (m==="rain" && i===1)));
+  document.querySelectorAll(".mode-tab").forEach((b,i) => {
+    b.classList.toggle("on", (m==="water" && i===0) || (m==="rain" && i===1) || (m==="reservoir" && i===2));
+  });
   document.getElementById("water-list").classList.toggle("hidden", m!=="water");
   document.getElementById("rain-list").classList.toggle("hidden", m!=="rain");
+  document.getElementById("reservoir-list").classList.toggle("hidden", m!=="reservoir");
 }
 
 /* ============================================================
@@ -657,6 +751,31 @@ function renderChoose() {
       <span class="name">${a}</span>
     </button>
   `).join("");
+
+  // Reservoir groups by amphoe
+  const byAmp = {};
+  RESERVOIRS.forEach(r => { (byAmp[r.amphoe] = byAmp[r.amphoe] || []).push(r); });
+  const resHtml = Object.keys(byAmp).map(am => {
+    const list = byAmp[am];
+    return `
+      <div class="river-group">
+        <div class="river-h">
+          <span>${amphoeIcons[am] || "📍"} อำเภอ${am}</span>
+          <span class="count">${list.length} อ่าง</span>
+        </div>
+        <div class="station-grid">
+          ${list.map(r => `
+            <button class="station-btn" onclick="chooseReservoir('${r.id}')">
+              <span class="code" style="color:#059669;">${r.id}</span>
+              <span class="name">${r.name}</span>
+              <span class="meta">💧 ความจุ ${r.capacity.toFixed(3)} ล้าน ลบ.ม.</span>
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("reservoir-groups").innerHTML = resHtml;
 }
 
 function chooseStation(stid) {
@@ -697,6 +816,25 @@ function chooseAmphoe(am) {
   setTimeout(()=>document.getElementById("pin-input").focus(),200);
 }
 
+function chooseReservoir(rid) {
+  const r = RESERVOIRS.find(x => x.id === rid);
+  if (!r) return;
+  SELECTED = { kind:"reservoir", ...r };
+  const storedPin = localStorage.getItem("wat_res_pin_" + rid);
+  if (storedPin) {
+    SESSION_PIN = storedPin;
+    enterRecord();
+    return;
+  }
+  document.getElementById("pin-label").textContent = "PIN สำหรับอ่างเก็บน้ำ";
+  document.getElementById("pin-target").textContent = "🏞️ " + r.id + " · " + r.name;
+  document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
 /* ============================================================
  *  PIN SCREEN
  * ============================================================ */
@@ -715,23 +853,25 @@ async function submitPin() {
   let resp;
   if (SELECTED.kind === "station") {
     resp = await api({ action:"loginstation", station_id:SELECTED.id, pin });
-  } else {
+  } else if (SELECTED.kind === "amphoe") {
     resp = await api({ action:"loginamphoe", amphoe:SELECTED.name, pin });
+  } else if (SELECTED.kind === "reservoir") {
+    resp = await api({ action:"loginreservoir", reservoir_id:SELECTED.id, pin });
   }
   btn.disabled = false; btn.innerHTML = "✓ เข้าระบบ";
-  if (!resp.ok) {
-    errMsg.textContent = resp.error || "PIN ไม่ถูกต้อง";
+  if (!resp || !resp.ok) {
+    errMsg.textContent = (resp && resp.error) || "PIN ไม่ถูกต้อง";
     err.classList.add("on");
     return;
   }
   err.classList.remove("on");
   SESSION_PIN = pin;
-  // Remember PIN
   if (SELECTED.kind === "station") localStorage.setItem("wat_pin_" + SELECTED.id, pin);
-  else localStorage.setItem("wat_amphoe_pin_" + SELECTED.name, pin);
-  // Save context returned from backend
-  if (resp.station) Object.assign(SELECTED, resp.station);
-  if (resp.amphoe)  Object.assign(SELECTED, resp.amphoe);
+  else if (SELECTED.kind === "amphoe") localStorage.setItem("wat_amphoe_pin_" + SELECTED.name, pin);
+  else if (SELECTED.kind === "reservoir") localStorage.setItem("wat_res_pin_" + SELECTED.id, pin);
+  if (resp.station)   Object.assign(SELECTED, resp.station);
+  if (resp.amphoe)    Object.assign(SELECTED, resp.amphoe);
+  if (resp.reservoir) Object.assign(SELECTED, resp.reservoir);
   enterRecord();
 }
 
@@ -741,12 +881,19 @@ async function submitPin() {
 function enterRecord() {
   showScreen("scr-record");
   if (SELECTED.kind === "station") enterWaterForm();
-  else enterRainForm();
+  else if (SELECTED.kind === "amphoe") enterRainForm();
+  else if (SELECTED.kind === "reservoir") enterReservoirForm();
+}
+
+function hideAllForms() {
+  document.getElementById("water-form").style.display = "none";
+  document.getElementById("rain-form").style.display = "none";
+  document.getElementById("reservoir-form").style.display = "none";
 }
 
 function enterWaterForm() {
+  hideAllForms();
   document.getElementById("water-form").style.display = "block";
-  document.getElementById("rain-form").style.display = "none";
   const s = SELECTED;
   document.getElementById("w-code").textContent = s.id;
   document.getElementById("w-name").textContent = s.name;
@@ -769,7 +916,7 @@ function enterWaterForm() {
 }
 
 function enterRainForm() {
-  document.getElementById("water-form").style.display = "none";
+  hideAllForms();
   document.getElementById("rain-form").style.display = "block";
   const a = SELECTED;
   document.getElementById("r-name").textContent = "🌧️ " + a.name + (a.amphoe?"":"");
@@ -785,6 +932,27 @@ function enterRainForm() {
   document.getElementById("r-recorder").value = rname;
   updateRainStatus();
   loadAmphoeContext();
+}
+
+function enterReservoirForm() {
+  hideAllForms();
+  document.getElementById("reservoir-form").style.display = "block";
+  const r = SELECTED;
+  document.getElementById("rs-code").textContent = r.id;
+  document.getElementById("rs-name").textContent = r.name;
+  document.getElementById("rs-meta").textContent = "📍 อ." + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("rs-cap-hint").textContent = "ความจุอ่าง: " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("side-title").textContent = "📊 ประวัติ " + r.id;
+  const now = new Date();
+  document.getElementById("rs-date").value = now.toISOString().slice(0,10);
+  document.getElementById("rs-volume").value = "";
+  document.getElementById("rs-level").value = "";
+  document.getElementById("rs-inflow").value = "";
+  document.getElementById("rs-outflow").value = "";
+  const rname = localStorage.getItem("wat_recorder_res_" + r.id) || "";
+  document.getElementById("rs-recorder").value = rname;
+  updateReservoirStatus();
+  loadReservoirContext();
 }
 
 async function loadStationContext() {
@@ -820,6 +988,23 @@ async function loadAmphoeContext() {
     document.getElementById("r-last").style.display = "none";
   }
   renderRecentRain(ctx.recent || []);
+}
+
+async function loadReservoirContext() {
+  const resp = await api({ action:"reservoircontext", reservoir_id:SELECTED.id, pin:SESSION_PIN });
+  if (!resp.ok) {
+    document.getElementById("recent-list").innerHTML = '<div class="side-empty">⚠️ โหลดประวัติไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const ctx = resp.reservoir;
+  if (ctx.last_volume != null) {
+    document.getElementById("rs-last").style.display = "flex";
+    document.getElementById("rs-last-val").textContent = parseFloat(ctx.last_volume).toFixed(3) + " ล้าน ลบ.ม." + (ctx.last_pct!=null?" ("+ctx.last_pct.toFixed(1)+"%)":"");
+    document.getElementById("rs-last-meta").textContent = (ctx.last_date||"-") + " · " + (ctx.last_reporter||"-") + " · " + (ctx.status||"-");
+  } else {
+    document.getElementById("rs-last").style.display = "none";
+  }
+  renderRecentReservoir(ctx.recent || []);
 }
 
 function renderRecentWater(arr) {
@@ -883,6 +1068,39 @@ function renderRecentRain(arr) {
   drawChart([...arr].reverse(), "rain");
 }
 
+function renderRecentReservoir(arr) {
+  const wrap = document.getElementById("recent-list");
+  if (!arr.length) {
+    wrap.innerHTML = '<div class="side-empty">ยังไม่มีข้อมูลบันทึก<br><small>การบันทึกครั้งแรกของอ่างนี้</small></div>';
+    document.getElementById("side-badge").textContent = "0 รายการ";
+    drawChart([]);
+    return;
+  }
+  const cap = SELECTED.capacity || 1;
+  wrap.innerHTML = arr.map(r => {
+    const v = parseFloat(r.current_volume) || 0;
+    const pct = cap > 0 ? (v / cap * 100) : 0;
+    let color = "#10b981";
+    if (pct >= 100)     color = "#dc2626";
+    else if (pct >= 80) color = "#f59e0b";
+    else if (pct < 30)  color = "#0ea5e9";
+    return `
+      <div class="side-row">
+        <span class="dot" style="background:${color};"></span>
+        <div class="left">
+          <div class="dt">${r.date||"-"}</div>
+          <div class="lv">${v.toFixed(3)} <span style="font-size:12px;color:#64748b;">(${pct.toFixed(0)}%)</span></div>
+          <div class="rec">${r.reporter||"-"}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("side-badge").textContent = arr.length + " รายการ";
+  // Chart shows volumes
+  const chartData = [...arr].reverse();
+  drawChart(chartData, "reservoir");
+}
+
 function drawChart(rows, kind="water") {
   const ctx = document.getElementById("historyChart").getContext("2d");
   if (historyChart) historyChart.destroy();
@@ -891,22 +1109,29 @@ function drawChart(rows, kind="water") {
     return;
   }
   const labels = rows.map(r => r.date ? r.date.slice(5) : "");
-  const data = rows.map(r => kind==="water" ? parseFloat(r.level)||null : parseFloat(r.rain_24hr)||0);
-  const isWater = kind === "water";
+  let data, type, borderColor, bgColor, fill;
+  if (kind === "water") {
+    data = rows.map(r => parseFloat(r.level) || null);
+    type = "line"; borderColor = "#0284c7"; bgColor = "rgba(2,132,199,.1)"; fill = true;
+  } else if (kind === "reservoir") {
+    data = rows.map(r => parseFloat(r.current_volume) || 0);
+    type = "line"; borderColor = "#059669"; bgColor = "rgba(5,150,105,.12)"; fill = true;
+  } else { // rain
+    data = rows.map(r => parseFloat(r.rain_24hr) || 0);
+    type = "bar";
+    bgColor = data.map(v => v>=35?"#dc2626":v>=20?"#f59e0b":"#0ea5e9");
+  }
   historyChart = new Chart(ctx, {
-    type: isWater ? "line" : "bar",
+    type,
     data: {
       labels,
       datasets: [{
         data,
-        borderColor: isWater ? "#0284c7" : undefined,
-        backgroundColor: isWater ? "rgba(2,132,199,.1)" : data.map(v=>v>=35?"#dc2626":v>=20?"#f59e0b":"#0ea5e9"),
-        borderWidth: 2,
-        tension: .35,
-        fill: isWater,
-        pointBackgroundColor: "#0284c7",
-        pointRadius: 3,
-        borderRadius: isWater ? 0 : 4,
+        borderColor: type==="line" ? borderColor : undefined,
+        backgroundColor: bgColor,
+        borderWidth: 2, tension: .35, fill: type==="line"?fill:false,
+        pointBackgroundColor: borderColor, pointRadius: 3,
+        borderRadius: type==="bar" ? 4 : 0,
       }]
     },
     options: {
@@ -965,6 +1190,35 @@ function updateRainStatus() {
   } else {
     banner.className = "status-banner ok";
     banner.querySelector(".msg").innerHTML = `<strong>☁️ ฝนน้อย</strong> · ${v.toFixed(1)} มม.`;
+  }
+}
+
+function updateReservoirStatus() {
+  const v = parseFloat(document.getElementById("rs-volume").value);
+  const cap = SELECTED && SELECTED.capacity ? SELECTED.capacity : 0;
+  const banner = document.getElementById("rs-status");
+  if (isNaN(v) || !cap) {
+    banner.className = "status-banner neutral";
+    banner.querySelector(".msg").textContent = "กรอกปริมาณน้ำเพื่อตรวจสอบสถานะ";
+    return;
+  }
+  const pct = v / cap * 100;
+  if (pct >= 100) {
+    banner.className = "status-banner crit";
+    banner.querySelector(".msg").innerHTML = `<strong>🚨 ล้นความจุ</strong> · ${pct.toFixed(1)}% (เกินความจุ ${(v-cap).toFixed(3)} ล้าน ลบ.ม.)`;
+  } else if (pct >= 80) {
+    banner.className = "status-banner warn";
+    banner.querySelector(".msg").innerHTML = `<strong>⚠️ น้ำมาก — เฝ้าระวัง</strong> · ${pct.toFixed(1)}% ของความจุ`;
+  } else if (pct >= 30) {
+    banner.className = "status-banner ok";
+    banner.querySelector(".msg").innerHTML = `<strong>✅ ปกติ</strong> · ${pct.toFixed(1)}% ของความจุ`;
+  } else {
+    banner.className = "status-banner";
+    banner.style.background = "#dbeafe";
+    banner.style.color = "#1e40af";
+    banner.style.borderColor = "#93c5fd";
+    banner.querySelector(".dot").style.background = "#0ea5e9";
+    banner.querySelector(".msg").innerHTML = `<strong>💧 น้ำน้อย</strong> · ${pct.toFixed(1)}% ของความจุ — ควรติดตาม`;
   }
 }
 
@@ -1064,10 +1318,56 @@ async function saveRain() {
   loadAmphoeContext();
 }
 
+async function saveReservoir() {
+  const r = SELECTED;
+  const date = document.getElementById("rs-date").value;
+  const volume = document.getElementById("rs-volume").value.trim();
+  const level = document.getElementById("rs-level").value.trim();
+  const inflow = document.getElementById("rs-inflow").value.trim();
+  const outflow = document.getElementById("rs-outflow").value.trim();
+  const recorder = document.getElementById("rs-recorder").value.trim();
+  if (!date) return showToast("rs-toast", "กรุณากรอกวันที่", false);
+  if (!volume || isNaN(parseFloat(volume))) return showToast("rs-toast", "กรุณากรอกปริมาณน้ำ (ล้าน ลบ.ม.)", false);
+
+  const btn = document.getElementById("rs-save");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
+
+  const resp = await api({
+    action:"savereservoir", pin:SESSION_PIN,
+    reservoir_id: r.id, reservoir_name: r.name, amphoe: r.amphoe,
+    date, current_volume: parseFloat(volume),
+    capacity: r.capacity,
+    level: level ? parseFloat(level) : "",
+    inflow: inflow ? parseFloat(inflow) : "",
+    outflow: outflow ? parseFloat(outflow) : "",
+    reporter: recorder
+  });
+
+  btn.disabled = false; btn.innerHTML = "💾 บันทึกข้อมูล";
+
+  if (!resp.ok) {
+    showToast("rs-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
+    if (resp.code === "INVALID_PIN") {
+      localStorage.removeItem("wat_res_pin_" + r.id);
+      SESSION_PIN = "";
+    }
+    return;
+  }
+  if (recorder) localStorage.setItem("wat_recorder_res_" + r.id, recorder);
+  showToast("rs-toast", "✅ บันทึกเรียบร้อย · หน้า reservoir.html จะอัปเดตทันที", true);
+  document.getElementById("rs-volume").value = "";
+  document.getElementById("rs-level").value = "";
+  document.getElementById("rs-inflow").value = "";
+  document.getElementById("rs-outflow").value = "";
+  updateReservoirStatus();
+  loadReservoirContext();
+}
+
 function logout() {
   if (SELECTED) {
     if (SELECTED.kind === "station") localStorage.removeItem("wat_pin_" + SELECTED.id);
     else if (SELECTED.kind === "amphoe") localStorage.removeItem("wat_amphoe_pin_" + SELECTED.name);
+    else if (SELECTED.kind === "reservoir") localStorage.removeItem("wat_res_pin_" + SELECTED.id);
   }
   SELECTED = null;
   SESSION_PIN = "";
@@ -1128,11 +1428,15 @@ function adminLogout() {
 }
 
 function setAdminTab(t) {
-  document.querySelectorAll(".admin-tab").forEach((b,i) => b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1)));
+  document.querySelectorAll(".admin-tab").forEach((b,i) => {
+    b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1) || (t==="reservoirs" && i===2));
+  });
   document.getElementById("admin-tab-stations").classList.toggle("hidden", t!=="stations");
   document.getElementById("admin-tab-amphoes").classList.toggle("hidden", t!=="amphoes");
+  document.getElementById("admin-tab-reservoirs").classList.toggle("hidden", t!=="reservoirs");
   if (t === "stations") loadStationPins();
-  else loadAmphoePins();
+  else if (t === "amphoes") loadAmphoePins();
+  else if (t === "reservoirs") loadReservoirPins();
 }
 
 async function loadStationPins() {
@@ -1290,6 +1594,81 @@ async function initAmphoePins() {
   const resp = await api({ action:"initamphoepins", adminpin:ADMIN_PIN });
   if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
   loadAmphoePins();
+}
+
+async function loadReservoirPins() {
+  const wrap = document.getElementById("reservoir-pin-content");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังโหลด PIN รายอ่าง...</div>';
+  const resp = await api({ action:"listreservoirpins", adminpin:ADMIN_PIN });
+  if (!Array.isArray(resp) && resp && resp.ok === false) {
+    if (resp.code === "INVALID_PIN" || (resp.error||"").includes("ผู้ดูแล")) { adminLogout(); openAdmin(); return; }
+    wrap.innerHTML = '<div class="admin-empty">⚠️ โหลดไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const rows = Array.isArray(resp) ? resp : [];
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มี PIN รายอ่าง — กดสร้างค่าเริ่มต้นเพื่อสร้าง PIN ให้ทั้ง 14 อ่าง<br><button class="btn btn-pri" onclick="initReservoirPinsAdmin()" style="background:#059669;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกอ่าง</button></div>`;
+    return;
+  }
+  const hasNone = rows.some(r => !r.has_pin);
+  let topHtml = "";
+  if (hasNone) {
+    topHtml = `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:12px 16px;border-radius:11px;margin-bottom:14px;font-size:13px;">
+      ⚠️ มี ${rows.filter(r=>!r.has_pin).length} อ่างยังไม่มี PIN · 
+      <button class="btn-mini gen" onclick="initReservoirPinsAdmin()" style="margin-left:8px;">สร้าง PIN เริ่มต้นให้ทุกอ่าง</button>
+    </div>`;
+  }
+  wrap.innerHTML = topHtml + `
+    <div class="tbl-wrap">
+      <table class="atbl">
+        <thead><tr>
+          <th>รหัส</th><th>ชื่ออ่าง</th><th>อำเภอ</th><th>ความจุ</th><th>PIN</th><th>ผู้รับผิดชอบ</th><th>ใช้ล่าสุด</th><th></th>
+        </tr></thead>
+        <tbody>
+        ${rows.map(r => `
+          <tr data-id="${r.reservoir_id}">
+            <td><span class="code" style="color:#059669;">${r.reservoir_id}</span></td>
+            <td><strong>${r.name||"-"}</strong></td>
+            <td>${r.amphoe||"-"}</td>
+            <td class="small">${parseFloat(r.capacity||0).toFixed(3)}</td>
+            <td>
+              <input class="pin-edit" type="text" value="${r.pin||""}" placeholder="ใส่ PIN ใหม่" data-field="pin" />
+              <span class="pill-st ${r.has_pin?"has":"no"}" style="margin-left:6px;">${r.has_pin?"มี PIN":"ไม่มี"}</span>
+            </td>
+            <td><input class="txt-edit" type="text" value="${escapeHtml(r.recorder_name||"")}" placeholder="ชื่อ" data-field="recorder" /></td>
+            <td class="small muted">${r.last_used||"-"}</td>
+            <td>
+              <button class="btn-mini gen" onclick="generatePin(this,'reservoir')">🎲</button>
+              <button class="btn-mini save" onclick="saveReservoirPinRow(this,'${r.reservoir_id}')">บันทึก</button>
+            </td>
+          </tr>
+        `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function saveReservoirPinRow(btn, rid) {
+  const tr = btn.closest("tr");
+  const pin = tr.querySelector('input[data-field="pin"]').value.trim();
+  const rec = tr.querySelector('input[data-field="recorder"]').value.trim();
+  if (!pin || pin.length < 3) { alert("PIN ต้องมีอย่างน้อย 3 ตัวอักษร"); return; }
+  btn.disabled = true; btn.textContent = "...";
+  const resp = await api({ action:"setreservoirpin", adminpin:ADMIN_PIN, reservoir_id:rid, new_pin:pin, recorder_name:rec });
+  btn.disabled = false; btn.textContent = "บันทึก";
+  if (!resp.ok) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  btn.textContent = "✓ แล้ว";
+  btn.style.background = "#10b981"; btn.style.color = "#fff";
+  setTimeout(()=>{btn.textContent="บันทึก";btn.style.background="";btn.style.color="";},2000);
+  loadReservoirPins();
+}
+
+async function initReservoirPinsAdmin() {
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกอ่างเก็บน้ำ?\n(เฉพาะอ่างที่ยังไม่มี PIN — สุ่ม 4 หลัก)")) return;
+  const resp = await api({ action:"initreservoirpins", adminpin:ADMIN_PIN });
+  if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  loadReservoirPins();
 }
 
 /* ============================================================

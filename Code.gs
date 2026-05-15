@@ -14,6 +14,7 @@ const SHEET_RESERVOIR   = "Reservoir";
 const SHEET_SETTINGS    = "Settings";
 const SHEET_PINS        = "StationPins";      // PIN รายสถานี
 const SHEET_AMPHOE_PINS = "AmphoePins";       // PIN รายอำเภอ (สำหรับฝน)
+const SHEET_RESERVOIR_PINS = "ReservoirPins"; // PIN รายอ่างเก็บน้ำ
 
 // ===== PIN =====
 const PIN_PROPERTY_KEY   = "APP_PIN";           // legacy global PIN (เผื่อ reservoir.html, daily report)
@@ -58,8 +59,13 @@ function doGet(e) {
           if (!amphoe) pinError = "ไม่ระบุอำเภอ";
           else if (verifyAmphoePin(amphoe, pin)) { pinOk = true; touchAmphoePinLastUsed(amphoe); }
           else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+        } else if (action === "savereservoir") {
+          const rid = String(params.reservoir_id || "").toUpperCase();
+          if (!rid) pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ (reservoir_id)";
+          else if (verifyReservoirPin(rid, pin)) { pinOk = true; touchReservoirPinLastUsed(rid); }
+          else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
         } else {
-          // savereservoir / savedailyreport — fallback legacy APP_PIN หรือ Admin
+          // savedailyreport — fallback legacy APP_PIN หรือ Admin
           const expected = getAppPin();
           if (expected && pin === expected) pinOk = true;
           else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับการบันทึก " + action;
@@ -103,6 +109,15 @@ function doGet(e) {
       }
       return respond({ ok:true, amphoe: getAmphoeContext(am) }, callback);
     }
+    if (action === "loginreservoir") {
+      const rid = String(params.reservoir_id || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+      if (!verifyReservoirPin(rid, pin) && !verifyAdminPin(pin)) {
+        return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+      }
+      return respond({ ok:true, reservoir: getReservoirContext(rid) }, callback);
+    }
     if (action === "adminlogin") {
       const pin = String(params.pin || "").trim();
       if (!verifyAdminPin(pin)) return respond({ ok:false, error:"PIN ผู้ดูแลระบบไม่ถูกต้อง" }, callback);
@@ -110,10 +125,9 @@ function doGet(e) {
     }
 
     // === ADMIN ACTIONS (need admin pin in `adminpin` param) ===
-    const adminActions = ["liststationpins","setstationpin","initstationpins","listamphoepins","setamphoepin","initamphoepins","stationcontext","amphoecontext"];
+    const adminActions = ["liststationpins","setstationpin","initstationpins","listamphoepins","setamphoepin","initamphoepins","listreservoirpins","setreservoirpin","initreservoirpins","stationcontext","amphoecontext","reservoircontext"];
     if (adminActions.indexOf(action) !== -1) {
       const adminpin = String(params.adminpin || params.pin || "").trim();
-      // stationcontext / amphoecontext อนุญาตให้ station/amphoe pin ใช้ได้ด้วย (สำหรับ refresh ในคอนโซล)
       const isAdmin = verifyAdminPin(adminpin);
       if (action === "stationcontext") {
         const stid = String(params.station_id || "").toUpperCase();
@@ -127,14 +141,23 @@ function doGet(e) {
         if (!isAdmin && !verifyAmphoePin(am, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
         return respond({ ok:true, amphoe: getAmphoeContext(am) }, callback);
       }
+      if (action === "reservoircontext") {
+        const rid = String(params.reservoir_id || "").toUpperCase();
+        if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+        if (!isAdmin && !verifyReservoirPin(rid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok:true, reservoir: getReservoirContext(rid) }, callback);
+      }
       if (!isAdmin) return respond({ ok:false, error:"ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
       switch (action) {
-        case "liststationpins":  data = listStationPins();  break;
-        case "setstationpin":    data = setStationPin_(params.station_id, params.new_pin, params.recorder_name); break;
-        case "initstationpins":  data = initStationPins();  break;
-        case "listamphoepins":   data = listAmphoePins();   break;
-        case "setamphoepin":     data = setAmphoePin_(params.amphoe, params.new_pin, params.recorder_name); break;
-        case "initamphoepins":   data = initAmphoePins();   break;
+        case "liststationpins":   data = listStationPins();  break;
+        case "setstationpin":     data = setStationPin_(params.station_id, params.new_pin, params.recorder_name); break;
+        case "initstationpins":   data = initStationPins();  break;
+        case "listamphoepins":    data = listAmphoePins();   break;
+        case "setamphoepin":      data = setAmphoePin_(params.amphoe, params.new_pin, params.recorder_name); break;
+        case "initamphoepins":    data = initAmphoePins();   break;
+        case "listreservoirpins": data = listReservoirPins(); break;
+        case "setreservoirpin":   data = setReservoirPin_(params.reservoir_id, params.new_pin, params.recorder_name); break;
+        case "initreservoirpins": data = initReservoirPins(); break;
       }
       return respond(data, callback);
     }
@@ -578,6 +601,138 @@ function initAmphoePins() {
     }
   });
   return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " อำเภอ", added: added };
+}
+
+// ===== RESERVOIR PIN MANAGEMENT =====
+/** รายการอ่างเก็บน้ำในจังหวัด (master list) — sync กับ reservoir.html */
+const RESERVOIR_LIST = [
+  { id:"R01", name:"ห้วยยางเงาะ",      amphoe:"เมืองหนองบัวลำภู", capacity:0.400 },
+  { id:"R02", name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",       capacity:0.750 },
+  { id:"R03", name:"ห้วยเหล่ายาง",      amphoe:"เมืองหนองบัวลำภู", capacity:2.469 },
+  { id:"R04", name:"อ่างน้ำบอง",        amphoe:"โนนสัง",            capacity:20.800 },
+  { id:"R05", name:"ห้วยสนามชัย",       amphoe:"นากลาง",            capacity:0.330 },
+  { id:"R06", name:"ผาวัง",             amphoe:"นาวัง",             capacity:2.122 },
+  { id:"R07", name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",             capacity:0.842 },
+  { id:"R08", name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",        capacity:1.430 },
+  { id:"R09", name:"ห้วยไร่ 1",         amphoe:"นากลาง",            capacity:0.200 },
+  { id:"R10", name:"ห้วยไร่ 2",         amphoe:"นากลาง",            capacity:0.695 },
+  { id:"R11", name:"ห้วยลำใย",          amphoe:"นากลาง",            capacity:0.450 },
+  { id:"R12", name:"ห้วยโป่งซาง",       amphoe:"นากลาง",            capacity:0.300 },
+  { id:"R13", name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",        capacity:0.623 },
+  { id:"R14", name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",             capacity:0.085 }
+];
+
+function ensureReservoirPinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_RESERVOIR_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_RESERVOIR_PINS);
+    sh.appendRow(["reservoir_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#0c4a6e").setFontColor("#fff");
+  }
+  return sh;
+}
+
+function getReservoirPinRow_(reservoirId) {
+  const sh = ensureReservoirPinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(reservoirId || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, reservoir_id: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyReservoirPin(reservoirId, pin) {
+  const r = getReservoirPinRow_(reservoirId);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function touchReservoirPinLastUsed(reservoirId) {
+  try {
+    const r = getReservoirPinRow_(reservoirId);
+    if (r) ensureReservoirPinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function listReservoirPins() {
+  ensureReservoirPinsSheet_();
+  return RESERVOIR_LIST.map(r => {
+    const row = getReservoirPinRow_(r.id);
+    return {
+      reservoir_id: r.id, name: r.name, amphoe: r.amphoe, capacity: r.capacity,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function setReservoirPin_(reservoirId, newPin, recorderName) {
+  if (!reservoirId) return { ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureReservoirPinsSheet_();
+  const row = getReservoirPinRow_(reservoirId);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(reservoirId).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + reservoirId + " เรียบร้อย", reservoir_id: reservoirId };
+}
+
+function initReservoirPins() {
+  ensureReservoirPinsSheet_();
+  const added = [];
+  RESERVOIR_LIST.forEach(r => {
+    const existing = getReservoirPinRow_(r.id);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setReservoirPin_(r.id, pin, "");
+      added.push({reservoir_id: r.id, name: r.name, pin: pin});
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " อ่าง", added: added };
+}
+
+function getReservoirContext(reservoirId) {
+  const meta = RESERVOIR_LIST.find(r => r.id === String(reservoirId).toUpperCase());
+  if (!meta) return { error:"ไม่พบอ่างเก็บน้ำ " + reservoirId };
+  const pinRow = getReservoirPinRow_(reservoirId);
+  // Recent records from Reservoir sheet
+  const all = getReservoirs() || [];
+  const forThis = all.filter(r => String(r.reservoir_id||"").toUpperCase() === meta.id);
+  // Sort by date desc, take 10 most recent
+  forThis.sort((a,b) => String(b.date||"").localeCompare(String(a.date||"")));
+  const recent = forThis.slice(0, 10);
+  const last = recent.length ? recent[0] : null;
+  const lastVol = last ? parseFloat(last.current_volume) : null;
+  const pct = (lastVol != null && !isNaN(lastVol) && meta.capacity > 0) ? (lastVol / meta.capacity * 100) : null;
+  let status = "ไม่มีข้อมูล", statusColor = "#94a3b8";
+  if (pct != null) {
+    if (pct >= 100)     { status = "ล้นความจุ";   statusColor = "#dc2626"; }
+    else if (pct >= 80) { status = "น้ำมากเฝ้าระวัง"; statusColor = "#f59e0b"; }
+    else if (pct >= 30) { status = "ปกติ";       statusColor = "#10b981"; }
+    else                { status = "น้ำน้อย";     statusColor = "#0ea5e9"; }
+  }
+  return {
+    reservoir_id: meta.id, name: meta.name, amphoe: meta.amphoe, capacity: meta.capacity,
+    recorder_name: pinRow ? pinRow.recorder_name : "",
+    last_volume: lastVol, last_date: last ? last.date : "", last_reporter: last ? last.reporter : "",
+    last_pct: pct, status: status, status_color: statusColor,
+    recent: recent
+  };
 }
 
 /** ใช้ใน Login screen — รายชื่อสถานี + สถานะมี PIN หรือยัง */
