@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#05070f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="น้ำหนองบัวลำภู">
+<link rel="manifest" href="manifest.json">
+<title>สภาพอากาศ · จ.หนองบัวลำภู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg-deep:#05070f;
+  --bg-mid:#0a0e1a;
+  --bg-card:rgba(255,255,255,.04);
+  --bg-card-h:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08);
+  --border-h:rgba(255,255,255,.16);
+  --ink:#f8fafc;
+  --ink-2:rgba(248,250,252,.75);
+  --ink-3:rgba(248,250,252,.5);
+  --ink-4:rgba(248,250,252,.35);
+  --cyan:#22d3ee;
+  --blue:#60a5fa;
+  --indigo:#818cf8;
+  --purple:#c084fc;
+  --pink:#f472b6;
+  --orange:#fb923c;
+  --amber:#fbbf24;
+  --green:#4ade80;
+  --red:#f87171;
+  --r-lg:20px;
+  --r-md:14px;
+  --r-sm:10px;
+  --sh-glow:0 0 40px rgba(96,165,250,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:'Sarabun','Inter',sans-serif;background:var(--bg-deep);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;}
+body{min-height:100vh;}
+
+/* ════════════════════════════════════════════════════════
+   ANIMATED PAGE BACKGROUND — time-of-day aware aurora
+   ═══════════════════════════════════════════════════════ */
+.page-bg{
+  position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--bg-deep);
+}
+.aurora{
+  position:absolute;border-radius:50%;filter:blur(120px);opacity:.45;
+  animation:auroraDrift 28s ease-in-out infinite;
+}
+.aurora.a1{top:-15%;left:-10%;width:55%;height:55%;background:radial-gradient(circle,#1e3a8a,transparent 70%);}
+.aurora.a2{top:30%;right:-15%;width:50%;height:60%;background:radial-gradient(circle,#7c3aed,transparent 70%);animation-delay:-9s;animation-duration:34s;}
+.aurora.a3{bottom:-15%;left:25%;width:60%;height:50%;background:radial-gradient(circle,#0891b2,transparent 70%);animation-delay:-18s;animation-duration:40s;}
+@keyframes auroraDrift{
+  0%,100%{transform:translate(0,0) scale(1);}
+  33%{transform:translate(60px,-40px) scale(1.1);}
+  66%{transform:translate(-50px,30px) scale(.9);}
+}
+.stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 20px 30px,rgba(255,255,255,.3),transparent),radial-gradient(1px 1px at 60px 70px,rgba(255,255,255,.4),transparent),radial-gradient(2px 2px at 130px 40px,rgba(255,255,255,.2),transparent),radial-gradient(1px 1px at 200px 90px,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 280px 50px,rgba(255,255,255,.3),transparent),radial-gradient(1px 1px at 320px 110px,rgba(255,255,255,.4),transparent);background-size:350px 150px;background-repeat:repeat;opacity:.4;animation:starTwinkle 8s ease-in-out infinite;}
+@keyframes starTwinkle{50%{opacity:.6;}}
+
+/* ════════════════════════════════════════════════════════
+   HEADER — slim glass dark
+   ═══════════════════════════════════════════════════════ */
+header{
+  position:sticky;top:0;z-index:1000;
+  background:rgba(5,7,15,.7);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border);
+}
+.hdr{max-width:1500px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:14px;height:56px;}
+.hdr-logo{
+  width:36px;height:36px;border-radius:11px;
+  background:linear-gradient(135deg,#22d3ee,#3b82f6,#a855f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+  box-shadow:0 0 24px rgba(96,165,250,.4),inset 0 1px 0 rgba(255,255,255,.2);
+}
+.hdr-brand{flex:1;min-width:0;}
+.hdr-t1{font-size:14px;font-weight:700;line-height:1.1;letter-spacing:-.2px;}
+.hdr-t2{font-size:10.5px;color:var(--ink-3);margin-top:1px;}
+.hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.hdr-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--bg-card);border:1px solid var(--border);
+  padding:6px 12px;border-radius:11px;
+  font-size:11.5px;font-weight:600;color:var(--ink-2);
+  cursor:pointer;transition:.2s;
+}
+.hdr-pill:hover{background:var(--bg-card-h);border-color:var(--border-h);transform:translateY(-1px);}
+.hdr-status{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 12px;border-radius:11px;
+  background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);
+}
+.hdr-status.warn{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.3);}
+.hdr-status.crit{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.35);box-shadow:0 0 16px rgba(248,113,113,.25);}
+.led{width:8px;height:8px;border-radius:50%;animation:ledPulse 1.6s ease-in-out infinite;}
+.led.ok{background:var(--green);box-shadow:0 0 10px var(--green);}
+.led.warn{background:var(--amber);box-shadow:0 0 10px var(--amber);}
+.led.crit{background:var(--red);box-shadow:0 0 12px var(--red);}
+@keyframes ledPulse{50%{opacity:.5;transform:scale(.85);}}
+.led-txt{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--green);font-family:'Inter',sans-serif;}
+.hdr-status.warn .led-txt{color:var(--amber);}
+.hdr-status.crit .led-txt{color:var(--red);}
+.hdr-clock{padding-left:12px;border-left:1px solid var(--border);text-align:right;}
+.hdr-time{font-family:'Inter',monospace;font-weight:500;font-size:13px;color:var(--ink);letter-spacing:.5px;}
+.hdr-date{font-size:10px;color:var(--ink-3);}
+
+/* ════════════════════════════════════════════════════════
+   NAV — minimal pill
+   ═══════════════════════════════════════════════════════ */
+nav{background:rgba(10,14,26,.5);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-inner{max-width:1500px;margin:0 auto;padding:8px 24px;display:flex;gap:4px;overflow-x:auto;}
+nav a{
+  padding:7px 13px;color:var(--ink-3);text-decoration:none;
+  font-size:12px;font-weight:600;white-space:nowrap;border-radius:9px;
+  transition:.2s;letter-spacing:.2px;
+}
+nav a:hover{color:var(--ink);background:var(--bg-card);}
+nav a.active{color:var(--ink);background:linear-gradient(135deg,rgba(34,211,238,.15),rgba(168,85,247,.15));border:1px solid rgba(34,211,238,.25);}
+
+/* ════════════════════════════════════════════════════════
+   MAIN container
+   ═══════════════════════════════════════════════════════ */
+main{max-width:1500px;margin:0 auto;padding:18px 24px 60px;}
+
+/* ════════════════════════════════════════════════════════
+   HERO — immersive sky
+   ═══════════════════════════════════════════════════════ */
+.hero{
+  position:relative;border-radius:24px;overflow:hidden;margin-bottom:18px;
+  min-height:420px;
+  background:linear-gradient(180deg,#0c1840 0%,#0e2f6a 40%,#1e5fa8 80%,#3b82f6 100%);
+  box-shadow:0 30px 80px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.05);
+}
+/* Time-of-day classes set via JS */
+.hero.dawn   {background:linear-gradient(180deg,#1e1b4b 0%,#7c3aed 35%,#ec4899 65%,#f97316 100%);}
+.hero.morning{background:linear-gradient(180deg,#0c4a6e 0%,#0ea5e9 50%,#7dd3fc 100%);}
+.hero.noon   {background:linear-gradient(180deg,#0369a1 0%,#0ea5e9 40%,#38bdf8 80%,#bae6fd 100%);}
+.hero.dusk   {background:linear-gradient(180deg,#312e81 0%,#7c3aed 35%,#ec4899 65%,#f97316 100%);}
+.hero.night  {background:linear-gradient(180deg,#020617 0%,#0c1840 50%,#1e3a8a 100%);}
+.hero.storm  {background:linear-gradient(180deg,#0f172a 0%,#1e293b 40%,#3730a3 80%,#475569 100%);}
+
+/* Sun decoration */
+.sun-orb{
+  position:absolute;width:280px;height:280px;border-radius:50%;
+  top:-40px;right:-40px;
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.6) 0%,rgba(254,240,138,.3) 30%,rgba(251,191,36,.1) 60%,transparent 75%);
+  filter:blur(2px);
+  animation:sunPulse 6s ease-in-out infinite;
+}
+@keyframes sunPulse{50%{transform:scale(1.05);}}
+.hero.night .sun-orb,.hero.dusk .sun-orb{display:none;}
+
+/* Moon for night */
+.moon-orb{
+  display:none;position:absolute;width:120px;height:120px;border-radius:50%;
+  top:30px;right:50px;
+  background:radial-gradient(circle at 35% 35%,#fef3c7 0%,#fbbf24 60%,#f59e0b 100%);
+  box-shadow:0 0 60px rgba(251,191,36,.4),0 0 120px rgba(251,191,36,.2);
+}
+.hero.night .moon-orb{display:block;}
+
+/* Floating clouds */
+.cloud{position:absolute;background:rgba(255,255,255,.12);border-radius:100px;filter:blur(8px);}
+.cloud.c1{width:300px;height:80px;top:80px;animation:cloudFloat1 90s linear infinite;}
+.cloud.c2{width:200px;height:60px;top:160px;animation:cloudFloat2 70s linear infinite;animation-delay:-30s;}
+.cloud.c3{width:240px;height:70px;top:50px;animation:cloudFloat1 110s linear infinite;animation-delay:-50s;opacity:.7;}
+@keyframes cloudFloat1{from{left:-300px;}to{left:calc(100% + 300px);}}
+@keyframes cloudFloat2{from{left:calc(100% + 200px);}to{left:-200px;}}
+
+/* Stars in night sky */
+.hero-stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 80px 50px,#fff,transparent),radial-gradient(2px 2px at 200px 100px,#fff,transparent),radial-gradient(1px 1px at 350px 60px,#fff,transparent),radial-gradient(2px 2px at 500px 130px,#fff,transparent),radial-gradient(1.5px 1.5px at 700px 80px,#fff,transparent),radial-gradient(1px 1px at 900px 110px,#fff,transparent),radial-gradient(2px 2px at 150px 200px,#fff,transparent),radial-gradient(1px 1px at 400px 250px,#fff,transparent),radial-gradient(1.5px 1.5px at 600px 180px,#fff,transparent);background-size:1000px 300px;opacity:0;transition:opacity 1s;}
+.hero.night .hero-stars,.hero.dusk .hero-stars{opacity:.7;}
+
+/* Rain particles */
+.rain-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .5s;}
+.rain-layer.show{opacity:1;}
+.raindrop{position:absolute;width:1.5px;background:linear-gradient(transparent,rgba(186,230,253,.7));border-radius:2px;animation:rainFall linear infinite;}
+@keyframes rainFall{0%{transform:translateY(-40px) translateX(0);}100%{transform:translateY(440px) translateX(-20px);}}
+
+/* Lightning */
+.lightning{position:absolute;inset:0;background:rgba(255,255,255,.6);opacity:0;pointer-events:none;}
+.lightning.flash{animation:lightFlash 1.5s;}
+@keyframes lightFlash{0%,100%{opacity:0;}3%{opacity:.8;}5%{opacity:0;}8%{opacity:.6;}10%{opacity:0;}}
+
+/* Hero content */
+.hero-content{position:relative;z-index:2;padding:32px 36px 28px;display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:center;min-height:420px;}
+.hero-main{}
+.hero-loc-row{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);font-size:12px;font-weight:600;margin-bottom:14px;}
+.hero-loc-row svg{width:14px;height:14px;}
+.hero-loc-coord{font-size:10.5px;color:rgba(255,255,255,.55);font-family:'Inter',monospace;letter-spacing:.3px;}
+
+.hero-temp-row{display:flex;align-items:flex-start;gap:24px;}
+.hero-icon-wrap{flex-shrink:0;width:130px;height:130px;display:flex;align-items:center;justify-content:center;}
+.hero-icon-wrap svg{width:130px;height:130px;filter:drop-shadow(0 8px 24px rgba(0,0,0,.25));}
+.hero-temps{}
+.hero-temp{
+  font-family:'Inter',sans-serif;font-weight:200;
+  font-size:128px;line-height:.85;letter-spacing:-7px;
+  color:#fff;text-shadow:0 8px 32px rgba(0,0,0,.3);
+  display:flex;align-items:flex-start;gap:0;
+}
+.hero-temp-deg{font-size:48px;font-weight:300;margin-top:14px;letter-spacing:0;color:rgba(255,255,255,.7);}
+.hero-desc{font-size:22px;font-weight:500;color:rgba(255,255,255,.95);margin-top:4px;letter-spacing:-.3px;}
+.hero-meta{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.7);margin-top:8px;}
+.hero-meta b{font-weight:600;color:rgba(255,255,255,.9);}
+
+/* Glass stat tiles */
+.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.stat-tile{
+  background:rgba(255,255,255,.1);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:16px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  transition:.25s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15);
+}
+.stat-tile:hover{background:rgba(255,255,255,.16);transform:translateY(-2px);}
+.st-ico{
+  width:38px;height:38px;border-radius:11px;
+  background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.st-ico svg{width:20px;height:20px;color:#fff;}
+.st-info{}
+.st-lbl{font-size:10.5px;color:rgba(255,255,255,.7);margin-bottom:1px;letter-spacing:.3px;}
+.st-val{font-size:18px;font-weight:700;color:#fff;line-height:1;font-family:'Inter',sans-serif;letter-spacing:-.5px;}
+.st-val .un{font-size:11px;font-weight:400;opacity:.65;}
+.st-sub{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;}
+
+/* ════════════════════════════════════════════════════════
+   ALERT STRIP — animated glow
+   ═══════════════════════════════════════════════════════ */
+.alert{
+  display:none;
+  border-radius:var(--r-md);padding:14px 18px;margin-bottom:16px;
+  align-items:flex-start;gap:14px;
+  background:linear-gradient(135deg,rgba(248,113,113,.12),rgba(220,38,38,.06));
+  border:1px solid rgba(248,113,113,.3);
+  position:relative;overflow:hidden;
+}
+.alert.show{display:flex;animation:alertSlide .5s ease-out;}
+.alert.warn{background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(245,158,11,.06));border-color:rgba(251,191,36,.3);}
+.alert::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#f87171,#dc2626);}
+.alert.warn::before{background:linear-gradient(180deg,#fbbf24,#f59e0b);}
+.alert::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 0% 50%,rgba(248,113,113,.08),transparent 50%);pointer-events:none;}
+.alert.warn::after{background:radial-gradient(circle at 0% 50%,rgba(251,191,36,.08),transparent 50%);}
+@keyframes alertSlide{from{opacity:0;transform:translateY(-8px);}}
+.alert-ico{font-size:22px;flex-shrink:0;animation:alertShake 2s ease-in-out infinite;}
+@keyframes alertShake{0%,100%{transform:rotate(0);}10%,30%{transform:rotate(-8deg);}20%{transform:rotate(8deg);}}
+.alert-body{flex:1;}
+.alert-t{font-size:14px;font-weight:700;color:var(--ink);}
+.alert-d{font-size:12px;color:var(--ink-2);margin-top:3px;line-height:1.55;}
+.alert-time{font-size:10.5px;color:var(--ink-4);margin-top:5px;font-family:'Inter',monospace;}
+
+/* ════════════════════════════════════════════════════════
+   AI PANEL — cosmic
+   ═══════════════════════════════════════════════════════ */
+.ai{
+  position:relative;border-radius:var(--r-md);overflow:hidden;margin-bottom:16px;
+  background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#1e1b4b 100%);
+  border:1px solid rgba(168,139,250,.18);
+  box-shadow:0 12px 40px rgba(76,29,149,.3);
+}
+.ai::before{content:'';position:absolute;top:-50%;right:-20%;width:60%;height:200%;background:radial-gradient(ellipse,rgba(168,139,250,.18) 0%,transparent 60%);animation:aiOrbit 18s linear infinite;}
+@keyframes aiOrbit{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+.ai-top{position:relative;z-index:1;padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(168,139,250,.12);}
+.ai-icon{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,#a78bfa 0%,#ec4899 100%);
+  display:flex;align-items:center;justify-content:center;font-size:19px;
+  flex-shrink:0;
+  box-shadow:0 0 24px rgba(168,139,250,.5),inset 0 1px 0 rgba(255,255,255,.3);
+  animation:aiBreath 3s ease-in-out infinite;
+}
+@keyframes aiBreath{50%{box-shadow:0 0 36px rgba(168,139,250,.7),inset 0 1px 0 rgba(255,255,255,.3);}}
+.ai-h-info{flex:1;}
+.ai-h-t{font-size:14px;font-weight:700;color:#f5f3ff;letter-spacing:-.2px;}
+.ai-h-s{font-size:10.5px;color:#c4b5fd;opacity:.85;margin-top:1px;}
+.ai-body{position:relative;z-index:1;padding:16px 18px;}
+.ai-txt{font-size:14px;line-height:1.85;color:#ede9fe;min-height:60px;}
+.ai-txt strong,.ai-txt b{color:#f0abfc;font-weight:600;}
+.ai-cursor{display:inline-block;width:2px;height:16px;background:#a78bfa;vertical-align:text-bottom;animation:aiBlink .8s steps(2) infinite;margin-left:2px;}
+@keyframes aiBlink{50%{opacity:0;}}
+.ai-foot{position:relative;z-index:1;padding:9px 18px;border-top:1px solid rgba(168,139,250,.12);display:flex;align-items:center;justify-content:space-between;}
+.ai-fnote{font-size:10.5px;color:#a78bfa;opacity:.75;}
+.ai-key-warn{font-size:10.5px;color:var(--amber);font-weight:600;}
+.ai-btn{padding:6px 14px;background:rgba(168,139,250,.18);border:1px solid rgba(168,139,250,.3);border-radius:9px;color:#ddd6fe;font-family:'Sarabun',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;transition:.2s;}
+.ai-btn:hover{background:rgba(168,139,250,.3);border-color:rgba(168,139,250,.5);transform:translateY(-1px);}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ai-spin{display:flex;align-items:center;gap:9px;color:#c4b5fd;font-size:13px;}
+.spinner{width:16px;height:16px;border:2px solid rgba(168,139,250,.2);border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ════════════════════════════════════════════════════════
+   PANEL — glass card
+   ═══════════════════════════════════════════════════════ */
+.panel{
+  background:var(--bg-card);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  overflow:hidden;
+  transition:.25s;
+}
+.panel:hover{border-color:var(--border-h);}
+.ph{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.ph h2{font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:.2px;display:flex;align-items:center;gap:9px;}
+.ph h2::before{content:'';width:4px;height:16px;border-radius:2px;background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 10px rgba(34,211,238,.4);}
+.ph-meta{font-size:10.5px;color:var(--ink-4);font-family:'Inter',monospace;}
+.pb{padding:14px 18px;}
+.src{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:7px;background:rgba(96,165,250,.15);color:#93c5fd;margin-left:6px;letter-spacing:.3px;border:1px solid rgba(96,165,250,.2);}
+.src.gov{background:rgba(74,222,128,.12);color:#86efac;border-color:rgba(74,222,128,.25);}
+
+/* ════════════════════════════════════════════════════════
+   HOURLY — area chart hero
+   ═══════════════════════════════════════════════════════ */
+.hourly-chart-wrap{position:relative;height:130px;margin-bottom:8px;}
+.hourly-row{display:flex;gap:6px;overflow-x:auto;padding:4px 2px;scroll-snap-type:x mandatory;}
+.hc{
+  scroll-snap-align:start;
+  flex-shrink:0;width:68px;
+  text-align:center;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:9px 8px;
+  transition:.2s;
+}
+.hc:hover{background:var(--bg-card-h);border-color:var(--border-h);transform:translateY(-3px);}
+.hc.now{
+  background:linear-gradient(180deg,rgba(34,211,238,.18),rgba(59,130,246,.08));
+  border-color:rgba(34,211,238,.4);
+  box-shadow:0 0 24px rgba(34,211,238,.2);
+}
+.hc-t{font-size:10.5px;color:var(--ink-3);font-family:'Inter',sans-serif;letter-spacing:.3px;font-weight:600;}
+.hc.now .hc-t{color:var(--cyan);}
+.hc-ico{font-size:22px;line-height:1;margin:5px 0;}
+.hc-tmp{font-size:16px;font-weight:700;font-family:'Inter',sans-serif;letter-spacing:-.5px;}
+.hc-r{font-size:10px;color:var(--blue);margin-top:3px;font-weight:600;}
+.hc-p{font-size:9px;color:var(--ink-4);}
+
+/* ════════════════════════════════════════════════════════
+   7-DAY FORECAST — gradient cards
+   ═══════════════════════════════════════════════════════ */
+.fc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;}
+.fc{
+  position:relative;
+  border-radius:14px;padding:14px 10px;
+  text-align:center;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  transition:.3s cubic-bezier(.34,1.56,.64,1);
+  overflow:hidden;
+  cursor:pointer;
+}
+.fc::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent,var(--g-from,transparent) 100%);opacity:.5;pointer-events:none;border-radius:inherit;}
+.fc:hover{transform:translateY(-4px) scale(1.02);border-color:var(--border-h);box-shadow:0 16px 40px rgba(0,0,0,.4);}
+.fc.today{
+  background:linear-gradient(180deg,rgba(34,211,238,.15),rgba(59,130,246,.08));
+  border-color:rgba(34,211,238,.35);
+  box-shadow:0 0 30px rgba(34,211,238,.18);
+}
+.fc.heavy{background:linear-gradient(180deg,rgba(248,113,113,.12),rgba(220,38,38,.05));border-color:rgba(248,113,113,.3);}
+.fc-day{font-size:11px;font-weight:700;color:var(--ink-2);letter-spacing:.3px;}
+.fc.today .fc-day{color:var(--cyan);}
+.fc.heavy .fc-day{color:#fca5a5;}
+.fc-dt{font-size:10px;color:var(--ink-4);margin-top:1px;font-family:'Inter',sans-serif;}
+.fc-ico{font-size:32px;line-height:1;margin:8px 0;position:relative;z-index:1;}
+.fc-tmps{display:flex;justify-content:center;gap:5px;align-items:baseline;}
+.fc-hi{font-size:17px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif;letter-spacing:-.5px;}
+.fc-sep{font-size:11px;color:var(--ink-4);}
+.fc-lo{font-size:13px;color:var(--ink-3);font-family:'Inter',sans-serif;}
+.fc-rain{font-size:10.5px;font-weight:600;color:var(--blue);margin-top:5px;}
+.fc-pop{font-size:9.5px;color:var(--ink-4);margin-top:1px;}
+
+/* ════════════════════════════════════════════════════════
+   MAP — premium dark
+   ═══════════════════════════════════════════════════════ */
+.map-panel{position:relative;background:#0a0e1a;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:16px;box-shadow:0 16px 50px rgba(0,0,0,.5);}
+.map-toolbar{
+  position:absolute;top:14px;left:14px;right:14px;z-index:500;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:rgba(5,7,15,.7);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:13px;padding:8px 12px;
+}
+.map-toolbar h2{font-size:12.5px;font-weight:700;color:var(--ink);flex:1;display:flex;align-items:center;gap:8px;}
+.map-toolbar h2::before{content:'';width:4px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--cyan),var(--blue));}
+.mtbtn{
+  padding:6px 12px;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:9px;color:var(--ink-2);font-family:'Sarabun',sans-serif;
+  font-size:11px;font-weight:600;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;gap:5px;
+}
+.mtbtn:hover{background:var(--bg-card-h);color:var(--ink);transform:translateY(-1px);}
+.mtbtn.active{background:linear-gradient(135deg,#0891b2,#3b82f6);color:#fff;border-color:transparent;box-shadow:0 0 20px rgba(34,211,238,.35);}
+#mainMap{height:480px;}
+/* dark theme overrides */
+.leaflet-container{background:#dbe5e8;}
+.leaflet-tile{filter:saturate(.85) brightness(1.02);}
+.leaflet-control-attribution{display:none;}
+.leaflet-control-zoom a{background:rgba(255,255,255,.95)!important;border-color:#cbd5e1!important;color:#334155!important;}
+.leaflet-control-zoom a:hover{background:#22d3ee!important;color:#fff!important;border-color:transparent!important;}
+.river-tip{background:rgba(15,23,42,.92)!important;border:1px solid rgba(96,165,250,.4)!important;color:#bae6fd!important;font-family:Sarabun,sans-serif!important;font-size:11px!important;font-weight:600!important;padding:3px 8px!important;border-radius:6px!important;box-shadow:0 4px 12px rgba(0,0,0,.25)!important;}
+.river-tip::before{display:none!important;}
+.station-tooltip{background:rgba(15,23,42,.92)!important;border:1px solid rgba(34,211,238,.4)!important;color:#fff!important;font-family:Sarabun,sans-serif!important;font-size:11px!important;font-weight:700!important;padding:3px 9px!important;border-radius:6px!important;}
+.station-tooltip::before{display:none!important;}
+.map-legend{
+  position:absolute;bottom:14px;left:14px;z-index:500;
+  background:rgba(5,7,15,.78);backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:11px;padding:10px 13px;
+  font-size:11px;
+}
+.map-legend.r-leg{display:none;}
+.lg-t{font-size:10.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px;letter-spacing:.3px;}
+.heat-bar{width:170px;height:8px;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#22d3ee,#fbbf24,#f87171,#dc2626);margin:5px 0 3px;}
+.lg-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-4);font-weight:600;font-family:'Inter',sans-serif;}
+.r-ctrl{
+  display:none;align-items:center;gap:9px;padding:9px 14px;
+  background:rgba(5,7,15,.7);backdrop-filter:blur(20px);border-top:1px solid var(--border);
+}
+.r-ctrl.show{display:flex;}
+.r-time{font-family:'Inter',monospace;font-weight:600;font-size:12.5px;color:var(--cyan);background:var(--bg-card);border:1px solid var(--border);padding:3px 10px;border-radius:7px;letter-spacing:.5px;}
+.r-slider{flex:1;-webkit-appearance:none;height:5px;background:var(--bg-card);border-radius:3px;outline:none;cursor:pointer;border:1px solid var(--border);}
+.r-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#3b82f6);border:2px solid #fff;box-shadow:0 0 12px rgba(34,211,238,.5);}
+.r-playbtn{padding:5px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--ink-2);font-family:'Sarabun',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;}
+.r-playbtn.on{background:linear-gradient(135deg,#0891b2,#3b82f6);color:#fff;border-color:transparent;}
+
+/* ════════════════════════════════════════════════════════
+   WATER PREDICTION CARDS — wave animation
+   ═══════════════════════════════════════════════════════ */
+.wlp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+.wlp{
+  position:relative;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:14px;padding:14px 14px 10px;
+  overflow:hidden;
+  transition:.25s;
+}
+.wlp:hover{border-color:var(--border-h);transform:translateY(-2px);}
+.wlp.low {border-top:2px solid var(--green);}
+.wlp.med {border-top:2px solid var(--amber);}
+.wlp.high{border-top:2px solid var(--red);box-shadow:0 0 24px rgba(248,113,113,.18);animation:wlpAlert 2.5s ease-in-out infinite;}
+@keyframes wlpAlert{50%{box-shadow:0 0 36px rgba(248,113,113,.3);}}
+.wlp-id{font-size:9.5px;font-family:'Inter',monospace;color:var(--ink-4);letter-spacing:.5px;font-weight:600;}
+.wlp-name{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px;line-height:1.2;}
+.wlp-cur{font-size:10.5px;color:var(--ink-3);margin-top:9px;font-family:'Inter',sans-serif;}
+.wlp-pred{display:flex;align-items:baseline;gap:5px;margin-top:3px;}
+.wlp-pv{font-size:24px;font-weight:800;line-height:1;font-family:'Inter',sans-serif;letter-spacing:-1px;}
+.wlp-pu{font-size:10px;color:var(--ink-3);}
+.wlp-d{font-size:11px;font-weight:700;margin-top:4px;font-family:'Inter',sans-serif;}
+.wlp-d.up{color:var(--red);}
+.wlp-d.down{color:var(--green);}
+.wlp-bar{position:relative;height:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:9px;}
+.wlp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bg-from),var(--bg-to));transition:width 1.2s cubic-bezier(.5,0,.2,1);position:relative;}
+.wlp-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:wlpShine 2s ease-in-out infinite;}
+@keyframes wlpShine{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+.wlp-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;margin-top:8px;letter-spacing:.3px;}
+.wlp-badge.low {background:rgba(74,222,128,.15);color:var(--green);}
+.wlp-badge.med {background:rgba(251,191,36,.15);color:var(--amber);}
+.wlp-badge.high{background:rgba(248,113,113,.18);color:var(--red);}
+
+/* ════════════════════════════════════════════════════════
+   AQI — animated ring
+   ═══════════════════════════════════════════════════════ */
+.aqi-card{display:flex;flex-direction:column;height:100%;}
+.aqi-body{padding:18px;display:flex;align-items:center;gap:18px;flex:1;}
+.aqi-ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0;}
+.aqi-ring{transform:rotate(-90deg);}
+.aqi-ring-bg{stroke:var(--bg-card);stroke-width:8;fill:none;}
+.aqi-ring-fg{stroke:url(#aqiGrad);stroke-width:8;fill:none;stroke-linecap:round;transition:stroke-dashoffset 1.5s cubic-bezier(.5,0,.2,1);filter:drop-shadow(0 0 8px var(--aqi-glow,#22d3ee));}
+.aqi-ring-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.aqi-num{font-size:30px;font-weight:800;font-family:'Inter',sans-serif;color:var(--ink);line-height:1;letter-spacing:-1px;}
+.aqi-lbl{font-size:9.5px;color:var(--ink-3);letter-spacing:.6px;font-weight:600;margin-top:1px;}
+.aqi-info{flex:1;}
+.aqi-pm{display:flex;align-items:baseline;gap:5px;}
+.aqi-pm-v{font-size:26px;font-weight:700;color:var(--ink);font-family:'Inter',sans-serif;line-height:1;letter-spacing:-.5px;}
+.aqi-pm-u{font-size:10.5px;color:var(--ink-3);}
+.aqi-q{font-size:14px;font-weight:700;margin-top:6px;}
+.aqi-adv{font-size:11px;color:var(--ink-3);margin-top:3px;line-height:1.5;}
+.aqi-foot{padding:8px 18px;border-top:1px solid var(--border);font-size:9.5px;color:var(--ink-4);background:rgba(0,0,0,.15);}
+
+/* ════════════════════════════════════════════════════════
+   GRIDS
+   ═══════════════════════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+
+/* ════════════════════════════════════════════════════════
+   SKELETON
+   ═══════════════════════════════════════════════════════ */
+.sk{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200%;}100%{background-position:-200%;}}
+
+/* ════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════ */
+footer{padding:24px 24px 32px;text-align:center;color:var(--ink-4);font-size:11px;line-height:1.7;border-top:1px solid var(--border);background:rgba(5,7,15,.5);}
+footer strong{color:var(--ink-2);font-weight:600;}
+.src-note{font-size:10px;opacity:.7;margin-top:4px;letter-spacing:.2px;}
+
+/* ════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+@media(max-width:1100px){
+  .hero-content{grid-template-columns:1fr;}
+  .fc-grid{grid-template-columns:repeat(4,1fr);}
+  .wlp-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:780px){
+  .grid-2{grid-template-columns:1fr;}
+  .fc-grid{grid-template-columns:repeat(3,1fr);}
+  .wlp-grid{grid-template-columns:1fr 1fr;}
+  .hero-temp{font-size:96px;}
+  .hero-icon-wrap{width:90px;height:90px;}
+  .hero-icon-wrap svg{width:90px;height:90px;}
+}
+@media(max-width:480px){
+  main{padding:14px 14px 40px;}
+  .hero-content{padding:24px 20px;}
+  .hero-temp{font-size:80px;letter-spacing:-4px;}
+  .hero-stats{grid-template-columns:1fr 1fr;}
+  .fc-grid{grid-template-columns:repeat(2,1fr);}
+  .wlp-grid{grid-template-columns:1fr;}
+  .hdr-clock,.hdr-status{display:none;}
+}
+@media print{
+  .page-bg,header,nav,footer,.ai-foot,.r-ctrl,.map-toolbar{display:none!important;}
+  body{background:#fff;color:#000;}
+  main{padding:0;}
+  .panel,.ai,.hero,.wlp{break-inside:avoid;background:#fff!important;border:1px solid #ccc!important;box-shadow:none!important;}
+}
+
+/* ============ NEW: ALERT RIBBON ============ */
+.alert-ribbon{
+  position:sticky; top:0; z-index:100;
+  display:none; padding:10px 16px;
+  background:linear-gradient(90deg,#7f1d1d 0%,#b91c1c 50%,#7f1d1d 100%);
+  background-size:200% 100%; animation:ribbonShift 8s linear infinite;
+  color:#fff; font-weight:600; font-size:13.5px;
+  border-bottom:1px solid #fca5a5;
+  box-shadow:0 4px 16px rgba(220,38,38,.4);
+}
+.alert-ribbon.warn{background:linear-gradient(90deg,#78350f 0%,#b45309 50%,#78350f 100%);background-size:200% 100%;box-shadow:0 4px 16px rgba(245,158,11,.4);border-bottom-color:#fbbf24;}
+.alert-ribbon.show{display:block;animation:ribbonShift 8s linear infinite,ribbonIn .3s;}
+@keyframes ribbonShift{0%{background-position:0% 0;}100%{background-position:-200% 0;}}
+@keyframes ribbonIn{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.alert-ribbon-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.alert-ribbon-icon{font-size:20px;animation:pulseScale 1.5s infinite;}
+.alert-ribbon-msg{flex:1;min-width:200px;line-height:1.5;}
+.alert-ribbon-msg strong{font-family:'Inter',sans-serif;letter-spacing:.2px;}
+.alert-ribbon-action{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.alert-ribbon-action:hover{background:rgba(255,255,255,.28);}
+@keyframes pulseScale{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+
+/* ============ NEW: NOTIFICATION FAB ============ */
+.notif-fab{
+  position:fixed; bottom:20px; right:20px; z-index:200;
+  width:54px; height:54px; border-radius:50%;
+  background:linear-gradient(135deg,#0ea5e9 0%,#3b82f6 100%);
+  border:none; color:#fff; font-size:22px;
+  box-shadow:0 8px 24px rgba(14,165,233,.45);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+}
+.notif-fab:hover{transform:scale(1.08);box-shadow:0 12px 32px rgba(14,165,233,.6);}
+.notif-fab.on{background:linear-gradient(135deg,#10b981 0%,#059669 100%);box-shadow:0 8px 24px rgba(16,185,129,.45);}
+.notif-fab.off{background:linear-gradient(135deg,#6b7280 0%,#4b5563 100%);}
+.notif-fab .badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--bg-deep);}
+.notif-tip{
+  position:fixed; bottom:84px; right:20px; z-index:201;
+  background:rgba(15,23,42,.96); color:#fff;
+  padding:14px 16px; border-radius:12px; max-width:280px;
+  font-size:12.5px; line-height:1.5; backdrop-filter:blur(12px);
+  border:1px solid rgba(148,163,184,.3); display:none;
+  box-shadow:0 12px 32px rgba(0,0,0,.4);
+}
+.notif-tip.show{display:block;animation:tipIn .3s;}
+.notif-tip::before{content:"";position:absolute;bottom:-6px;right:20px;width:12px;height:12px;background:rgba(15,23,42,.96);border-right:1px solid rgba(148,163,184,.3);border-bottom:1px solid rgba(148,163,184,.3);transform:rotate(45deg);}
+@keyframes tipIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.notif-tip-close{position:absolute;top:8px;right:10px;background:none;border:none;color:#fff;font-size:18px;cursor:pointer;opacity:.6;}
+.notif-tip-close:hover{opacity:1;}
+
+/* ============ NEW: PROVINCIAL WATER STATUS PANEL ============ */
+.pws-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:640px){.pws-grid{grid-template-columns:repeat(2,1fr);}}
+.pws-card{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+.pws-card .ico{font-size:24px;margin-bottom:6px;display:block;}
+.pws-card .num{font-family:'Inter',sans-serif;font-size:26px;font-weight:800;letter-spacing:-.5px;}
+.pws-card .lbl{font-size:11px;color:var(--ink-3);margin-top:2px;letter-spacing:.3px;}
+.pws-card.ok .num{color:#4ade80;}
+.pws-card.warn .num{color:#fbbf24;}
+.pws-card.crit .num{color:#f87171;}
+.pws-card.info .num{color:#60a5fa;}
+
+.river-row{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:6px;}
+.river-row .nm{flex:1;min-width:0;}
+.river-row .nm-t{font-weight:600;font-size:13.5px;}
+.river-row .nm-s{font-size:11px;color:var(--ink-3);}
+.river-row .bar-wrap{flex:0 0 140px;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;position:relative;}
+.river-row .bar{height:100%;border-radius:4px;transition:width .6s;}
+.river-row .pct{flex:0 0 50px;text-align:right;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;}
+@media(max-width:560px){.river-row{flex-wrap:wrap;}.river-row .bar-wrap{flex:1 1 100%;}.river-row .pct{flex:0;}}
+
+/* ============ NEW: RESERVOIRS MICRO-GRID ============ */
+.res-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.res-mini{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden;}
+.res-mini::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#10b981;}
+.res-mini.warn::before{background:#fbbf24;}
+.res-mini.crit::before{background:#ef4444;}
+.res-mini.low::before{background:#0ea5e9;}
+.res-mini .code{font-family:'Inter',sans-serif;font-weight:700;font-size:11px;color:var(--ink-3);letter-spacing:.5px;}
+.res-mini .nm{font-size:12px;font-weight:600;margin:2px 0 4px;line-height:1.3;color:var(--ink);}
+.res-mini .pct{font-family:'Inter',sans-serif;font-size:18px;font-weight:800;}
+.res-mini .vol{font-size:10px;color:var(--ink-3);margin-top:1px;}
+.res-mini.ok .pct{color:#4ade80;}
+.res-mini.warn .pct{color:#fbbf24;}
+.res-mini.crit .pct{color:#f87171;}
+.res-mini.low .pct{color:#60a5fa;}
+.res-mini.empty .pct{color:var(--ink-4);}
+
+/* ============ NEW: REFRESH STATUS BAR ============ */
+.refresh-bar{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--ink-3);padding:8px 4px;margin-bottom:12px;flex-wrap:wrap;}
+.refresh-bar .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulseGreen 2s infinite;flex-shrink:0;}
+@keyframes pulseGreen{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,.6);}50%{opacity:.7;box-shadow:0 0 0 6px rgba(74,222,128,0);}}
+.refresh-bar .next{margin-left:auto;}
+.refresh-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--ink-2);padding:6px 10px;border-radius:8px;font-family:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.refresh-btn:hover{background:rgba(255,255,255,.1);color:var(--ink);}
+.refresh-btn.busy .ico{animation:rotate 1s linear infinite;display:inline-block;}
+@keyframes rotate{to{transform:rotate(360deg);}}
+
+</style>
+</head>
+<body>
+
+<!-- ALERT RIBBON (โผล่เมื่อมีสถานการณ์วิกฤติ) -->
+<div class="alert-ribbon" id="alertRibbon">
+  <div class="alert-ribbon-inner">
+    <span class="alert-ribbon-icon">🚨</span>
+    <span class="alert-ribbon-msg" id="alertRibbonMsg">—</span>
+    <button class="alert-ribbon-action" onclick="enableNotifications()">🔔 เปิดแจ้งเตือน</button>
+  </div>
+</div>
+
+<!-- LIVING BACKGROUND -->
+<div class="page-bg">
+  <div class="aurora a1"></div>
+  <div class="aurora a2"></div>
+  <div class="aurora a3"></div>
+  <div class="stars"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr">
+    <div class="hdr-logo">🌤️</div>
+    <div class="hdr-brand">
+      <div class="hdr-t1">รายงานสภาพอากาศ · จ.หนองบัวลำภู</div>
+      <div class="hdr-t2">Weather Intelligence · สำนักงานสถิติจังหวัด</div>
+    </div>
+    <div class="hdr-actions">
+      <div class="hdr-pill" onclick="detectGPS()" title="ตรวจจับ GPS">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-7-7-12a7 7 0 0114 0c0 5-7 12-7 12z"/></svg>
+        <span id="locName">หนองบัวลำภู</span>
+      </div>
+      <div class="hdr-status" id="hdrStatus">
+        <span class="led ok" id="hdrLed"></span>
+        <span class="led-txt" id="hdrTxt">NORMAL</span>
+      </div>
+      <div class="hdr-clock">
+        <div class="hdr-time" id="liveTime">--:--:--</div>
+        <div class="hdr-date" id="liveDate">—</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html">หน้าหลัก</a>
+    <a href="daily_briefing.html" class="active">สภาพอากาศ</a>
+    <a href="paneang.html">ลำน้ำพะเนียง</a>
+    <a href="mong.html">ลำน้ำโมง</a>
+    <a href="rainfall.html">ปริมาณฝน</a>
+    <a href="reservoir.html">อ่างเก็บน้ำ</a>
+    <a href="input.html">บันทึกข้อมูล</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- LIVE STATUS BAR -->
+  <div class="refresh-bar">
+    <span class="dot"></span>
+    <span><strong style="color:var(--ink);">ข้อมูล Real-time</strong> · อัปเดตล่าสุด <span id="lastUpdate" style="color:var(--ink-2);">—</span></span>
+    <button class="refresh-btn" id="manualRefresh" onclick="manualRefresh()"><span class="ico">⟳</span> รีเฟรช</button>
+    <span class="next">รอบถัดไป <span id="nextUpdate">5 นาที</span></span>
+  </div>
+
+  <!-- ALERT -->
+  <div class="alert" id="alertBox">
+    <div class="alert-ico" id="alertIco">⚠️</div>
+    <div class="alert-body">
+      <div class="alert-t" id="alertT">—</div>
+      <div class="alert-d" id="alertD">—</div>
+      <div class="alert-time" id="alertTime">—</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero" id="hero">
+    <div class="sun-orb"></div>
+    <div class="moon-orb"></div>
+    <div class="hero-stars"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="rain-layer" id="rainLayer"></div>
+    <div class="lightning" id="lightning"></div>
+
+    <div class="hero-content">
+      <div class="hero-main">
+        <div class="hero-loc-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-7-7-12a7 7 0 0114 0c0 5-7 12-7 12z"/></svg>
+          <span id="heroLoc">จ.หนองบัวลำภู</span>
+          <span class="hero-loc-coord" id="heroCoord">17.2189, 102.4215</span>
+        </div>
+        <div class="hero-temp-row">
+          <div class="hero-icon-wrap" id="heroIcon">
+            <!-- SVG icon injected -->
+          </div>
+          <div class="hero-temps">
+            <div class="hero-temp"><span id="heroTemp">--</span><span class="hero-temp-deg">°</span></div>
+            <div class="hero-desc" id="heroDesc">กำลังโหลด...</div>
+            <div class="hero-meta">
+              <span>รู้สึก <b id="heroFeels">--°</b></span>
+              <span>สูงสุด <b id="heroHi">--°</b></span>
+              <span>ต่ำสุด <b id="heroLo">--°</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-tile">
+          <div class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5s-7 9-7 13a7 7 0 0014 0c0-4-7-13-7-13z"/></svg></div>
+          <div class="st-info"><div class="st-lbl">ความชื้น</div><div class="st-val"><span id="hHum">--</span><span class="un">%</span></div></div>
+        </div>
+        <div class="stat-tile">
+          <div class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h13a3 3 0 100-6"/><path d="M3 12h17a3 3 0 110 6"/><path d="M3 16h8"/></svg></div>
+          <div class="st-info"><div class="st-lbl">ความเร็วลม</div><div class="st-val"><span id="hWind">--</span><span class="un"> km/h</span></div><div class="st-sub" id="hWindDir">—</div></div>
+        </div>
+        <div class="stat-tile">
+          <div class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 14v6m-4-6v6m-4-6v6"/><path d="M16.5 9a4.5 4.5 0 00-9-1A5 5 0 008 18"/></svg></div>
+          <div class="st-info"><div class="st-lbl">ฝนวันนี้</div><div class="st-val"><span id="hRain">--</span><span class="un"> มม.</span></div><div class="st-sub" id="hPop">—</div></div>
+        </div>
+        <div class="stat-tile">
+          <div class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg></div>
+          <div class="st-info"><div class="st-lbl">UV Index</div><div class="st-val" id="hUV">--</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AQI + RAIN ROW (ใต้ Hero สภาพอากาศ) -->
+  <div class="grid-2">
+    <div class="panel aqi-card">
+      <div class="ph"><h2>คุณภาพอากาศ PM2.5<span class="src gov" id="aqiSrc">air4thai PCD</span></h2><span class="ph-meta" id="aqiUpd">—</span></div>
+      <div class="aqi-body" id="aqiContent">
+        <div class="sk" style="width:120px;height:120px;border-radius:50%;"></div>
+        <div style="flex:1;"><div class="sk" style="height:90px;"></div></div>
+      </div>
+      <div class="aqi-foot" id="aqiStation">—</div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>ปริมาณฝน 24 ชม. รายอำเภอ<span class="src">Open-Meteo</span></h2><span class="ph-meta" id="rainUpd">—</span></div>
+      <div class="pb"><div style="height:200px;"><canvas id="rainChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- NEW: สถานการณ์น้ำในจังหวัด (Real-time จาก backend) -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph">
+      <h2>สถานการณ์น้ำในจังหวัด<span class="src gov" id="pwsSrc">Backend Live</span></h2>
+      <span class="ph-meta" id="pwsUpd">—</span>
+    </div>
+    <div class="pb">
+      <div class="pws-grid">
+        <div class="pws-card ok" id="pws-stations">
+          <span class="ico">📍</span>
+          <div class="num" id="pws-stations-num">—</div>
+          <div class="lbl">สถานีรวม</div>
+        </div>
+        <div class="pws-card warn" id="pws-warn">
+          <span class="ico">⚠️</span>
+          <div class="num" id="pws-warn-num">—</div>
+          <div class="lbl">เฝ้าระวัง</div>
+        </div>
+        <div class="pws-card crit" id="pws-crit">
+          <span class="ico">🚨</span>
+          <div class="num" id="pws-crit-num">—</div>
+          <div class="lbl">วิกฤติ ล้นตลิ่ง</div>
+        </div>
+        <div class="pws-card info" id="pws-rivers">
+          <span class="ico">🌊</span>
+          <div class="num" id="pws-rivers-num">4</div>
+          <div class="lbl">ลำน้ำหลัก</div>
+        </div>
+      </div>
+      <div id="pwsRiverList"><!-- river rows injected --></div>
+    </div>
+  </div>
+
+  <!-- NEW: อ่างเก็บน้ำ 14 แห่ง -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph">
+      <h2>อ่างเก็บน้ำในจังหวัด<span class="src gov">Backend Live</span></h2>
+      <span class="ph-meta" id="resUpd">—</span>
+    </div>
+    <div class="pb">
+      <div class="pws-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;">
+        <div class="pws-card ok">
+          <span class="ico">💧</span>
+          <div class="num" id="res-avg">—</div>
+          <div class="lbl">% ความจุเฉลี่ย</div>
+        </div>
+        <div class="pws-card warn">
+          <span class="ico">⚠️</span>
+          <div class="num" id="res-warn-num">—</div>
+          <div class="lbl">อ่างน้ำมาก (≥80%)</div>
+        </div>
+        <div class="pws-card info">
+          <span class="ico">📉</span>
+          <div class="num" id="res-low-num">—</div>
+          <div class="lbl">อ่างน้ำน้อย (≤30%)</div>
+        </div>
+      </div>
+      <div class="res-mini-grid" id="resMiniGrid"><!-- 14 อ่าง --></div>
+    </div>
+  </div>
+
+  <!-- AI -->
+  <div class="ai">
+    <div class="ai-top">
+      <div class="ai-icon">✨</div>
+      <div class="ai-h-info">
+        <div class="ai-h-t">Gemini AI · วิเคราะห์สถานการณ์อากาศ</div>
+        <div class="ai-h-s">วิเคราะห์จากข้อมูล Open-Meteo + AQI · อัปเดตทุก 30 นาที</div>
+      </div>
+    </div>
+    <div class="ai-body">
+      <div class="ai-txt" id="aiTxt"><div class="ai-spin"><span class="spinner"></span> รอข้อมูลพยากรณ์อากาศโหลดเสร็จก่อน...</div></div>
+    </div>
+    <div class="ai-foot">
+      <span class="ai-key-warn" id="aiKeyNote">⚙️ ตั้งค่า GEMINI_API_KEY ใน config.js เพื่อเปิดใช้งาน</span>
+      <button class="ai-btn" id="aiBtnRun" onclick="runGemini()">🔄 วิเคราะห์ใหม่</button>
+    </div>
+  </div>
+
+  <!-- HOURLY -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph"><h2>พยากรณ์ 24 ชั่วโมง<span class="src">Open-Meteo</span></h2><span class="ph-meta" id="hourlyUpd">—</span></div>
+    <div class="pb">
+      <div class="hourly-chart-wrap"><canvas id="hourlyChart"></canvas></div>
+      <div class="hourly-row" id="hourlyRow"><div class="sk" style="height:90px;width:100%;"></div></div>
+    </div>
+  </div>
+
+  <!-- 7-DAY -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph"><h2>พยากรณ์ 7 วัน<span class="src">Open-Meteo</span></h2><span class="ph-meta" id="fcUpd">—</span></div>
+    <div class="pb"><div class="fc-grid" id="fcGrid"><div class="sk" style="height:140px;grid-column:1/-1;"></div></div></div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-panel">
+    <div class="map-toolbar">
+      <h2>แผนที่ความชุกฝน + เรดาร์</h2>
+      <button class="mtbtn active" id="btnRivers" onclick="toggleRivers()">🌊 แม่น้ำ</button>
+      <button class="mtbtn active" id="btnHeat" onclick="toggleHeat()">🌧 Heatmap ฝน</button>
+      <button class="mtbtn" id="btnRadar" onclick="toggleRadar()">🛰 เรดาร์</button>
+      <button class="mtbtn active" id="btnSt" onclick="toggleStations()">📍 สถานี</button>
+    </div>
+    <div id="mainMap"></div>
+    <div class="map-legend" id="legendHeat">
+      <div class="lg-t">ความชุกฝน 24 ชม.</div>
+      <div class="heat-bar"></div>
+      <div class="lg-labels"><span>0</span><span>10</span><span>35</span><span>90+ มม.</span></div>
+    </div>
+    <div class="map-legend r-leg" id="legendRadar">
+      <div class="lg-t">ความหนาแน่นเรดาร์</div>
+      <div class="heat-bar"></div>
+      <div class="lg-labels"><span>เบา</span><span>กลาง</span><span>หนัก</span><span>หนักมาก</span></div>
+    </div>
+    <div class="r-ctrl" id="radarCtrl">
+      <span class="r-time" id="rTime">--:--</span>
+      <span style="font-size:11px;color:var(--ink-3);flex-shrink:0;">ย้อน 2 ชม. + พยากรณ์ 30 นาที</span>
+      <input type="range" class="r-slider" id="rSlider" min="0" max="13" value="11" oninput="showRFrame(+this.value)">
+      <button class="r-playbtn" id="rPlayBtn" onclick="togglePlay()">▶ เล่น</button>
+    </div>
+  </div>
+
+  <!-- WATER PREDICTION -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph"><h2>คาดการณ์ระดับน้ำหลังฝนตก (+12 ชม.)<span class="src">คำนวณจากพยากรณ์ฝน</span></h2><span class="ph-meta" id="wlpUpd">—</span></div>
+    <div class="pb">
+      <div style="font-size:11px;color:var(--ink-3);margin-bottom:12px;line-height:1.5;">อ้างอิงจากปริมาณฝนคาดการณ์ × สัมประสิทธิ์น้ำท่า (Runoff Coefficient) ของแต่ละลุ่มน้ำย่อย</div>
+      <div class="wlp-grid" id="wlpGrid"><div class="sk" style="height:120px;grid-column:1/-1;"></div></div>
+    </div>
+  </div>
+
+
+</main>
+
+<!-- NOTIFICATION FAB (มุมขวาล่าง) -->
+<button class="notif-fab" id="notifFab" onclick="toggleNotifications()" title="แจ้งเตือนเมื่อสถานการณ์รุนแรง">
+  <span id="notifIcon">🔔</span>
+</button>
+<div class="notif-tip" id="notifTip">
+  <button class="notif-tip-close" onclick="document.getElementById('notifTip').classList.remove('show');">×</button>
+  <strong>เปิดแจ้งเตือนสถานการณ์</strong><br>
+  รับการแจ้งเตือนทันทีบนโทรศัพท์เมื่อมี ฝนหนัก / ระดับน้ำวิกฤติ / อ่างเสี่ยงล้น
+  <button onclick="enableNotifications()" style="margin-top:10px;display:block;width:100%;background:linear-gradient(135deg,#0ea5e9,#3b82f6);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">เปิดเลย</button>
+</div>
+
+<footer>
+  <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong> · Weather Intelligence Dashboard
+  <div class="src-note">Open-Meteo · air4thai.pcd.go.th · RainViewer · Google Gemini AI</div>
+</footer>
+
+<!-- SVG sprite for AQI gradient -->
+<svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <linearGradient id="aqiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG — ใส่ใน config.js
+//  window.APP_CONFIG = { API_URL:'...', GEMINI_API_KEY:'...' };
+// ═══════════════════════════════════════════════════════════
+const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || '';
+const DEFAULT = { lat:17.2189, lon:102.4215, name:'หนองบัวลำภู' };
+let CUR = { ...DEFAULT };
+
+const AMPHOE = [
+  { name:'เมืองหนองบัวลำภู', short:'เมือง',  lat:17.21, lon:102.43 },
+  { name:'นาวัง',            short:'นาวัง',   lat:17.36, lon:102.05 },
+  { name:'นากลาง',           short:'นากลาง',  lat:17.29, lon:102.20 },
+  { name:'ศรีบุญเรือง',       short:'ศรีบุญฯ', lat:17.11, lon:102.35 },
+  { name:'สุวรรณคูหา',        short:'สุวรรณฯ', lat:17.51, lon:102.18 },
+  { name:'โนนสัง',            short:'โนนสัง',  lat:17.07, lon:102.65 },
+];
+
+const STATIONS = [
+  { id:'PN01', name:'วังปลาป้อม',      bank:290.0, warn:289.5, lat:17.421, lon:101.993, rc:0.55, area:120 },
+  { id:'PN02', name:'โคกกระทอ',         bank:266.0, warn:265.5, lat:17.343, lon:102.072, rc:0.52, area:180 },
+  { id:'PN03', name:'วังสามหาบ',         bank:258.0, warn:257.5, lat:17.310, lon:102.108, rc:0.50, area:220 },
+  { id:'PN04', name:'บ้านหนองด่าน',      bank:249.0, warn:248.5, lat:17.279, lon:102.166, rc:0.50, area:280 },
+  { id:'PN05', name:'บ้านฝั่งแดง',       bank:237.0, warn:236.5, lat:17.267, lon:102.227, rc:0.48, area:340 },
+  { id:'PN06', name:'ปตร.หนองหว้าใหญ่',  bank:216.0, warn:215.5, lat:17.180, lon:102.386, rc:0.48, area:480 },
+  { id:'PN07', name:'วังหมื่น',           bank:210.0, warn:209.5, lat:17.183, lon:102.432, rc:0.46, area:520 },
+  { id:'PN08', name:'ปตร.ปู่หลอด',       bank:203.0, warn:202.5, lat:17.115, lon:102.454, rc:0.46, area:560 },
+  { id:'PN09', name:'บ้านข้องโป้',        bank:201.0, warn:200.5, lat:17.082, lon:102.451, rc:0.45, area:580 },
+  { id:'PN10', name:'ปตร.หัวนา',         bank:191.0, warn:190.5, lat:17.001, lon:102.424, rc:0.44, area:620 },
+  { id:'MG01', name:'คลองบุญทัน',        bank:231.0, warn:230.5, lat:17.545, lon:102.168, rc:0.50, area:90 },
+  { id:'MG02', name:'บ้านโคก',           bank:218.0, warn:217.5, lat:17.550, lon:102.204, rc:0.48, area:130 },
+];
+
+function buildHeatGrid(){
+  const pts=[];
+  const latR=[[16.92,17.05],[17.05,17.25],[17.25,17.45],[17.45,17.65]];
+  const lonR=[[101.88,102.05],[102.05,102.25],[102.25,102.45],[102.45,102.65]];
+  latR.forEach(([la0,la1])=>{
+    const la=+(la0+(la1-la0)/2).toFixed(4);
+    lonR.forEach(([lo0,lo1])=>{
+      const lo=+(lo0+(lo1-lo0)/2).toFixed(4);
+      pts.push({lat:la,lon:lo});
+    });
+  });
+  AMPHOE.forEach(a=>pts.push({lat:a.lat,lon:a.lon}));
+  return pts;
+}
+const HEAT_GRID = buildHeatGrid();
+
+const $=id=>document.getElementById(id);
+const tx=(id,v)=>{if($(id))$(id).textContent=v;};
+const ht=(id,v)=>{if($(id))$(id).innerHTML=v;};
+const t12=()=>new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+' น.';
+const safe=fn=>fn().catch(()=>null);
+
+// ═══════════════════════════════════════════════════════════
+//  CUSTOM SVG WEATHER ICONS
+// ═══════════════════════════════════════════════════════════
+const ICONS = {
+  sunny:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="sun" cx="35%" cy="35%"><stop offset="0%" stop-color="#fef3c7"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs>
+    <g style="transform-origin:100px 100px;animation:sunSpin 30s linear infinite;">
+      <g stroke="#fde68a" stroke-width="6" stroke-linecap="round" opacity=".8">
+        <line x1="100" y1="20" x2="100" y2="40"/>
+        <line x1="100" y1="160" x2="100" y2="180"/>
+        <line x1="20" y1="100" x2="40" y2="100"/>
+        <line x1="160" y1="100" x2="180" y2="100"/>
+        <line x1="44" y1="44" x2="58" y2="58"/>
+        <line x1="142" y1="142" x2="156" y2="156"/>
+        <line x1="44" y1="156" x2="58" y2="142"/>
+        <line x1="142" y1="58" x2="156" y2="44"/>
+      </g>
+    </g>
+    <circle cx="100" cy="100" r="42" fill="url(#sun)"/>
+  </svg><style>@keyframes sunSpin{to{transform:rotate(360deg);}}</style>`,
+  cloudy:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="clA" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity=".95"/><stop offset="100%" stop-color="#cbd5e1"/></linearGradient></defs>
+    <g style="animation:cloudFloat 5s ease-in-out infinite;">
+      <ellipse cx="70" cy="120" rx="38" ry="28" fill="url(#clA)" opacity=".85"/>
+      <ellipse cx="110" cy="105" rx="48" ry="34" fill="url(#clA)"/>
+      <ellipse cx="145" cy="125" rx="32" ry="25" fill="url(#clA)" opacity=".9"/>
+    </g>
+  </svg><style>@keyframes cloudFloat{50%{transform:translateY(-4px);}}</style>`,
+  partly:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="ps" cx="35%" cy="35%"><stop offset="0%" stop-color="#fef3c7"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient><linearGradient id="pcl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#cbd5e1"/></linearGradient></defs>
+    <g style="transform-origin:65px 70px;animation:sunSpin 30s linear infinite;"><circle cx="65" cy="70" r="32" fill="url(#ps)"/></g>
+    <g style="animation:cloudFloat 5s ease-in-out infinite;"><ellipse cx="110" cy="125" rx="48" ry="32" fill="url(#pcl)"/><ellipse cx="80" cy="140" rx="32" ry="22" fill="url(#pcl)" opacity=".9"/><ellipse cx="145" cy="138" rx="28" ry="20" fill="url(#pcl)" opacity=".9"/></g>
+  </svg>`,
+  rain:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="rcl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#64748b"/></linearGradient></defs>
+    <g><ellipse cx="70" cy="80" rx="38" ry="28" fill="url(#rcl)"/><ellipse cx="110" cy="68" rx="48" ry="34" fill="url(#rcl)"/><ellipse cx="145" cy="85" rx="32" ry="25" fill="url(#rcl)"/></g>
+    <g stroke="#60a5fa" stroke-width="4" stroke-linecap="round" fill="none">
+      <line x1="70" y1="120" x2="62" y2="155" style="animation:rainDrop 1s linear infinite;"/>
+      <line x1="100" y1="125" x2="92" y2="165" style="animation:rainDrop 1.1s .15s linear infinite;"/>
+      <line x1="130" y1="120" x2="122" y2="160" style="animation:rainDrop .95s .3s linear infinite;"/>
+      <line x1="85" y1="130" x2="77" y2="170" style="animation:rainDrop 1.05s .45s linear infinite;"/>
+      <line x1="115" y1="130" x2="107" y2="172" style="animation:rainDrop .9s .55s linear infinite;"/>
+    </g>
+  </svg><style>@keyframes rainDrop{0%{opacity:0;transform:translateY(-8px);}30%{opacity:1;}100%{opacity:0;transform:translateY(20px);}}</style>`,
+  storm:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="scl" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#475569"/></linearGradient></defs>
+    <g><ellipse cx="70" cy="75" rx="38" ry="28" fill="url(#scl)"/><ellipse cx="110" cy="65" rx="48" ry="34" fill="url(#scl)"/><ellipse cx="145" cy="80" rx="32" ry="25" fill="url(#scl)"/></g>
+    <path d="M105 105 L85 145 L100 145 L92 175 L120 130 L105 130 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" style="animation:lightning 2s ease-in-out infinite;"/>
+  </svg><style>@keyframes lightning{0%,90%,100%{opacity:1;filter:drop-shadow(0 0 8px #fbbf24);}45%{opacity:.3;filter:none;}}</style>`,
+  fog:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#cbd5e1" stroke-width="10" stroke-linecap="round" opacity=".85">
+      <line x1="40" y1="70" x2="160" y2="70" style="animation:fogShift 3s ease-in-out infinite;"/>
+      <line x1="30" y1="100" x2="170" y2="100" style="animation:fogShift 3.5s .3s ease-in-out infinite;"/>
+      <line x1="50" y1="130" x2="150" y2="130" style="animation:fogShift 4s .6s ease-in-out infinite;"/>
+      <line x1="40" y1="160" x2="160" y2="160" style="animation:fogShift 3.2s .9s ease-in-out infinite;"/>
+    </g>
+  </svg><style>@keyframes fogShift{50%{transform:translateX(8px);opacity:.5;}}</style>`,
+  night:`<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="moon" cx="35%" cy="35%"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#fbbf24"/></radialGradient></defs>
+    <g style="animation:moonGlow 3s ease-in-out infinite;">
+      <circle cx="100" cy="100" r="40" fill="url(#moon)"/>
+      <circle cx="100" cy="100" r="40" fill="none" stroke="#fbbf24" stroke-width="2" opacity=".5"/>
+    </g>
+    <g fill="#fff" opacity=".8">
+      <circle cx="40" cy="40" r="2"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+      <circle cx="160" cy="60" r="1.5"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite"/></circle>
+      <circle cx="50" cy="160" r="2"><animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="170" cy="150" r="1.5"><animate attributeName="opacity" values="0.3;1;0.3" dur="2.2s" repeatCount="indefinite"/></circle>
+    </g>
+  </svg><style>@keyframes moonGlow{50%{filter:drop-shadow(0 0 20px #fbbf24);}}</style>`,
+};
+
+function wxCode(c){
+  const hr=new Date().getHours(); const isNight=hr<6||hr>=19;
+  if(c===0)         return{i:isNight?ICONS.night:ICONS.sunny,e:'☀️',t:'ท้องฟ้าโปร่ง',k:'clear'};
+  if(c<=2)          return{i:isNight?ICONS.night:ICONS.partly,e:'⛅',t:'เมฆบางส่วน',k:'partly'};
+  if(c===3)         return{i:ICONS.cloudy,e:'☁️',t:'เมฆมาก',k:'cloudy'};
+  if(c>=45&&c<=48)  return{i:ICONS.fog,e:'🌫️',t:'หมอก',k:'fog'};
+  if(c>=51&&c<=65)  return{i:ICONS.rain,e:'🌧️',t:'ฝนตก',k:'rain'};
+  if(c>=80&&c<=82)  return{i:ICONS.rain,e:'🌦️',t:'ฝนซู่',k:'rain'};
+  if(c>=95)         return{i:ICONS.storm,e:'⛈️',t:'พายุฟ้าคะนอง',k:'storm'};
+  return{i:ICONS.cloudy,e:'🌤️',t:'—',k:'cloudy'};
+}
+function wxEmoji(c){return wxCode(c).e;}
+
+function windDir(deg){
+  const d=['เหนือ','ตอน.เหนือ','ตะวันออก','ตอน.ใต้','ใต้','ตต.ใต้','ตะวันตก','ตต.เหนือ'];
+  return d[Math.round(deg/45)%8];
+}
+function uvLbl(v){
+  if(v<=2)return{t:'ต่ำ',c:'#4ade80'};
+  if(v<=5)return{t:'ปานกลาง',c:'#fbbf24'};
+  if(v<=7)return{t:'สูง',c:'#fb923c'};
+  if(v<=10)return{t:'สูงมาก',c:'#f87171'};
+  return{t:'อันตราย',c:'#c084fc'};
+}
+function aqiCat(v){
+  if(!v||isNaN(v))return{c:'#94a3b8',l:'ไม่มีข้อมูล',d:'—'};
+  if(v<=25)return{c:'#4ade80',l:'ดีมาก',d:'ทำกิจกรรมกลางแจ้งได้ตามปกติ'};
+  if(v<=50)return{c:'#84cc16',l:'ดี',d:'คุณภาพอากาศดี เหมาะกับทุกกิจกรรม'};
+  if(v<=100)return{c:'#fbbf24',l:'ปานกลาง',d:'กลุ่มเสี่ยงควรเฝ้าระวัง'};
+  if(v<=200)return{c:'#fb923c',l:'เริ่มมีผลต่อสุขภาพ',d:'ลดกิจกรรมกลางแจ้ง'};
+  return{c:'#f87171',l:'อันตราย',d:'งดออกนอกอาคาร สวมหน้ากาก N95'};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TIME-OF-DAY HERO
+// ═══════════════════════════════════════════════════════════
+function applyTimeMood(weatherKey){
+  const h=new Date().getHours();
+  const hero=$('hero');
+  hero.classList.remove('dawn','morning','noon','dusk','night','storm');
+  if(weatherKey==='storm'||weatherKey==='rain'){ hero.classList.add('storm'); return; }
+  if(h>=5&&h<7) hero.classList.add('dawn');
+  else if(h>=7&&h<11) hero.classList.add('morning');
+  else if(h>=11&&h<15) hero.classList.add('noon');
+  else if(h>=15&&h<19) hero.classList.add('dusk');
+  else hero.classList.add('night');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RAIN PARTICLES
+// ═══════════════════════════════════════════════════════════
+function makeRain(show){
+  const layer=$('rainLayer'); if(!layer)return;
+  if(!show){layer.classList.remove('show');layer.innerHTML='';return;}
+  layer.innerHTML='';
+  for(let i=0;i<70;i++){
+    const d=document.createElement('div');
+    d.className='raindrop';
+    d.style.left=Math.random()*100+'%';
+    d.style.height=(10+Math.random()*16)+'px';
+    d.style.opacity=(.3+Math.random()*.5);
+    d.style.animationDuration=(.5+Math.random()*.5)+'s';
+    d.style.animationDelay=Math.random()*2+'s';
+    layer.appendChild(d);
+  }
+  layer.classList.add('show');
+}
+
+function flashLightning(){
+  const el=$('lightning'); if(!el)return;
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'),1500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════════════
+function tick(){
+  const n=new Date();
+  tx('liveTime',n.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+  tx('liveDate',n.toLocaleDateString('th-TH',{day:'numeric',month:'short'}));
+}
+setInterval(tick,1000); tick();
+
+// ═══════════════════════════════════════════════════════════
+//  GPS
+// ═══════════════════════════════════════════════════════════
+function detectGPS(){
+  if(!navigator.geolocation){alert('เบราว์เซอร์ไม่รองรับ GPS');return;}
+  tx('locName','กำลังตรวจจับ...');
+  navigator.geolocation.getCurrentPosition(p=>{
+    CUR={lat:p.coords.latitude,lon:p.coords.longitude,name:'ตำแหน่งปัจจุบัน'};
+    tx('locName',CUR.lat.toFixed(3)+', '+CUR.lon.toFixed(3));
+    loadAll();
+  },()=>{CUR={...DEFAULT};tx('locName','หนองบัวลำภู');});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANIMATED COUNTER
+// ═══════════════════════════════════════════════════════════
+function animNum(id,target,dur=1200,decimals=0){
+  const el=$(id); if(!el)return;
+  const start=parseFloat(el.textContent.replace(/[^\d.-]/g,''))||0;
+  const t0=performance.now();
+  function step(now){
+    const t=Math.min((now-t0)/dur,1);
+    const e=1-Math.pow(1-t,3);
+    const v=start+(target-start)*e;
+    el.textContent=decimals?v.toFixed(decimals):Math.round(v);
+    if(t<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FETCHERS
+// ═══════════════════════════════════════════════════════════
+let _wx=null,_rainAm=null,_rainHeat=null,_aqi=null,_stRain=null;
+
+const fetchWx=()=>safe(()=>fetch(
+  `https://api.open-meteo.com/v1/forecast?latitude=${CUR.lat}&longitude=${CUR.lon}`+
+  `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,`+
+  `wind_speed_10m,wind_direction_10m,precipitation,uv_index`+
+  `&hourly=temperature_2m,weather_code,precipitation,precipitation_probability`+
+  `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,`+
+  `precipitation_probability_max,uv_index_max`+
+  `&timezone=Asia%2FBangkok&forecast_days=7`).then(r=>r.json()));
+
+const fetchRainAm=()=>safe(async()=>{
+  const lats=AMPHOE.map(a=>a.lat).join(','),lons=AMPHOE.map(a=>a.lon).join(',');
+  const d=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&daily=precipitation_sum,precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=1`).then(r=>r.json());
+  const arr=Array.isArray(d)?d:[d];
+  return AMPHOE.map((a,i)=>({...a,rain:arr[i]?.daily?.precipitation_sum?.[0]??0,pop:arr[i]?.daily?.precipitation_probability_max?.[0]??0}));
+});
+
+const fetchHeat=()=>safe(async()=>{
+  const lats=HEAT_GRID.map(p=>p.lat).join(','),lons=HEAT_GRID.map(p=>p.lon).join(',');
+  const d=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&daily=precipitation_sum&timezone=Asia%2FBangkok&forecast_days=1`).then(r=>r.json());
+  const arr=Array.isArray(d)?d:[d];
+  return HEAT_GRID.map((p,i)=>({...p,rain:arr[i]?.daily?.precipitation_sum?.[0]??0}));
+});
+
+const fetchStRain=()=>safe(async()=>{
+  const lats=STATIONS.map(s=>s.lat).join(','),lons=STATIONS.map(s=>s.lon).join(',');
+  const d=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&daily=precipitation_sum&timezone=Asia%2FBangkok&forecast_days=1`).then(r=>r.json());
+  const arr=Array.isArray(d)?d:[d];
+  return STATIONS.map((s,i)=>({...s,forecast_rain:arr[i]?.daily?.precipitation_sum?.[0]??0}));
+});
+
+const fetchAQI=()=>safe(async()=>{
+  for(const st of ['71t','51t']){
+    try{
+      const r=await fetch(`https://air4thai.pcd.go.th/services/getNewAQI_JSON.php?stationID=${st}`);
+      const d=await r.json();
+      if(d?.stations?.[0])return{...d.stations[0],src:'air4thai PCD'};
+    }catch{}
+  }
+  const r=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${CUR.lat}&longitude=${CUR.lon}&current=pm2_5,european_aqi&timezone=Asia%2FBangkok`);
+  const d=await r.json();
+  if(d?.current)return{pm25:d.current.pm2_5,aqi:d.current.european_aqi,src:'Open-Meteo'};
+  return null;
+});
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════
+function renderHero(d){
+  const c=d.current,dd=d.daily,wx=wxCode(c.weather_code);
+  ht('heroIcon',wx.i);
+  tx('heroDesc',wx.t);
+  tx('heroLoc',CUR.name==='ตำแหน่งปัจจุบัน'?'ตำแหน่งปัจจุบัน':'จ.หนองบัวลำภู');
+  tx('heroCoord',CUR.lat.toFixed(4)+', '+CUR.lon.toFixed(4));
+  animNum('heroTemp',Math.round(c.temperature_2m));
+  tx('heroFeels',Math.round(c.apparent_temperature)+'°');
+  tx('heroHi',Math.round(dd.temperature_2m_max[0])+'°');
+  tx('heroLo',Math.round(dd.temperature_2m_min[0])+'°');
+  animNum('hHum',Math.round(c.relative_humidity_2m));
+  animNum('hWind',Math.round(c.wind_speed_10m));
+  tx('hWindDir',windDir(c.wind_direction_10m||0));
+  animNum('hRain',(dd.precipitation_sum[0]||0).toFixed(1),1200,1);
+  tx('hPop',(dd.precipitation_probability_max[0]||0)+'% โอกาสฝน');
+  const uv=uvLbl(Math.round(c.uv_index||0));
+  $('hUV').innerHTML=`<span style="color:${uv.c}">${Math.round(c.uv_index||0)}</span> <span class="un" style="color:${uv.c};opacity:.8;">(${uv.t})</span>`;
+  applyTimeMood(wx.k);
+  makeRain(wx.k==='rain'||wx.k==='storm');
+  if(wx.k==='storm'){flashLightning();setInterval(()=>{if(Math.random()<.4)flashLightning();},6000);}
+}
+
+let _hourlyChart=null;
+function renderHourly(d){
+  tx('hourlyUpd',t12());
+  const now=new Date(),curH=now.getHours();
+  const times=d.hourly.time,temps=d.hourly.temperature_2m,
+        codes=d.hourly.weather_code,prec=d.hourly.precipitation,
+        pops=d.hourly.precipitation_probability;
+  let si=0;
+  for(let i=0;i<times.length;i++){if(new Date(times[i]).getHours()===curH){si=i;break;}}
+
+  // Area chart for temp
+  const labels=[],dataT=[],dataR=[];
+  for(let i=0;i<24;i++){
+    const idx=si+i;if(idx>=times.length)break;
+    const h=new Date(times[idx]).getHours();
+    labels.push(i===0?'ตอนนี้':String(h).padStart(2,'0')+':00');
+    dataT.push(+temps[idx]);
+    dataR.push(+prec[idx]||0);
+  }
+  const ctx=$('hourlyChart');
+  if(ctx){
+    if(_hourlyChart)_hourlyChart.destroy();
+    const grad=ctx.getContext('2d').createLinearGradient(0,0,0,130);
+    grad.addColorStop(0,'rgba(34,211,238,.45)'); grad.addColorStop(1,'rgba(34,211,238,0)');
+    _hourlyChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'อุณหภูมิ',data:dataT,borderColor:'#22d3ee',backgroundColor:grad,borderWidth:2.5,tension:.45,fill:true,pointRadius:0,pointHoverRadius:5,pointBackgroundColor:'#22d3ee',pointBorderColor:'#fff',pointBorderWidth:2}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(5,7,15,.95)',titleColor:'#f8fafc',bodyColor:'#22d3ee',borderColor:'rgba(34,211,238,.4)',borderWidth:1,padding:10,callbacks:{label:c=>` ${c.parsed.y.toFixed(1)}°C`},titleFont:{family:'Sarabun'},bodyFont:{family:'Inter',weight:600}}},scales:{x:{ticks:{color:'rgba(248,250,252,.4)',font:{family:'Inter',size:9}},grid:{display:false}},y:{ticks:{color:'rgba(248,250,252,.35)',font:{family:'Inter',size:9},callback:v=>v+'°'},grid:{color:'rgba(255,255,255,.04)',drawBorder:false}}}}});
+  }
+
+  // Hour cards
+  const cards=[];
+  for(let i=0;i<24;i++){
+    const idx=si+i;if(idx>=times.length)break;
+    const h=new Date(times[idx]).getHours();
+    const wx=wxEmoji(codes[idx]||0),rain=prec[idx]||0,pop=pops[idx]||0;
+    cards.push(`<div class="hc${i===0?' now':''}">
+      <div class="hc-t">${i===0?'ตอนนี้':String(h).padStart(2,'0')+':00'}</div>
+      <div class="hc-ico">${wx}</div>
+      <div class="hc-tmp">${Math.round(temps[idx]||0)}°</div>
+      <div class="hc-r">${rain>0?rain.toFixed(1)+'มม.':''}</div>
+      <div class="hc-p">${pop>15?'💧'+pop+'%':''}</div>
+    </div>`);
+  }
+  ht('hourlyRow',cards.join(''));
+}
+
+function renderForecast(d){
+  tx('fcUpd',t12());
+  const dd=d.daily,DN=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  const today=new Date().toISOString().slice(0,10);
+  ht('fcGrid',dd.time.map((dt,i)=>{
+    const dat=new Date(dt+'T00:00:00'),isT=dt===today;
+    const wx=wxEmoji(dd.weather_code[i]);
+    const rain=(dd.precipitation_sum[i]||0).toFixed(1);
+    const pop=dd.precipitation_probability_max[i]||0;
+    const heavy=+rain>35||pop>80;
+    return `<div class="fc${isT?' today':''}${heavy&&!isT?' heavy':''}">
+      <div class="fc-day">${isT?'วันนี้':'วัน'+DN[dat.getDay()].slice(0,2)}</div>
+      <div class="fc-dt">${dat.getDate()} ${dat.toLocaleDateString('th-TH',{month:'short'})}</div>
+      <div class="fc-ico">${wx}</div>
+      <div class="fc-tmps"><span class="fc-hi">${Math.round(dd.temperature_2m_max[i])}°</span><span class="fc-sep">/</span><span class="fc-lo">${Math.round(dd.temperature_2m_min[i])}°</span></div>
+      <div class="fc-rain">💧 ${rain} มม.</div>
+      <div class="fc-pop">${pop}% โอกาสฝน</div>
+    </div>`;
+  }).join(''));
+}
+
+function renderAlert(wx,rainAm){
+  const box=$('alertBox');
+  if(!wx){box.classList.remove('show');return;}
+  const dd=wx.daily;
+  const r3=dd.precipitation_sum.slice(0,3).reduce((a,b)=>a+(b||0),0);
+  const maxPop=Math.max(...dd.precipitation_probability_max.slice(0,3));
+  const rmax=rainAm?Math.max(...rainAm.map(a=>a.rain)):0;
+  const top=rainAm?[...rainAm].sort((a,b)=>b.rain-a.rain)[0]:null;
+  let level=0,ico='',title='',desc='';
+  if(r3>100||rmax>50){
+    level=3;ico='⛈️';
+    title=`แจ้งเตือน: ฝนตกหนักมาก — ฝนสะสม 3 วัน ${r3.toFixed(0)} มม.`;
+    desc=`${top&&top.rain>30?'อ.'+top.name+' ฝน '+top.rain.toFixed(1)+' มม. · ':''}เสี่ยงน้ำท่วมในพื้นที่ลุ่มต่ำ ควรเฝ้าระวังการเปลี่ยนแปลงระดับน้ำในลำน้ำ`;
+    $('hdrStatus').className='hdr-status crit';$('hdrLed').className='led crit';tx('hdrTxt','ALERT');
+  }else if(r3>50||maxPop>70){
+    level=2;ico='🌧️';
+    title=`เฝ้าระวัง: ฝนตกหนักบางพื้นที่ — โอกาสฝนสูงสุด ${maxPop}%`;
+    desc=`ฝนสะสม 3 วัน ${r3.toFixed(0)} มม. ควรติดตามสถานการณ์น้ำในลำน้ำพะเนียง/โมง`;
+    $('hdrStatus').className='hdr-status warn';$('hdrLed').className='led warn';tx('hdrTxt','WATCH');
+  }else{
+    $('hdrStatus').className='hdr-status';$('hdrLed').className='led ok';tx('hdrTxt','NORMAL');
+  }
+  if(level===0){box.classList.remove('show');return;}
+  box.className='alert show '+(level>=3?'':'warn');
+  tx('alertIco',ico);tx('alertT',title);tx('alertD',desc);tx('alertTime','อัปเดตล่าสุด '+t12());
+}
+
+function renderAQI(d){
+  tx('aqiUpd',t12());
+  if(!d){ht('aqiContent','<div style="padding:20px;text-align:center;font-size:11px;color:var(--ink-3);">ไม่สามารถโหลดข้อมูลได้</div>');return;}
+  let pm25=null,aqi=null,stN='',stD='';
+  if(d.src==='air4thai PCD'){
+    pm25=+d.PM25?.value||+d.pm25||null;
+    aqi=+d.AQI?.aqi||+d.aqi||null;
+    stN=d.nameTH||d.nameEN||'';
+    stD=d.date&&d.time?d.date+' '+d.time:'';
+    $('aqiSrc').textContent='air4thai PCD';$('aqiSrc').className='src gov';
+  }else{
+    pm25=d.pm25;aqi=d.aqi;
+    $('aqiSrc').textContent='Open-Meteo';$('aqiSrc').className='src';
+  }
+  const cat=aqiCat(aqi);
+  // Animated ring
+  const radius=52,circ=2*Math.PI*radius;
+  const pct=Math.min((aqi||0)/300,1);
+  const offset=circ*(1-pct);
+  ht('aqiContent',`
+    <div class="aqi-ring-wrap">
+      <svg class="aqi-ring" viewBox="0 0 120 120" width="120" height="120">
+        <circle class="aqi-ring-bg" cx="60" cy="60" r="${radius}"/>
+        <circle class="aqi-ring-fg" cx="60" cy="60" r="${radius}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" style="stroke:${cat.c};--aqi-glow:${cat.c};"/>
+      </svg>
+      <div class="aqi-ring-num">
+        <div class="aqi-num">${aqi||'—'}</div>
+        <div class="aqi-lbl">AQI</div>
+      </div>
+    </div>
+    <div class="aqi-info">
+      <div class="aqi-pm"><span class="aqi-pm-v">${pm25!==null?pm25.toFixed(1):'—'}</span><span class="aqi-pm-u">μg/m³ PM2.5</span></div>
+      <div class="aqi-q" style="color:${cat.c};">${cat.l}</div>
+      <div class="aqi-adv">${cat.d}</div>
+    </div>`);
+  // Animate ring
+  setTimeout(()=>{const fg=document.querySelector('.aqi-ring-fg');if(fg)fg.style.strokeDashoffset=offset;},100);
+  tx('aqiStation',stN?'📡 สถานี '+stN+(stD?' · '+stD:''):'—');
+  _aqi={pm25,aqi,cat};
+}
+
+let _rainChart=null;
+function renderRainChart(data){
+  tx('rainUpd',t12());
+  if(!data)return;
+  const labels=data.map(a=>a.short);
+  const vals=data.map(a=>+a.rain.toFixed(1));
+  const colors=vals.map(v=>v>50?'#f87171':v>25?'#fb923c':v>10?'#fbbf24':v>0?'#22d3ee':'#475569');
+  const ctx=$('rainChart');if(!ctx)return;
+  if(_rainChart)_rainChart.destroy();
+  _rainChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'ฝน 24ชม.',data:vals,backgroundColor:colors,borderRadius:8,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(5,7,15,.95)',titleColor:'#f8fafc',bodyColor:'#22d3ee',borderColor:'rgba(34,211,238,.4)',borderWidth:1,padding:10,callbacks:{label:c=>` ${c.parsed.y.toFixed(1)} มม.`},titleFont:{family:'Sarabun'},bodyFont:{family:'Inter',weight:600}}},
+    scales:{x:{ticks:{color:'rgba(248,250,252,.5)',font:{family:'Sarabun',size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'rgba(248,250,252,.4)',font:{family:'Inter',size:10},callback:v=>v+' มม.'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+}
+
+function predictLevel(s,rainMm){
+  const delta=rainMm*s.rc*0.008;
+  const baseDemo=s.bank-(1.0+(s.area-90)/1000);
+  const pred=baseDemo+delta;
+  const risk=pred>=s.bank?'high':pred>=s.warn?'med':'low';
+  return{cur:baseDemo,pred,delta,risk};
+}
+
+function renderWLP(stRain){
+  tx('wlpUpd',t12());
+  if(!stRain){ht('wlpGrid','<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12px;grid-column:1/-1;">กำลังคำนวณ...</div>');return;}
+  ht('wlpGrid',stRain.slice(0,12).map(s=>{
+    const r=predictLevel(s,s.forecast_rain||0);
+    const pct=Math.min(Math.round((r.pred/s.bank)*100),100);
+    const colors={low:['#4ade80','#16a34a'],med:['#fbbf24','#d97706'],high:['#f87171','#dc2626']}[r.risk];
+    const lbl={low:'✓ ปกติ',med:'⚠ เฝ้าระวัง',high:'⚠ เสี่ยงสูง'}[r.risk];
+    return `<div class="wlp ${r.risk}" style="--bg-from:${colors[0]};--bg-to:${colors[1]};">
+      <div class="wlp-id">${s.id}</div>
+      <div class="wlp-name">${s.name}</div>
+      <div class="wlp-cur">ปัจจุบัน <b style="color:var(--ink-2);">${r.cur.toFixed(2)}</b> ม.รทก.</div>
+      <div class="wlp-pred"><span class="wlp-pv" style="color:${colors[0]};">${r.pred.toFixed(2)}</span><span class="wlp-pu">ม.รทก.</span></div>
+      <div class="wlp-d ${r.delta>0?'up':'down'}">${r.delta>.005?'▲':'▼'} ${Math.abs(r.delta).toFixed(2)} ม. · ฝน ${(s.forecast_rain||0).toFixed(1)} มม.</div>
+      <div class="wlp-bar"><div class="wlp-fill" style="width:0%"></div></div>
+      <div class="wlp-badge ${r.risk}">${lbl}</div>
+    </div>`;
+  }).join(''));
+  // animate bars
+  setTimeout(()=>{
+    document.querySelectorAll('.wlp').forEach((el,i)=>{
+      const fill=el.querySelector('.wlp-fill');
+      if(fill){
+        const s=stRain[i],r=predictLevel(s,s.forecast_rain||0);
+        const pct=Math.min(Math.round((r.pred/s.bank)*100),100);
+        fill.style.width=pct+'%';
+      }
+    });
+  },150);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAP
+// ═══════════════════════════════════════════════════════════
+let MAP,heatLayer=null,radarLayers=[],radarFrames=[],curFrame=11,playTimer=null,stMarkers=[];
+let boundaryLayer=null, riversLayer=null;
+let showSt=true,showHeat=true,showRadar=false,showRivers=true;
+
+// ─── Province boundary + rivers ─────────────────────────
+const NBL_QUERY_NOMINATIM = 'https://nominatim.openstreetmap.org/search?q=%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AB%E0%B8%99%E0%B8%AD%E0%B8%87%E0%B8%9A%E0%B8%B1%E0%B8%A7%E0%B8%A5%E0%B8%B3%E0%B8%A0%E0%B8%B9&country=Thailand&format=json&polygon_geojson=1&limit=1';
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+// Mirror สำรอง
+const OVERPASS_FALLBACK = 'https://overpass.kumi.systems/api/interpreter';
+
+async function loadNBLBoundary(){
+  try{
+    const cached = localStorage.getItem('nbl_boundary_v2');
+    if(cached){ try{ return JSON.parse(cached); }catch{} }
+    const r = await fetch(NBL_QUERY_NOMINATIM,{headers:{'Accept':'application/json'}});
+    const data = await r.json();
+    if(data?.[0]?.geojson){
+      try{ localStorage.setItem('nbl_boundary_v2', JSON.stringify(data[0].geojson)); }catch{}
+      return data[0].geojson;
+    }
+  }catch(e){ console.warn('boundary fail', e); }
+  return null;
+}
+
+async function loadNBLRivers(){
+  // cache for 7 days
+  try{
+    const c = localStorage.getItem('nbl_rivers_v2');
+    const ct = localStorage.getItem('nbl_rivers_v2_t');
+    if(c && ct && (Date.now()-+ct) < 7*24*3600*1000){
+      try{ return JSON.parse(c); }catch{}
+    }
+  }catch{}
+
+  // Overpass query: รวมแม่น้ำหลักในเขต จ.หนองบัวลำภู
+  const q = `[out:json][timeout:60];
+area["boundary"="administrative"]["admin_level"="4"]["name"="หนองบัวลำภู"]->.nbl;
+(
+  way["waterway"="river"](area.nbl);
+  way["waterway"="canal"](area.nbl);
+  way["waterway"="stream"]["name"](area.nbl);
+);
+out geom;`;
+
+  for(const url of [OVERPASS_URL, OVERPASS_FALLBACK]){
+    try{
+      const r = await fetch(url, { method:'POST', body:'data='+encodeURIComponent(q) });
+      const data = await r.json();
+      if(data?.elements?.length){
+        const features = data.elements.filter(e=>e.geometry).map(e=>({
+          type:'Feature',
+          properties:{name:e.tags?.name||e.tags?.['name:th']||'', kind:e.tags?.waterway||'river'},
+          geometry:{ type:'LineString', coordinates: e.geometry.map(g=>[g.lon,g.lat]) }
+        }));
+        const fc = { type:'FeatureCollection', features };
+        try{
+          localStorage.setItem('nbl_rivers_v2', JSON.stringify(fc));
+          localStorage.setItem('nbl_rivers_v2_t', String(Date.now()));
+        }catch{}
+        return fc;
+      }
+    }catch(e){ console.warn('overpass fail',url,e); }
+  }
+  return null;
+}
+
+function styleRiver(feat){
+  const k = feat.properties?.kind;
+  if(k==='river')  return { color:'#3b82f6', weight:2.4, opacity:.85, lineCap:'round' };
+  if(k==='canal')  return { color:'#60a5fa', weight:1.8, opacity:.7,  lineCap:'round' };
+  return { color:'#7dd3fc', weight:1.2, opacity:.55, lineCap:'round', dashArray:'2 3' };
+}
+
+async function loadOverlay(){
+  // Boundary
+  const gj = await loadNBLBoundary();
+  if(gj){
+    boundaryLayer = L.geoJSON(gj,{
+      style:{ color:'#fb923c', weight:2.5, opacity:.95, fillColor:'#fb923c', fillOpacity:.04, lineJoin:'round' }
+    }).addTo(MAP);
+    // Fit to boundary
+    try{ MAP.fitBounds(boundaryLayer.getBounds(),{padding:[20,20]}); }catch{}
+  }
+  // Rivers
+  const riv = await loadNBLRivers();
+  if(riv && showRivers){
+    riversLayer = L.geoJSON(riv,{
+      style:styleRiver,
+      onEachFeature:(f,layer)=>{
+        const n = f.properties?.name; if(n) layer.bindTooltip(n,{sticky:true,className:'river-tip'});
+      }
+    }).addTo(MAP);
+    riversLayer.bringToBack();
+  }
+}
+
+function initMap(){
+  MAP=L.map('mainMap',{zoomControl:true,attributionControl:false}).setView([CUR.lat,CUR.lon],10);
+  // ใช้ basemap สีอ่อนแบบเว็บอ้างอิง onwr (ESRI World Street Map)
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{
+    maxZoom:19, attribution:'© Esri'
+  }).addTo(MAP);
+  // เพิ่ม overlay จังหวัด + แม่น้ำ
+  loadOverlay();
+  // Station markers
+  STATIONS.forEach(s=>{
+    const m=L.circleMarker([s.lat,s.lon],{radius:7,fillColor:'#16a34a',color:'#fff',weight:2,fillOpacity:.95,zIndexOffset:300})
+      .bindTooltip(s.name,{direction:'top',className:'station-tooltip'}).addTo(MAP);
+    stMarkers.push(m);
+  });
+  initRV();
+}
+
+function toggleRivers(){
+  showRivers=!showRivers;
+  $('btnRivers').classList.toggle('active',showRivers);
+  if(riversLayer){
+    if(showRivers){ riversLayer.addTo(MAP); riversLayer.bringToBack(); }
+    else MAP.removeLayer(riversLayer);
+  }
+}
+
+async function initRV(){
+  try{
+    const d=await fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json());
+    const past=d.radar.past||[],now2=d.radar.nowcast||[];
+    radarFrames=[...past,...now2];
+    radarLayers=radarFrames.map(f=>L.tileLayer(`${d.host}${f.path}/256/{z}/{x}/{y}/4/1_1.png`,{opacity:0,zIndex:200,maxNativeZoom:10,maxZoom:19}));
+    curFrame=past.length-1;
+    const sl=$('rSlider');if(sl){sl.max=radarFrames.length-1;sl.value=curFrame;}
+  }catch(e){console.warn('RV',e);}
+}
+
+function updateHeatmap(grid){
+  if(heatLayer)MAP.removeLayer(heatLayer);
+  if(!showHeat||!grid)return;
+  const max=Math.max(...grid.map(p=>p.rain),1);
+  const pts=grid.filter(p=>p.rain>0).map(p=>[p.lat,p.lon,p.rain/max]);
+  if(pts.length){
+    heatLayer=L.heatLayer(pts,{radius:60,blur:50,maxZoom:14,max:1,gradient:{0:'rgba(59,130,246,0)',0.2:'#3b82f6',0.4:'#22d3ee',0.6:'#fbbf24',0.8:'#f87171',1:'#dc2626'}}).addTo(MAP);
+  }
+}
+function toggleHeat(){
+  showHeat=!showHeat;$('btnHeat').classList.toggle('active',showHeat);
+  $('legendHeat').style.display=showHeat?'block':'none';
+  if(!showHeat&&heatLayer){MAP.removeLayer(heatLayer);heatLayer=null;}
+  else if(showHeat&&_rainHeat) updateHeatmap(_rainHeat);
+}
+function toggleRadar(){
+  showRadar=!showRadar;
+  $('btnRadar').classList.toggle('active',showRadar);
+  $('radarCtrl').classList.toggle('show',showRadar);
+  $('legendRadar').style.display=showRadar?'block':'none';
+  if(showRadar)showRFrame(curFrame);
+  else{radarLayers.forEach(l=>{if(MAP.hasLayer(l))MAP.removeLayer(l);});if(playTimer){clearInterval(playTimer);playTimer=null;$('rPlayBtn').textContent='▶ เล่น';$('rPlayBtn').classList.remove('on');}}
+}
+function toggleStations(){
+  showSt=!showSt;$('btnSt').classList.toggle('active',showSt);
+  stMarkers.forEach(m=>showSt?m.addTo(MAP):MAP.removeLayer(m));
+}
+function showRFrame(idx){
+  if(!radarLayers.length)return;
+  radarLayers.forEach(l=>{if(MAP.hasLayer(l))l.setOpacity(0);});
+  const l=radarLayers[idx];if(!MAP.hasLayer(l))l.addTo(MAP);l.setOpacity(.65);
+  const f=radarFrames[idx];if(f){const t=new Date(f.time*1000);tx('rTime',t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));}
+  const sl=$('rSlider');if(sl)sl.value=idx;curFrame=idx;
+}
+function togglePlay(){
+  const btn=$('rPlayBtn');
+  if(playTimer){clearInterval(playTimer);playTimer=null;btn.textContent='▶ เล่น';btn.classList.remove('on');}
+  else{btn.textContent='⏸ หยุด';btn.classList.add('on');let i=parseInt($('rSlider')?.value||curFrame);
+    playTimer=setInterval(()=>{i=(i+1)%radarFrames.length;showRFrame(i);},600);}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GEMINI AI
+// ═══════════════════════════════════════════════════════════
+let aiRunning=false;
+async function runGemini(){
+  if(aiRunning)return;
+  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "your-key" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
+  aiRunning=true;$('aiBtnRun').disabled=true;
+  ht('aiTxt','<div class="ai-spin"><span class="spinner"></span> Gemini กำลังวิเคราะห์สถานการณ์...</div>');
+  tx('aiKeyNote','Gemini AI · ประมวลผล...');
+  const wx=_wx,rain=_rainAm,aqi=_aqi;
+  if(!wx){ht('aiTxt','<span style="color:#c4b5fd;">รอข้อมูลอากาศโหลดเสร็จก่อน</span>');aiRunning=false;$('aiBtnRun').disabled=false;return;}
+  const d=wx.daily,c=wx.current;
+  const today=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const r3=d.precipitation_sum.slice(0,3).map((v,i)=>`วัน${i+1}: ${(v||0).toFixed(1)} มม.`).join(', ');
+  const top=rain?[...rain].sort((a,b)=>b.rain-a.rain)[0]:null;
+
+  // NEW: ดึงสรุปน้ำในแม่น้ำจาก backend
+  let waterCtx = "";
+  if(_provincial && _provincial.stations){
+    const sts = _provincial.stations;
+    const crit = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level);return !isNaN(l)&&!isNaN(b)&&l>=b;});
+    const warn = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level),w=parseFloat(s.warn_level);return !isNaN(l)&&!isNaN(b)&&!isNaN(w)&&l>=w&&l<b;});
+    waterCtx = `\n\nสถานการณ์น้ำในแม่น้ำจังหวัด (จาก ${sts.length} สถานี):\n- สถานีปกติ ${sts.length-crit.length-warn.length} แห่ง · เฝ้าระวัง ${warn.length} แห่ง · วิกฤติ ${crit.length} แห่ง`;
+    if(crit.length) waterCtx += `\n- สถานีวิกฤติ: ${crit.slice(0,3).map(s=>s.station_id+" "+s.name+" "+parseFloat(s.current_level).toFixed(2)+"ม.").join(", ")}${crit.length>3?" และอีก "+(crit.length-3)+" สถานี":""}`;
+    if(warn.length) waterCtx += `\n- สถานีเฝ้าระวัง: ${warn.slice(0,3).map(s=>s.station_id+" "+s.name).join(", ")}${warn.length>3?" และอีก "+(warn.length-3)+" สถานี":""}`;
+  }
+
+  // NEW: ดึงสรุปอ่างเก็บน้ำ
+  let resCtx = "";
+  if(_reservoirs && Array.isArray(_reservoirs) && _reservoirs.length){
+    const RES_CAP = {R01:0.400,R02:0.750,R03:2.469,R04:20.800,R05:0.330,R06:2.122,R07:0.842,R08:1.430,R09:0.200,R10:0.695,R11:0.450,R12:0.300,R13:0.623,R14:0.085};
+    const latest = {};
+    _reservoirs.forEach(r => {
+      const id = String(r.reservoir_id||"").toUpperCase();
+      if(!id) return;
+      if(!latest[id] || String(r.date||"") > String(latest[id].date||"")) latest[id] = r;
+    });
+    const pcts = Object.keys(latest).map(id => {
+      const cap = RES_CAP[id]; if(!cap) return null;
+      const v = parseFloat(latest[id].current_volume);
+      if(isNaN(v)) return null;
+      return {id, name:latest[id].reservoir_name, pct:v/cap*100};
+    }).filter(x=>x);
+    if(pcts.length){
+      const high = pcts.filter(r=>r.pct>=80);
+      const low = pcts.filter(r=>r.pct<30);
+      const avg = pcts.reduce((a,b)=>a+b.pct,0)/pcts.length;
+      resCtx = `\n\nสถานการณ์อ่างเก็บน้ำ (จาก ${pcts.length}/14 อ่าง):\n- เฉลี่ย ${avg.toFixed(0)}% ของความจุ`;
+      if(high.length) resCtx += `\n- อ่างน้ำมากเฝ้าระวัง (≥80%): ${high.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
+      if(low.length) resCtx += `\n- อ่างน้ำน้อย (<30%): ${low.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
+    }
+  }
+
+  const prompt=`คุณเป็นผู้เชี่ยวชาญด้านอุตุนิยมวิทยาและการจัดการภัยพิบัติ จังหวัดหนองบัวลำภู
+วันที่: ${today}
+
+ข้อมูลสภาพอากาศปัจจุบัน:
+- อุณหภูมิ: ${Math.round(c.temperature_2m)}°C (รู้สึก ${Math.round(c.apparent_temperature)}°C) สภาพ: ${wxCode(c.weather_code).t}
+- ความชื้น ${Math.round(c.relative_humidity_2m)}% · ลม ${Math.round(c.wind_speed_10m)} km/h · UV ${Math.round(c.uv_index||0)}
+- ฝนวันนี้ ${(d.precipitation_sum[0]||0).toFixed(1)} มม. (โอกาส ${d.precipitation_probability_max[0]||0}%)
+- พยากรณ์ฝน 3 วัน: ${r3}
+${top?`- ฝนสูงสุด 24ชม.: อ.${top.name} ${top.rain.toFixed(1)} มม.`:''}
+${aqi?`- PM2.5: ${aqi.pm25?.toFixed(1)||'-'} μg/m³ ระดับ: ${aqi.cat?.l||'-'}`:''}${waterCtx}${resCtx}
+
+วิเคราะห์ภาพรวมสถานการณ์ จ.หนองบัวลำภู เขียนภาษาไทย 4-5 ประโยค เน้น:
+1) สรุปภาพรวมสภาพอากาศ + น้ำในจังหวัด (ทั้งแม่น้ำและอ่าง)
+2) พื้นที่/อ่าง/สถานีที่ต้องเฝ้าระวังเป็นพิเศษ
+3) แนวโน้มผลกระทบในระยะ 24-48 ชม. ข้างหน้า
+4) คำแนะนำเฉพาะเจาะจงสำหรับหน่วยงานและประชาชน
+ใช้ภาษาราชการ เข้าใจง่าย เน้นใจความสำคัญด้วย **ข้อความ**`;
+  try{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.4,maxOutputTokens:800}})});
+    const data=await res.json();
+    if(data?.error){ht('aiTxt',`<span style="color:#fca5a5;">❌ Gemini Error: ${data.error.message}</span>`);aiRunning=false;$('aiBtnRun').disabled=false;return;}
+    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่สามารถวิเคราะห์ได้';
+    typeWriter(text);tx('aiKeyNote','Gemini วิเคราะห์เมื่อ '+t12());
+  }catch(e){ht('aiTxt','<span style="color:#fca5a5;">❌ '+e.message+'</span>');}
+  aiRunning=false;$('aiBtnRun').disabled=false;
+}
+
+let _typeT=null;
+function typeWriter(text,speed=14){
+  if(_typeT)clearTimeout(_typeT);
+  const el=$('aiTxt');if(!el)return;
+  const html=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+  el.innerHTML='<span class="ai-cursor"></span>';let i=0;
+  function step(){
+    if(i>=html.length){el.innerHTML=html+'<span class="ai-cursor"></span>';return;}
+    if(html[i]==='<'){const e=html.indexOf('>',i);if(e>-1){i=e+1;el.innerHTML=html.slice(0,i)+'<span class="ai-cursor"></span>';_typeT=setTimeout(step,1);return;}}
+    i++;el.innerHTML=html.slice(0,i)+'<span class="ai-cursor"></span>';
+    _typeT=setTimeout(step,speed);
+  }
+  step();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: BACKEND DATA — น้ำในแม่น้ำ + อ่างเก็บน้ำ
+// ═══════════════════════════════════════════════════════════
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
+let _provincial = null;
+let _reservoirs = null;
+
+async function fetchProvincial(){
+  if(!API_URL) return null;
+  try{
+    const r = await fetch(API_URL + "?action=summary");
+    return await r.json();
+  }catch(e){console.warn("[provincial] fail",e);return null;}
+}
+
+async function fetchReservoirs(){
+  if(!API_URL) return null;
+  try{
+    const r = await fetch(API_URL + "?action=reservoir");
+    const data = await r.json();
+    return Array.isArray(data) ? data : null;
+  }catch(e){console.warn("[reservoir] fail",e);return null;}
+}
+
+function renderProvincialWater(data){
+  if(!data || !data.stations){
+    tx('pwsSrc','offline');
+    document.getElementById('pwsRiverList').innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px;">⚠️ เชื่อมต่อข้อมูลน้ำไม่ได้</div>';
+    return;
+  }
+  const stations = data.stations || [];
+  let warnCount = 0, critCount = 0;
+  const byRiver = {};
+  stations.forEach(s => {
+    const lv = parseFloat(s.current_level);
+    const bank = parseFloat(s.bank_level);
+    const warn = parseFloat(s.warn_level);
+    let risk = "ok";
+    if(!isNaN(lv) && !isNaN(bank)){
+      if(lv >= bank){risk = "crit"; critCount++;}
+      else if(!isNaN(warn) && lv >= warn){risk = "warn"; warnCount++;}
+    }
+    const river = s.river || "อื่นๆ";
+    if(!byRiver[river]) byRiver[river] = {total:0, warn:0, crit:0, sumPct:0, cnt:0};
+    byRiver[river].total++;
+    if(risk === "warn") byRiver[river].warn++;
+    if(risk === "crit") byRiver[river].crit++;
+    if(!isNaN(lv) && !isNaN(bank) && bank > 0){
+      // pct = how close to bank (0% = much below, 100% = at bank)
+      byRiver[river].sumPct += Math.min(100, Math.max(0, (lv/bank)*100));
+      byRiver[river].cnt++;
+    }
+  });
+  tx('pws-stations-num', stations.length);
+  tx('pws-warn-num', warnCount);
+  tx('pws-crit-num', critCount);
+  tx('pws-rivers-num', Object.keys(byRiver).length);
+  tx('pwsUpd', 'อัปเดต ' + t12());
+  tx('pwsSrc', 'Live');
+
+  // River breakdown
+  const rivers = Object.keys(byRiver).sort();
+  document.getElementById('pwsRiverList').innerHTML = rivers.map(rv => {
+    const r = byRiver[rv];
+    const avgPct = r.cnt > 0 ? (r.sumPct/r.cnt) : 0;
+    const color = r.crit > 0 ? "#f87171" : r.warn > 0 ? "#fbbf24" : "#4ade80";
+    return `<div class="river-row">
+      <div class="nm">
+        <div class="nm-t">${rv}</div>
+        <div class="nm-s">${r.total} สถานี${r.warn?' · ⚠️ '+r.warn+' เฝ้าระวัง':''}${r.crit?' · 🚨 '+r.crit+' วิกฤติ':''}</div>
+      </div>
+      <div class="bar-wrap"><div class="bar" style="width:${avgPct.toFixed(0)}%;background:${color};"></div></div>
+      <div class="pct" style="color:${color};">${avgPct.toFixed(0)}%</div>
+    </div>`;
+  }).join("") || '<div style="text-align:center;padding:18px;color:var(--ink-3);font-size:13px;">ไม่มีข้อมูล</div>';
+}
+
+function renderReservoirs(arr){
+  const RES_META = [
+    {id:"R01",name:"ห้วยยางเงาะ",cap:0.400},{id:"R02",name:"ห้วยซับม่วง",cap:0.750},
+    {id:"R03",name:"ห้วยเหล่ายาง",cap:2.469},{id:"R04",name:"อ่างน้ำบอง",cap:20.800},
+    {id:"R05",name:"ห้วยสนามชัย",cap:0.330},{id:"R06",name:"ผาวัง",cap:2.122},
+    {id:"R07",name:"ห้วยลาดกั่ว",cap:0.842},{id:"R08",name:"ห้วยโซ่",cap:1.430},
+    {id:"R09",name:"ห้วยไร่ 1",cap:0.200},{id:"R10",name:"ห้วยไร่ 2",cap:0.695},
+    {id:"R11",name:"ห้วยลำใย",cap:0.450},{id:"R12",name:"ห้วยโป่งซาง",cap:0.300},
+    {id:"R13",name:"ห้วยบ้านคลองเจริญ",cap:0.623},{id:"R14",name:"ผาจ้ำน้ำ",cap:0.085}
+  ];
+  // Build latest by reservoir_id
+  const latest = {};
+  if(Array.isArray(arr)){
+    arr.forEach(r => {
+      const id = String(r.reservoir_id||"").toUpperCase();
+      if(!id) return;
+      const d = String(r.date||"");
+      if(!latest[id] || d > String(latest[id].date||"")){
+        latest[id] = r;
+      }
+    });
+  }
+  let totalPct = 0, cnt = 0, warnN = 0, lowN = 0;
+  const html = RES_META.map(meta => {
+    const live = latest[meta.id];
+    const vol = live ? parseFloat(live.current_volume) : null;
+    const pct = (vol != null && !isNaN(vol) && meta.cap > 0) ? (vol/meta.cap*100) : null;
+    let cls = "empty";
+    if(pct != null){
+      cnt++; totalPct += pct;
+      if(pct >= 100) {cls = "crit"; warnN++;}
+      else if(pct >= 80) {cls = "warn"; warnN++;}
+      else if(pct < 30) {cls = "low"; lowN++;}
+      else cls = "ok";
+    }
+    return `<div class="res-mini ${cls}">
+      <div class="code">${meta.id}</div>
+      <div class="nm">${meta.name}</div>
+      <div class="pct">${pct!=null?pct.toFixed(0)+'%':'—'}</div>
+      <div class="vol">${vol!=null?vol.toFixed(3):'—'} / ${meta.cap.toFixed(3)}</div>
+    </div>`;
+  }).join("");
+  document.getElementById('resMiniGrid').innerHTML = html;
+  tx('res-avg', cnt > 0 ? (totalPct/cnt).toFixed(0)+'%' : '—');
+  tx('res-warn-num', warnN);
+  tx('res-low-num', lowN);
+  tx('resUpd', cnt > 0 ? 'อัปเดต ' + t12() : 'ยังไม่มีข้อมูล');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: NOTIFICATION SYSTEM
+// ═══════════════════════════════════════════════════════════
+const NOTIF_KEY = "nbl_notif_enabled";
+const NOTIF_HISTORY_KEY = "nbl_notif_history";  // {id: lastShownTimestamp}
+const NOTIF_COOLDOWN_MS = 3*60*60*1000; // 3 ชม. ไม่ส่งซ้ำ alert เดิม
+
+function isNotifSupported(){return 'Notification' in window;}
+function isNotifEnabled(){return isNotifSupported() && Notification.permission === "granted" && localStorage.getItem(NOTIF_KEY) === "1";}
+
+function updateNotifFabUI(){
+  const fab = document.getElementById('notifFab');
+  const icon = document.getElementById('notifIcon');
+  if(!fab) return;
+  if(!isNotifSupported()){
+    fab.style.display = "none"; return;
+  }
+  if(isNotifEnabled()){
+    fab.className = "notif-fab on";
+    icon.textContent = "🔔";
+    fab.title = "แจ้งเตือนเปิดอยู่ — แตะเพื่อปิด";
+  } else if(Notification.permission === "denied"){
+    fab.className = "notif-fab off";
+    icon.textContent = "🔕";
+    fab.title = "แจ้งเตือนถูกบล็อกในบราวเซอร์";
+  } else {
+    fab.className = "notif-fab";
+    icon.textContent = "🔔";
+    fab.title = "แตะเพื่อเปิดการแจ้งเตือน";
+  }
+}
+
+function toggleNotifications(){
+  if(!isNotifSupported()){alert("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน");return;}
+  if(isNotifEnabled()){
+    localStorage.setItem(NOTIF_KEY, "0");
+    updateNotifFabUI();
+    showInAppToast("ปิดการแจ้งเตือนแล้ว");
+  } else {
+    enableNotifications();
+  }
+}
+
+async function enableNotifications(){
+  if(!isNotifSupported()){alert("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน");return;}
+  document.getElementById('notifTip').classList.remove('show');
+  if(Notification.permission === "denied"){
+    alert("แจ้งเตือนถูกบล็อก กรุณาเปิดในการตั้งค่าบราวเซอร์ — Site settings → Notifications → Allow");
+    return;
+  }
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm === "granted"){
+      localStorage.setItem(NOTIF_KEY, "1");
+      updateNotifFabUI();
+      // Send welcome notification
+      new Notification("✅ เปิดการแจ้งเตือนแล้ว", {
+        body: "คุณจะได้รับแจ้งเตือนเมื่อมีฝนตกหนัก ระดับน้ำวิกฤติ หรืออ่างเก็บน้ำเสี่ยงล้น",
+        icon: "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f30a.png",
+        tag: "welcome"
+      });
+      // Run checks immediately
+      checkAndNotify();
+    } else {
+      showInAppToast("ไม่ได้รับอนุญาตให้แจ้งเตือน");
+    }
+  }catch(e){console.warn("notif perm error",e);}
+}
+
+function showInAppToast(msg){
+  const t = document.createElement('div');
+  t.style.cssText = "position:fixed;bottom:90px;right:20px;z-index:300;background:rgba(15,23,42,.95);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;border:1px solid rgba(148,163,184,.3);box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(8px);";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.transition="opacity .3s";t.style.opacity="0";setTimeout(()=>t.remove(),300);},2500);
+}
+
+function getNotifHistory(){
+  try{return JSON.parse(localStorage.getItem(NOTIF_HISTORY_KEY) || "{}");}catch(e){return {};}
+}
+function saveNotifHistory(h){localStorage.setItem(NOTIF_HISTORY_KEY, JSON.stringify(h));}
+
+function notify(id, title, body, urgency){
+  if(!isNotifEnabled()) return;
+  const now = Date.now();
+  const hist = getNotifHistory();
+  if(hist[id] && (now - hist[id]) < NOTIF_COOLDOWN_MS) return; // cooldown
+  try{
+    const n = new Notification(title, {
+      body, tag: id, renotify: true,
+      icon: "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/" + (urgency === "crit" ? "1f6a8" : urgency === "warn" ? "26a0" : "1f30a") + ".png",
+      requireInteraction: urgency === "crit"
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+    hist[id] = now;
+    saveNotifHistory(hist);
+  }catch(e){console.warn("notify fail",e);}
+}
+
+function checkAndNotify(){
+  // 1. ฝนหนักภายใน 24 ชม. (current or forecast)
+  const ribbonAlerts = [];
+  if(_wx && _wx.daily){
+    const todayRain = parseFloat(_wx.daily.precipitation_sum?.[0] || 0);
+    if(todayRain >= 35){
+      const id = "rain_today_" + new Date().toDateString();
+      notify(id, "🌧️ ฝนหนักวันนี้", "พยากรณ์ฝน " + todayRain.toFixed(0) + " มม. ในจังหวัดหนองบัวลำภู — เตรียมรับมือน้ำท่วม", "crit");
+      ribbonAlerts.push({type:"crit",msg:`🌧️ <strong>ฝนหนัก ${todayRain.toFixed(0)} มม.</strong> วันนี้ในจังหวัด`});
+    } else if(todayRain >= 20){
+      ribbonAlerts.push({type:"warn",msg:`🌦️ <strong>ฝนปานกลาง ${todayRain.toFixed(0)} มม.</strong> วันนี้`});
+    }
+  }
+  if(_rainAm){
+    const heavy = _rainAm.filter(r => parseFloat(r.rain_24hr) >= 35);
+    if(heavy.length){
+      const id = "rain_amphoe_" + heavy.map(h=>h.amphoe).sort().join("_");
+      const list = heavy.map(h => h.amphoe + " " + parseFloat(h.rain_24hr).toFixed(0) + "มม.").join(", ");
+      notify(id, "🌧️ ฝนตกหนักในจังหวัด", list, "warn");
+    }
+  }
+  // 2. ระดับน้ำในแม่น้ำ
+  if(_provincial && _provincial.stations){
+    const crit = _provincial.stations.filter(s => {
+      const lv = parseFloat(s.current_level), bk = parseFloat(s.bank_level);
+      return !isNaN(lv) && !isNaN(bk) && lv >= bk;
+    });
+    const warn = _provincial.stations.filter(s => {
+      const lv = parseFloat(s.current_level), bk = parseFloat(s.bank_level), wn = parseFloat(s.warn_level);
+      return !isNaN(lv) && !isNaN(bk) && !isNaN(wn) && lv >= wn && lv < bk;
+    });
+    if(crit.length){
+      const id = "water_crit_" + crit.map(s=>s.station_id).sort().join("_");
+      const list = crit.slice(0,3).map(s => s.station_id+" "+s.name+" "+parseFloat(s.current_level).toFixed(2)+"ม.").join(", ");
+      notify(id, "🚨 น้ำล้นตลิ่ง " + crit.length + " สถานี", list + (crit.length>3?" และอีก "+(crit.length-3)+" จุด":""), "crit");
+      ribbonAlerts.push({type:"crit",msg:`🚨 <strong>${crit.length} สถานีน้ำล้นตลิ่ง</strong> · ${crit.slice(0,2).map(s=>s.name).join(", ")}${crit.length>2?" และอีก "+(crit.length-2)+" จุด":""}`});
+    } else if(warn.length){
+      ribbonAlerts.push({type:"warn",msg:`⚠️ <strong>${warn.length} สถานีอยู่ในเฝ้าระวัง</strong> · ${warn.slice(0,2).map(s=>s.name).join(", ")}`});
+    }
+  }
+  // 3. อ่างเก็บน้ำใกล้ล้น
+  if(_reservoirs && Array.isArray(_reservoirs)){
+    const RES_CAP = {R01:0.400,R02:0.750,R03:2.469,R04:20.800,R05:0.330,R06:2.122,R07:0.842,R08:1.430,R09:0.200,R10:0.695,R11:0.450,R12:0.300,R13:0.623,R14:0.085};
+    const latest = {};
+    _reservoirs.forEach(r => {
+      const id = String(r.reservoir_id||"").toUpperCase();
+      if(!id) return;
+      if(!latest[id] || String(r.date||"") > String(latest[id].date||"")) latest[id] = r;
+    });
+    const risky = Object.keys(latest).map(id => {
+      const cap = RES_CAP[id]; if(!cap) return null;
+      const v = parseFloat(latest[id].current_volume);
+      if(isNaN(v)) return null;
+      const pct = v/cap*100;
+      return {id, name:latest[id].reservoir_name, pct};
+    }).filter(x => x && x.pct >= 90);
+    if(risky.length){
+      const id = "res_risky_" + risky.map(r=>r.id).sort().join("_");
+      const list = risky.slice(0,3).map(r=>r.id+" "+r.name+" "+r.pct.toFixed(0)+"%").join(", ");
+      notify(id, "🏞️ อ่างเก็บน้ำใกล้ล้น", list, "crit");
+      ribbonAlerts.push({type:"crit",msg:`🏞️ <strong>${risky.length} อ่างน้ำมาก</strong> · ${risky.slice(0,2).map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`});
+    }
+  }
+  // 4. PM2.5
+  if(_aqi){
+    const pm = parseFloat(_aqi.pm25);
+    if(pm >= 75){
+      notify("pm25_high_" + new Date().toDateString(), "😷 PM2.5 อยู่ในระดับอันตราย", "PM2.5 = " + pm + " ไมโครกรัม/ลบ.ม. — ควรงดออกกลางแจ้ง", "crit");
+      ribbonAlerts.push({type:"crit",msg:`😷 <strong>PM2.5 = ${pm}</strong> ระดับอันตราย — งดออกกลางแจ้ง`});
+    } else if(pm >= 50){
+      ribbonAlerts.push({type:"warn",msg:`😷 <strong>PM2.5 = ${pm}</strong> เริ่มมีผลกระทบ`});
+    }
+  }
+  // Render ribbon
+  renderRibbon(ribbonAlerts);
+}
+
+function renderRibbon(alerts){
+  const ribbon = document.getElementById('alertRibbon');
+  if(!alerts.length){
+    ribbon.classList.remove('show');
+    return;
+  }
+  // Worst first
+  const crit = alerts.filter(a => a.type === "crit");
+  const warn = alerts.filter(a => a.type === "warn");
+  const show = crit.length ? crit : warn;
+  if(show.length === 0){ribbon.classList.remove('show');return;}
+  ribbon.classList.remove('warn');
+  if(!crit.length) ribbon.classList.add('warn');
+  document.getElementById('alertRibbonMsg').innerHTML = show.map(a => a.msg).join(' &nbsp;·&nbsp; ');
+  ribbon.classList.add('show');
+  // Hide notification action if already enabled
+  const actBtn = ribbon.querySelector('.alert-ribbon-action');
+  if(isNotifEnabled()) actBtn.style.display = "none";
+  else actBtn.style.display = "";
+}
+
+// First-visit notif tip
+function maybeShowNotifTip(){
+  if(!isNotifSupported()) return;
+  if(Notification.permission !== "default") return;  // already decided
+  if(localStorage.getItem("nbl_notif_tip_seen") === "1") return;
+  setTimeout(()=>{
+    document.getElementById('notifTip').classList.add('show');
+    localStorage.setItem("nbl_notif_tip_seen", "1");
+  }, 3500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: REFRESH STATUS UI
+// ═══════════════════════════════════════════════════════════
+let _lastUpdate = null;
+let _nextRefreshMs = 5*60*1000;
+let _refreshTimer = null;
+
+function updateRefreshUI(){
+  if(_lastUpdate){
+    const diff = Math.floor((Date.now() - _lastUpdate)/1000);
+    if(diff < 60) tx('lastUpdate', diff + " วินาทีก่อน");
+    else tx('lastUpdate', Math.floor(diff/60) + " นาทีก่อน");
+  }
+}
+setInterval(updateRefreshUI, 10000);
+
+function startCountdown(ms){
+  if(_refreshTimer) clearInterval(_refreshTimer);
+  let remain = Math.floor(ms/1000);
+  const update = () => {
+    if(remain <= 0){tx('nextUpdate', 'กำลังรีเฟรช...');return;}
+    const m = Math.floor(remain/60), s = remain%60;
+    tx('nextUpdate', m > 0 ? m+":"+String(s).padStart(2,"0")+" นาที" : s+" วินาที");
+    remain--;
+  };
+  update();
+  _refreshTimer = setInterval(update, 1000);
+}
+
+async function manualRefresh(){
+  const btn = document.getElementById('manualRefresh');
+  btn.classList.add('busy');
+  btn.disabled = true;
+  await loadAll();
+  btn.classList.remove('busy');
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD ALL — combined: weather + provincial + reservoirs + notify
+// ═══════════════════════════════════════════════════════════
+async function loadAll(){
+  if(!GEMINI_KEY)tx('aiKeyNote','⚙️ ตั้งค่า GEMINI_API_KEY ใน config.js เพื่อเปิดใช้งาน');
+  else tx('aiKeyNote','Gemini AI · พร้อมใช้งาน');
+
+  const [wxR,rAmR,heatR,stR,aqiR,pwR,resR] = await Promise.allSettled([
+    fetchWx(), fetchRainAm(), fetchHeat(), fetchStRain(), fetchAQI(),
+    fetchProvincial(), fetchReservoirs()
+  ]);
+  const get=r=>r.status==='fulfilled'?r.value:null;
+  const wx=get(wxR),rAm=get(rAmR),heat=get(heatR),stR2=get(stR),aq=get(aqiR);
+  const pw=get(pwR), res=get(resR);
+  _wx=wx;_rainAm=rAm;_rainHeat=heat;_stRain=stR2;_aqi=aq;
+  _provincial=pw;_reservoirs=res;
+  if(wx){renderHero(wx);renderHourly(wx);renderForecast(wx);}
+  renderAlert(wx,rAm);renderAQI(aq);renderRainChart(rAm);renderWLP(stR2);
+  renderProvincialWater(pw);
+  renderReservoirs(res);
+  if(heat&&showHeat)updateHeatmap(heat);
+  if(stR2)stR2.forEach((s,i)=>{
+    const r=predictLevel(s,s.forecast_rain||0);
+    const c=r.risk==='high'?'#f87171':r.risk==='med'?'#fbbf24':'#4ade80';
+    if(stMarkers[i])stMarkers[i].setStyle({fillColor:c});
+  });
+  // Notifications + ribbon
+  checkAndNotify();
+  // Refresh meta
+  _lastUpdate = Date.now();
+  updateRefreshUI();
+  startCountdown(_nextRefreshMs);
+  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini,800);
+}
+
+initMap();
+updateNotifFabUI();
+maybeShowNotifTip();
+loadAll();
+setInterval(loadAll,5*60*1000);
+setInterval(()=>{if(GEMINI_KEY&&!aiRunning)runGemini();},30*60*1000);
+</script>
+</body>
+</html>

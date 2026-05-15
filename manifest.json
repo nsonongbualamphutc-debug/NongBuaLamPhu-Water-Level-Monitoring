@@ -1,0 +1,43 @@
+{
+  "name": "สถานการณ์น้ำหนองบัวลำภู",
+  "short_name": "น้ำหนองบัวฯ",
+  "description": "ระบบติดตามสถานการณ์น้ำและสภาพอากาศ จังหวัดหนองบัวลำภู — แจ้งเตือนเรียลไทม์",
+  "start_url": "daily_briefing.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#05070f",
+  "background_color": "#05070f",
+  "lang": "th",
+  "categories": ["weather", "utilities", "government"],
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f30a.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f30a.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "หน้าหลัก Dashboard",
+      "url": "index.html",
+      "icons": [{"src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f3e0.png", "sizes": "72x72"}]
+    },
+    {
+      "name": "บันทึกข้อมูล",
+      "url": "input.html",
+      "icons": [{"src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f4dd.png", "sizes": "72x72"}]
+    },
+    {
+      "name": "ลำน้ำพะเนียง",
+      "url": "paneang.html"
+    }
+  ]
+}
