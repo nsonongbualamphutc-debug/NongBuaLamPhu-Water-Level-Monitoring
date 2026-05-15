@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0c4a6e">
+<title>📝 บันทึกข้อมูล | สถานการณ์น้ำ จ.หนองบัวลำภู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;
+  --brand:#0c4a6e;--brand-deep:#0c1e3d;--brand2:#0284c7;--accent:#38bdf8;
+  --info:#0ea5e9;--ok:#10b981;--warn:#f59e0b;--crit:#dc2626;
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.08);
+  --shadow-lg:0 4px 12px rgba(15,23,42,.06),0 24px 48px rgba(15,23,42,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.55;}
+
+/* HEADER */
+header{background:linear-gradient(135deg,var(--brand-deep) 0%,var(--brand) 55%,#075985 100%);color:#fff;position:relative;overflow:hidden;}
+header::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 90% 30%,rgba(56,189,248,.25),transparent 50%),radial-gradient(circle at 10% 90%,rgba(14,165,233,.2),transparent 50%);}
+.header-inner{max-width:1100px;margin:0 auto;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;}
+.brand{display:flex;align-items:center;gap:14px;}
+.logo{width:48px;height:48px;border-radius:14px;background:rgba(56,189,248,.22);border:1px solid rgba(125,211,252,.4);display:flex;align-items:center;justify-content:center;font-size:24px;backdrop-filter:blur(8px);}
+h1{font-family:'Kanit',sans-serif;font-size:19px;font-weight:600;letter-spacing:.2px;line-height:1.2;}
+.sub{font-size:11.5px;color:#bae6fd;margin-top:2px;letter-spacing:.4px;}
+.header-actions{display:flex;gap:8px;}
+.btn-icon{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;backdrop-filter:blur(8px);}
+.btn-icon:hover{background:rgba(255,255,255,.18);}
+.btn-icon.admin{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.4);color:#fde68a;}
+.btn-icon.admin:hover{background:rgba(251,191,36,.25);}
+
+/* NAV */
+nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;gap:0;padding:0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-inner::-webkit-scrollbar{display:none;}
+nav a{padding:13px 16px;color:var(--muted);text-decoration:none;font-weight:500;font-size:13.5px;border-bottom:3px solid transparent;white-space:nowrap;transition:.2s;}
+nav a:hover{color:var(--brand2);}
+nav a.active{color:var(--brand);border-bottom-color:var(--brand2);font-weight:700;}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:22px 20px 60px;}
+
+/* SCREENS */
+.screen{display:none;animation:fadeIn .25s ease;}
+.screen.on{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* SELECT STATION SCREEN */
+.choose-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:24px;border:1px solid var(--line);}
+.choose-h{font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;color:var(--brand);margin-bottom:6px;}
+.choose-sub{font-size:13.5px;color:var(--muted);margin-bottom:22px;}
+.mode-tabs{display:flex;gap:6px;background:#f1f5f9;padding:5px;border-radius:12px;margin-bottom:20px;}
+.mode-tab{flex:1;padding:11px 12px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);border-radius:8px;cursor:pointer;transition:.2s;border:none;background:transparent;font-family:inherit;}
+.mode-tab.on{background:#fff;color:var(--brand);box-shadow:0 2px 6px rgba(15,23,42,.06);}
+
+/* RIVER GROUPS */
+.river-group{margin-bottom:18px;}
+.river-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--brand);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--line);}
+.river-h .count{margin-left:auto;font-size:11px;color:var(--muted);font-weight:500;background:#f1f5f9;padding:2px 8px;border-radius:8px;}
+.station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.station-btn{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all .15s;font-family:inherit;display:flex;flex-direction:column;gap:4px;color:var(--ink);}
+.station-btn:hover{border-color:var(--brand2);background:#f0f9ff;transform:translateY(-1px);box-shadow:0 6px 14px rgba(2,132,199,.12);}
+.station-btn .code{font-family:'Kanit',sans-serif;font-size:13px;font-weight:700;color:var(--brand2);letter-spacing:.5px;}
+.station-btn .name{font-size:14.5px;font-weight:600;color:var(--ink);}
+.station-btn .meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+.amphoe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.amphoe-btn{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center;cursor:pointer;transition:all .15s;font-family:inherit;color:var(--ink);}
+.amphoe-btn:hover{border-color:var(--brand2);background:#f0f9ff;transform:translateY(-1px);}
+.amphoe-btn .icon{font-size:24px;margin-bottom:8px;display:block;}
+.amphoe-btn .name{font-size:14px;font-weight:600;}
+
+/* PIN INPUT SCREEN */
+.pin-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow-lg);padding:0;border:1px solid var(--line);max-width:520px;margin:0 auto;overflow:hidden;}
+.pin-banner{background:linear-gradient(135deg,var(--brand) 0%,var(--brand2) 100%);color:#fff;padding:24px 28px;position:relative;overflow:hidden;}
+.pin-banner::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 30%,rgba(255,255,255,.15),transparent 60%);}
+.pin-banner .label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.85;font-weight:600;position:relative;}
+.pin-banner h2{font-family:'Kanit',sans-serif;font-size:24px;font-weight:700;margin-top:6px;position:relative;}
+.pin-banner .meta{font-size:13px;opacity:.9;margin-top:6px;position:relative;}
+.pin-body{padding:24px 28px;}
+.pin-info{background:#f1f5f9;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px;}
+.pin-info .ico{font-size:18px;}
+.pin-input-wrap{position:relative;}
+.pin-input{width:100%;padding:18px 18px;font-size:24px;text-align:center;letter-spacing:8px;font-family:'Kanit',sans-serif;font-weight:600;border:2px solid var(--line);border-radius:14px;outline:none;transition:.2s;background:#f8fafc;color:var(--brand);}
+.pin-input:focus{border-color:var(--brand2);background:#fff;box-shadow:0 0 0 4px rgba(2,132,199,.1);}
+.pin-input::placeholder{color:#cbd5e1;letter-spacing:6px;}
+.pin-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);padding:4px;}
+.pin-actions{display:flex;gap:10px;margin-top:18px;}
+.btn{flex:1;padding:14px 20px;border-radius:12px;border:none;font-family:'Kanit',sans-serif;font-weight:600;font-size:15px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.btn-pri{background:var(--brand);color:#fff;}
+.btn-pri:hover{background:var(--brand-deep);}
+.btn-pri:disabled{background:#94a3b8;cursor:not-allowed;}
+.btn-sec{background:#f1f5f9;color:var(--ink);}
+.btn-sec:hover{background:#e2e8f0;}
+.pin-error{margin-top:14px;padding:12px 14px;background:#fee2e2;color:#991b1b;border-radius:10px;font-size:13px;display:none;align-items:center;gap:8px;}
+.pin-error.on{display:flex;}
+
+/* RECORD SCREEN */
+.rec-wrap{display:grid;grid-template-columns:1fr 360px;gap:18px;}
+@media(max-width:900px){.rec-wrap{grid-template-columns:1fr;}}
+.rec-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:0;border:1px solid var(--line);overflow:hidden;}
+.rec-head{background:linear-gradient(135deg,var(--brand-deep) 0%,var(--brand) 100%);color:#fff;padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.rec-head .l{flex:1;}
+.rec-head .code{font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;opacity:.8;letter-spacing:.5px;}
+.rec-head h3{font-family:'Kanit',sans-serif;font-size:22px;font-weight:700;margin-top:2px;}
+.rec-head .meta{font-size:12.5px;opacity:.85;margin-top:6px;}
+.rec-head .logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:7px 12px;border-radius:9px;font-size:11.5px;cursor:pointer;font-family:inherit;}
+.rec-body{padding:22px;}
+
+/* LAST READING CARD */
+.last-card{background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);border:1px solid #bae6fd;border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;}
+.last-card .ico{font-size:28px;flex-shrink:0;}
+.last-card .lbl{font-size:11px;color:var(--brand);font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.last-card .val{font-family:'Kanit',sans-serif;font-size:20px;font-weight:700;color:var(--brand-deep);margin-top:2px;}
+.last-card .meta{font-size:11.5px;color:var(--muted);margin-top:1px;}
+
+/* FORM */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:520px){.fgrid{grid-template-columns:1fr;}}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.3px;display:flex;align-items:center;gap:4px;}
+.fg label .req{color:var(--crit);}
+.fg input,.fg textarea,.fg select{padding:13px 14px;border:1.5px solid var(--line);border-radius:11px;font-size:15px;font-family:inherit;outline:none;transition:.15s;background:#fff;color:var(--ink);font-weight:500;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(2,132,199,.12);}
+.fg input[type=number]{font-family:'Kanit',sans-serif;font-size:18px;font-weight:600;text-align:center;}
+.fg .hint{font-size:11px;color:var(--muted);}
+
+/* LIVE STATUS BANNER */
+.status-banner{margin-top:6px;padding:12px 14px;border-radius:11px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;border:1px solid;transition:.2s;}
+.status-banner .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite;}
+.status-banner .msg{flex:1;}
+.status-banner.ok{background:#d1fae5;color:#065f46;border-color:#86efac;}
+.status-banner.ok .dot{background:#10b981;}
+.status-banner.warn{background:#fef3c7;color:#92400e;border-color:#fcd34d;}
+.status-banner.warn .dot{background:#f59e0b;}
+.status-banner.crit{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
+.status-banner.crit .dot{background:#dc2626;}
+.status-banner.neutral{background:#f1f5f9;color:var(--muted);border-color:var(--line);}
+.status-banner.neutral .dot{background:#94a3b8;animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* SUBMIT */
+.submit-row{display:flex;gap:10px;margin-top:22px;}
+.toast{margin-top:14px;padding:12px 16px;border-radius:11px;font-size:13.5px;font-weight:600;display:none;align-items:center;gap:10px;}
+.toast.on{display:flex;}
+.toast.ok{background:#d1fae5;color:#065f46;}
+.toast.err{background:#fee2e2;color:#991b1b;}
+
+/* SIDEBAR — recent records */
+.side-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;}
+.side-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.side-head h4{font-family:'Kanit',sans-serif;font-size:15px;font-weight:700;color:var(--brand);}
+.side-head .badge{font-size:10.5px;background:#dbeafe;color:var(--brand);padding:3px 8px;border-radius:8px;font-weight:700;letter-spacing:.4px;}
+.side-chart{padding:14px 16px;height:180px;}
+.side-list{max-height:340px;overflow-y:auto;}
+.side-row{padding:11px 18px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:12px;}
+.side-row:last-child{border-bottom:none;}
+.side-row .left{flex:1;min-width:0;}
+.side-row .dt{font-size:11px;color:var(--muted);font-weight:500;}
+.side-row .lv{font-family:'Kanit',sans-serif;font-size:17px;font-weight:700;color:var(--brand-deep);margin-top:1px;}
+.side-row .rec{font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.side-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.side-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* ADMIN SCREEN */
+.admin-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;margin-bottom:18px;}
+.admin-head{background:linear-gradient(135deg,#7c2d12 0%,#b45309 100%);color:#fff;padding:18px 22px;display:flex;align-items:center;gap:12px;}
+.admin-head .ico{font-size:24px;}
+.admin-head h3{font-family:'Kanit',sans-serif;font-size:19px;font-weight:700;}
+.admin-head .sub{font-size:12px;opacity:.85;margin-top:2px;}
+.admin-tabs{display:flex;background:#f8fafc;border-bottom:1px solid var(--line);padding:0 14px;gap:4px;overflow-x:auto;}
+.admin-tab{padding:14px 16px;background:none;border:none;font-family:'Kanit',sans-serif;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s;}
+.admin-tab.on{color:var(--brand);border-bottom-color:var(--brand2);}
+.admin-body{padding:18px;}
+
+/* admin table */
+.atbl{width:100%;border-collapse:collapse;font-size:13px;}
+.atbl thead th{background:#f8fafc;text-align:left;padding:11px 12px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.atbl tbody td{padding:12px;border-bottom:1px solid #f1f5f9;}
+.atbl tbody tr:hover{background:#f8fafc;}
+.atbl .code{font-family:'Kanit',sans-serif;font-weight:700;color:var(--brand2);}
+.atbl .pin-cell{font-family:'Kanit',sans-serif;font-weight:700;letter-spacing:1px;}
+.atbl .pin-masked{color:#94a3b8;font-size:18px;letter-spacing:2px;}
+.atbl input.pin-edit,.atbl input.txt-edit{padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;width:120px;outline:none;}
+.atbl input.pin-edit{font-family:'Kanit',sans-serif;font-weight:600;letter-spacing:2px;}
+.atbl input:focus{border-color:var(--brand2);}
+.btn-mini{padding:6px 12px;border-radius:8px;border:none;font-family:'Kanit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-mini.save{background:var(--brand);color:#fff;}
+.btn-mini.save:hover{background:var(--brand-deep);}
+.btn-mini.gen{background:#f1f5f9;color:var(--brand);}
+.btn-mini.gen:hover{background:#e2e8f0;}
+.pill-st{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;}
+.pill-st.has{background:#d1fae5;color:#065f46;}
+.pill-st.no{background:#fee2e2;color:#991b1b;}
+
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line);}
+.admin-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.7;}
+.admin-empty .btn{margin-top:14px;display:inline-flex;flex:0;}
+
+/* RAIN form differs slightly */
+.amphoe-banner{background:linear-gradient(135deg,#0369a1 0%,#0284c7 100%);color:#fff;padding:18px 22px;display:flex;align-items:center;gap:14px;}
+.amphoe-banner .ico{font-size:30px;}
+.amphoe-banner .l h3{font-family:'Kanit',sans-serif;font-size:20px;font-weight:700;}
+.amphoe-banner .l .sub{font-size:12.5px;opacity:.85;margin-top:2px;}
+.amphoe-banner .logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:7px 12px;border-radius:9px;font-size:11.5px;cursor:pointer;font-family:inherit;margin-left:auto;}
+
+footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line);background:#fff;}
+
+/* loading state */
+.loading{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px;}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--brand2);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:-3px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* utility */
+.hidden{display:none!important;}
+.muted{color:var(--muted);}
+.small{font-size:11.5px;}
+.center{text-align:center;}
+
+@media (max-width:560px){
+  .header-inner{padding:14px 16px;}
+  h1{font-size:17px;}
+  main{padding:16px 14px 40px;}
+  .choose-card{padding:18px;}
+  .choose-h{font-size:19px;}
+  .pin-body,.pin-banner{padding-left:20px;padding-right:20px;}
+  .pin-input{font-size:22px;letter-spacing:6px;padding:16px;}
+  .rec-body{padding:18px;}
+  .rec-head{padding:16px 18px;}
+  .rec-head h3{font-size:19px;}
+  .station-grid{grid-template-columns:1fr;}
+  .amphoe-grid{grid-template-columns:repeat(2,1fr);}
+  .submit-row{flex-direction:column-reverse;}
+  .submit-row .btn{width:100%;}
+  .atbl{font-size:12.5px;}
+  .atbl thead th,.atbl tbody td{padding:9px 8px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">📝</div>
+      <div>
+        <h1>บันทึกข้อมูลสถานการณ์น้ำ</h1>
+        <div class="sub">จังหวัดหนองบัวลำภู • ระบบ PIN รายสถานี</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon admin" onclick="openAdmin()">🔐 Admin</button>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
+    <a href="mong.html">🌿 ลำน้ำโมง</a>
+    <a href="mo.html">💧 ลำน้ำมอ</a>
+    <a href="phuay.html">🌀 ลำน้ำพวย</a>
+    <a href="rainfall.html">🌧️ ปริมาณฝน</a>
+    <a href="reservoir.html">🏞️ อ่างเก็บน้ำ</a>
+    <a href="input.html" class="active">📝 บันทึกข้อมูล</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ SCREEN 1: เลือกสถานี / อำเภอ ============ -->
+<section id="scr-choose" class="screen on">
+  <div class="choose-card">
+    <h2 class="choose-h">เลือกจุดที่ต้องการบันทึก</h2>
+    <p class="choose-sub">เจ้าหน้าที่แต่ละจุดมี PIN ของตัวเอง เลือกจุดของท่านแล้วใส่ PIN เพื่อเข้าระบบ</p>
+
+    <div class="mode-tabs">
+      <button class="mode-tab on" onclick="setMode('water')">💧 บันทึกระดับน้ำ</button>
+      <button class="mode-tab" onclick="setMode('rain')">🌧️ บันทึกฝนรายอำเภอ</button>
+    </div>
+
+    <div id="water-list">
+      <!-- River groups injected here -->
+    </div>
+
+    <div id="rain-list" class="hidden">
+      <div class="river-h">
+        <span>🌧️ บันทึกปริมาณฝน — เลือกอำเภอ</span>
+        <span class="count">6 อำเภอ</span>
+      </div>
+      <div class="amphoe-grid" id="amphoe-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 2: ใส่ PIN ============ -->
+<section id="scr-pin" class="screen">
+  <div class="pin-card">
+    <div class="pin-banner">
+      <div class="label" id="pin-label">PIN สำหรับจุดบันทึก</div>
+      <h2 id="pin-target">—</h2>
+      <div class="meta" id="pin-meta">—</div>
+    </div>
+    <div class="pin-body">
+      <div class="pin-info">
+        <span class="ico">🛡️</span>
+        <span>กรอก PIN เฉพาะของจุดนี้ — PIN จะถูกจดจำไว้ในเครื่องนี้จนกว่าจะออกระบบ</span>
+      </div>
+      <div class="pin-input-wrap">
+        <input id="pin-input" class="pin-input" type="password" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="• • • • • •" onkeydown="if(event.key==='Enter')submitPin()" />
+        <button class="pin-eye" onclick="togglePinEye()" title="แสดง/ซ่อน PIN">👁️</button>
+      </div>
+      <div class="pin-error" id="pin-error">
+        <span>⚠️</span>
+        <span id="pin-error-msg"></span>
+      </div>
+      <div class="pin-actions">
+        <button class="btn btn-sec" onclick="showScreen('scr-choose')">← เปลี่ยนจุด</button>
+        <button class="btn btn-pri" id="pin-submit" onclick="submitPin()">✓ เข้าระบบ</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 3: บันทึกข้อมูล ============ -->
+<section id="scr-record" class="screen">
+  <div class="rec-wrap">
+
+    <!-- LEFT: FORM -->
+    <div>
+      <!-- WATER FORM CARD -->
+      <div class="rec-card" id="water-form" style="display:none;">
+        <div class="rec-head">
+          <div class="l">
+            <div class="code" id="w-code">—</div>
+            <h3 id="w-name">—</h3>
+            <div class="meta" id="w-meta">—</div>
+          </div>
+          <button class="logout" onclick="logout()">ออกระบบ</button>
+        </div>
+        <div class="rec-body">
+
+          <div class="last-card" id="w-last" style="display:none;">
+            <span class="ico">📊</span>
+            <div style="flex:1;">
+              <div class="lbl">ค่าล่าสุดที่บันทึก</div>
+              <div class="val" id="w-last-val">—</div>
+              <div class="meta" id="w-last-meta">—</div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg">
+              <label>วันที่ <span class="req">*</span></label>
+              <input type="date" id="w-date" />
+            </div>
+            <div class="fg">
+              <label>เวลา <span class="req">*</span></label>
+              <input type="time" id="w-time" />
+            </div>
+            <div class="fg full">
+              <label>ระดับน้ำ (เมตร รทก.) <span class="req">*</span></label>
+              <input type="number" id="w-level" step="0.01" placeholder="เช่น 288.50" oninput="updateWaterStatus()" />
+              <div class="status-banner neutral" id="w-status">
+                <span class="dot"></span>
+                <span class="msg">กรอกระดับน้ำเพื่อตรวจสอบสถานะ</span>
+              </div>
+            </div>
+            <div class="fg">
+              <label>อัตราการไหล (ลบ.ม./วิ)</label>
+              <input type="number" id="w-flow" step="0.01" placeholder="ไม่บังคับ" />
+              <span class="hint">เว้นว่างได้ถ้าไม่มีข้อมูล</span>
+            </div>
+            <div class="fg">
+              <label>ผู้บันทึก</label>
+              <input type="text" id="w-recorder" placeholder="ชื่อผู้บันทึก" />
+              <span class="hint">จดจำให้อัตโนมัติจากการบันทึกล่าสุด</span>
+            </div>
+            <div class="fg full">
+              <label>หมายเหตุ</label>
+              <textarea id="w-remark" rows="2" placeholder="เช่น สภาพอากาศ ลักษณะน้ำ — ไม่บังคับ"></textarea>
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนจุด</button>
+            <button class="btn btn-pri" id="w-save" onclick="saveWater()">💾 บันทึกข้อมูล</button>
+          </div>
+          <div class="toast" id="w-toast"></div>
+        </div>
+      </div>
+
+      <!-- RAIN FORM CARD -->
+      <div class="rec-card" id="rain-form" style="display:none;">
+        <div class="amphoe-banner">
+          <span class="ico">🌧️</span>
+          <div class="l">
+            <h3 id="r-name">—</h3>
+            <div class="sub" id="r-meta">บันทึกปริมาณฝน — รายวัน 7 วัน เดือน</div>
+          </div>
+          <button class="logout" onclick="logout()">ออกระบบ</button>
+        </div>
+        <div class="rec-body">
+
+          <div class="last-card" id="r-last" style="display:none;">
+            <span class="ico">📅</span>
+            <div style="flex:1;">
+              <div class="lbl">บันทึกล่าสุด</div>
+              <div class="val" id="r-last-val">—</div>
+              <div class="meta" id="r-last-meta">—</div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg full">
+              <label>วันที่ <span class="req">*</span></label>
+              <input type="date" id="r-date" />
+            </div>
+            <div class="fg full">
+              <label>ฝน 24 ชั่วโมง (มม.) <span class="req">*</span></label>
+              <input type="number" id="r-24" step="0.1" placeholder="เช่น 15.5" oninput="updateRainStatus()" />
+              <div class="status-banner neutral" id="r-status">
+                <span class="dot"></span>
+                <span class="msg">กรอกฝน 24 ชม. เพื่อตรวจสอบความรุนแรง</span>
+              </div>
+            </div>
+            <div class="fg">
+              <label>ฝน 7 วัน (มม.)</label>
+              <input type="number" id="r-7" step="0.1" placeholder="สะสม 7 วัน" />
+            </div>
+            <div class="fg">
+              <label>ฝนเดือนนี้ (มม.)</label>
+              <input type="number" id="r-mo" step="0.1" placeholder="สะสมเดือน" />
+            </div>
+            <div class="fg">
+              <label>ผู้บันทึก</label>
+              <input type="text" id="r-recorder" placeholder="ชื่อผู้บันทึก" />
+            </div>
+            <div class="fg">
+              <label>หมายเหตุ</label>
+              <input type="text" id="r-remark" placeholder="ไม่บังคับ" />
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนอำเภอ</button>
+            <button class="btn btn-pri" id="r-save" onclick="saveRain()">💾 บันทึกข้อมูล</button>
+          </div>
+          <div class="toast" id="r-toast"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RECENT RECORDS SIDEBAR -->
+    <div>
+      <div class="side-card">
+        <div class="side-head">
+          <h4 id="side-title">📊 บันทึกล่าสุด</h4>
+          <span class="badge" id="side-badge">7 รายการ</span>
+        </div>
+        <div class="side-chart"><canvas id="historyChart"></canvas></div>
+        <div class="side-list" id="recent-list">
+          <div class="side-empty">ยังไม่มีข้อมูลบันทึก</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 4: ADMIN ============ -->
+<section id="scr-admin" class="screen">
+
+  <!-- ADMIN LOGIN -->
+  <div id="admin-login" class="pin-card">
+    <div class="pin-banner" style="background:linear-gradient(135deg,#7c2d12 0%,#b45309 100%);">
+      <div class="label">🔐 ADMIN PANEL</div>
+      <h2>เข้าสู่ระบบผู้ดูแล</h2>
+      <div class="meta">จัดการ PIN ของเจ้าหน้าที่ทุกจุดในจังหวัด</div>
+    </div>
+    <div class="pin-body">
+      <div class="pin-info">
+        <span class="ico">⚠️</span>
+        <span>ต้องใช้ Master PIN ที่ตั้งใน Apps Script (Script Properties: ADMIN_PIN)</span>
+      </div>
+      <div class="pin-input-wrap">
+        <input id="admin-pin-input" class="pin-input" type="password" inputmode="numeric" maxlength="30" autocomplete="off" placeholder="• • • • • •" onkeydown="if(event.key==='Enter')adminLogin()" />
+        <button class="pin-eye" onclick="toggleAdminEye()">👁️</button>
+      </div>
+      <div class="pin-error" id="admin-pin-error">
+        <span>⚠️</span>
+        <span id="admin-pin-error-msg"></span>
+      </div>
+      <div class="pin-actions">
+        <button class="btn btn-sec" onclick="showScreen('scr-choose')">← กลับ</button>
+        <button class="btn btn-pri" id="admin-submit" onclick="adminLogin()" style="background:#b45309;">✓ เข้าระบบผู้ดูแล</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL (after login) -->
+  <div id="admin-panel" class="hidden">
+    <div class="admin-card">
+      <div class="admin-head">
+        <span class="ico">🔐</span>
+        <div style="flex:1;">
+          <h3>Admin Panel — จัดการ PIN</h3>
+          <div class="sub">ตั้งค่า PIN รายสถานี / รายอำเภอ / ดูประวัติการใช้งาน</div>
+        </div>
+        <button class="logout" onclick="adminLogout()">ออกระบบผู้ดูแล</button>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab on" onclick="setAdminTab('stations')">💧 PIN รายสถานี (ระดับน้ำ)</button>
+        <button class="admin-tab" onclick="setAdminTab('amphoes')">🌧️ PIN รายอำเภอ (ฝน)</button>
+      </div>
+
+      <div class="admin-body">
+        <!-- Station PIN tab -->
+        <div id="admin-tab-stations">
+          <div id="station-pin-content">
+            <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
+          </div>
+        </div>
+        <!-- Amphoe PIN tab -->
+        <div id="admin-tab-amphoes" class="hidden">
+          <div id="amphoe-pin-content">
+            <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  ระบบติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู · สำนักงานสถิติจังหวัด<br>
+  <span class="small">รองรับมือถือและแทปเล็ต · PIN เก็บไว้เฉพาะในเครื่องนี้ของท่าน</span>
+</footer>
+
+<script>
+/* ============================================================
+ *  CONFIG & STATE
+ * ============================================================ */
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
+let MODE = "water";  // water | rain
+let SELECTED = null; // {kind:"station",id,name,..} or {kind:"amphoe",name,..}
+let SESSION_PIN = ""; // current session PIN for selected entity
+let ADMIN_PIN = "";   // admin PIN (in admin panel only)
+let historyChart = null;
+
+const STATIONS = [
+  {id:"PN01",no:1,  name:"วังปลาป้อม",       amphoe:"นาวัง",              bank:290.0, warn:289.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN02",no:2,  name:"โคกกระทอ",         amphoe:"นาวัง",              bank:266.0, warn:265.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN03",no:3,  name:"วังสามหาบ",        amphoe:"นาวัง",              bank:258.0, warn:257.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN04",no:4,  name:"บ้านหนองด่าน",     amphoe:"นากลาง",             bank:249.0, warn:248.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN05",no:5,  name:"บ้านฝั่งแดง",      amphoe:"นากลาง",             bank:237.0, warn:236.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN06",no:6,  name:"ปตร.หนองหว้าใหญ่", amphoe:"เมืองหนองบัวลำภู",  bank:216.0, warn:215.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN07",no:7,  name:"วังหมื่น",          amphoe:"เมืองหนองบัวลำภู",  bank:210.0, warn:209.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN08",no:8,  name:"ปตร.ปู่หลอด",       amphoe:"เมืองหนองบัวลำภู",  bank:203.0, warn:202.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN09",no:9,  name:"บ้านข้องโป้",       amphoe:"เมืองหนองบัวลำภู",  bank:201.0, warn:200.5, river:"ลำน้ำพะเนียง"},
+  {id:"PN10",no:10, name:"ปตร.หัวนา",         amphoe:"เมืองหนองบัวลำภู",  bank:191.0, warn:190.5, river:"ลำน้ำพะเนียง"},
+  {id:"MG01",no:1,  name:"คลองบุญทัน",        amphoe:"สุวรรณคูหา",        bank:231.0, warn:230.5, river:"ลำน้ำโมง"},
+  {id:"MG02",no:2,  name:"บ้านโคก",           amphoe:"สุวรรณคูหา",        bank:218.0, warn:217.5, river:"ลำน้ำโมง"},
+  {id:"MG03",no:3,  name:"บ้านนาตาแหลว",     amphoe:"สุวรรณคูหา",        bank:202.0, warn:201.5, river:"ลำน้ำโมง"},
+  {id:"MG04",no:4,  name:"บ้านกุดผึ้ง",        amphoe:"สุวรรณคูหา",        bank:192.0, warn:191.5, river:"ลำน้ำโมง"},
+  {id:"MO01",no:1,  name:"อ่างเก็บน้ำมอ",      amphoe:"ศรีบุญเรือง",       bank:242.0, warn:241.5, river:"ลำน้ำมอ"},
+  {id:"MO02",no:2,  name:"บ้านวังคูณ",         amphoe:"ศรีบุญเรือง",       bank:211.0, warn:210.5, river:"ลำน้ำมอ"},
+  {id:"MO03",no:3,  name:"บ้านโนนสูงเปลือย",   amphoe:"ศรีบุญเรือง",       bank:202.0, warn:201.5, river:"ลำน้ำมอ"},
+  {id:"PY01",no:1,  name:"บ้านวังโปร่ง",       amphoe:"ศรีบุญเรือง",       bank:212.0, warn:211.5, river:"ลำน้ำพวย"},
+  {id:"PY02",no:2,  name:"บ้านทุ่งโพธิ์",      amphoe:"ศรีบุญเรือง",       bank:197.0, warn:196.5, river:"ลำน้ำพวย"},
+  {id:"PY03",no:3,  name:"บ้านโคกล่าม",       amphoe:"ศรีบุญเรือง",       bank:193.0, warn:192.5, river:"ลำน้ำพวย"},
+];
+const AMPHOES = ["เมืองหนองบัวลำภู","นากลาง","นาวัง","ศรีบุญเรือง","สุวรรณคูหา","โนนสัง"];
+
+/* ============================================================
+ *  API helper — GET via query string (avoid CORS preflight + 302 redirect)
+ * ============================================================ */
+async function api(p) {
+  if (!API_URL) return { ok:false, error:"ยังไม่ตั้งค่า API_URL ใน config.js" };
+  const qs = new URLSearchParams();
+  Object.keys(p).forEach(k => {
+    const v = p[k];
+    if (v === undefined || v === null || v === "") return;
+    qs.append(k, String(v));
+  });
+  const url = API_URL + (API_URL.includes("?") ? "&" : "?") + qs.toString();
+  try {
+    const r = await fetch(url, { method:"GET", redirect:"follow" });
+    return await r.json();
+  } catch (e) {
+    return { ok:false, error:"เชื่อมต่อ API ไม่ได้: " + e.message };
+  }
+}
+
+/* ============================================================
+ *  SCREEN MANAGEMENT
+ * ============================================================ */
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  document.getElementById(id).classList.add("on");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function setMode(m) {
+  MODE = m;
+  document.querySelectorAll(".mode-tab").forEach((b,i) => b.classList.toggle("on", (m==="water" && i===0) || (m==="rain" && i===1)));
+  document.getElementById("water-list").classList.toggle("hidden", m!=="water");
+  document.getElementById("rain-list").classList.toggle("hidden", m!=="rain");
+}
+
+/* ============================================================
+ *  CHOOSE SCREEN — render
+ * ============================================================ */
+function renderChoose() {
+  // Group stations by river
+  const byRiver = {};
+  STATIONS.forEach(s => { (byRiver[s.river] = byRiver[s.river] || []).push(s); });
+  const html = Object.keys(byRiver).map(r => {
+    const list = byRiver[r];
+    return `
+      <div class="river-group">
+        <div class="river-h">
+          <span>🌊 ${r}</span>
+          <span class="count">${list.length} สถานี</span>
+        </div>
+        <div class="station-grid">
+          ${list.map(s => `
+            <button class="station-btn" onclick="chooseStation('${s.id}')">
+              <span class="code">${s.id}</span>
+              <span class="name">${s.name}</span>
+              <span class="meta">📍 ${s.amphoe} · ตลิ่ง ${s.bank.toFixed(1)} ม.</span>
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("water-list").innerHTML = html;
+
+  // Amphoe grid
+  const amphoeIcons = {
+    "เมืองหนองบัวลำภู":"🏛️", "นากลาง":"🌾", "นาวัง":"🌳",
+    "ศรีบุญเรือง":"🍃", "สุวรรณคูหา":"⛰️", "โนนสัง":"🌻"
+  };
+  document.getElementById("amphoe-grid").innerHTML = AMPHOES.map(a => `
+    <button class="amphoe-btn" onclick="chooseAmphoe('${a}')">
+      <span class="icon">${amphoeIcons[a] || "📍"}</span>
+      <span class="name">${a}</span>
+    </button>
+  `).join("");
+}
+
+function chooseStation(stid) {
+  const s = STATIONS.find(x => x.id === stid);
+  if (!s) return;
+  SELECTED = { kind:"station", ...s };
+  // Check if PIN was remembered
+  const storedPin = localStorage.getItem("wat_pin_" + stid);
+  if (storedPin) {
+    SESSION_PIN = storedPin;
+    enterRecord();
+    return;
+  }
+  // Show PIN screen
+  document.getElementById("pin-label").textContent = "PIN สำหรับสถานี";
+  document.getElementById("pin-target").textContent = s.id + " · " + s.name;
+  document.getElementById("pin-meta").textContent = "📍 " + s.amphoe + " · ตลิ่ง " + s.bank.toFixed(1) + " ม.";
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+function chooseAmphoe(am) {
+  SELECTED = { kind:"amphoe", name:am };
+  const storedPin = localStorage.getItem("wat_amphoe_pin_" + am);
+  if (storedPin) {
+    SESSION_PIN = storedPin;
+    enterRecord();
+    return;
+  }
+  document.getElementById("pin-label").textContent = "PIN สำหรับอำเภอ";
+  document.getElementById("pin-target").textContent = "🌧️ " + am;
+  document.getElementById("pin-meta").textContent = "บันทึกปริมาณฝนรายอำเภอ";
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+/* ============================================================
+ *  PIN SCREEN
+ * ============================================================ */
+function togglePinEye() {
+  const i = document.getElementById("pin-input");
+  i.type = i.type === "password" ? "text" : "password";
+}
+
+async function submitPin() {
+  const pin = document.getElementById("pin-input").value.trim();
+  const err = document.getElementById("pin-error");
+  const errMsg = document.getElementById("pin-error-msg");
+  if (!pin) { errMsg.textContent = "กรุณากรอก PIN"; err.classList.add("on"); return; }
+  const btn = document.getElementById("pin-submit");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ตรวจสอบ...';
+  let resp;
+  if (SELECTED.kind === "station") {
+    resp = await api({ action:"loginstation", station_id:SELECTED.id, pin });
+  } else {
+    resp = await api({ action:"loginamphoe", amphoe:SELECTED.name, pin });
+  }
+  btn.disabled = false; btn.innerHTML = "✓ เข้าระบบ";
+  if (!resp.ok) {
+    errMsg.textContent = resp.error || "PIN ไม่ถูกต้อง";
+    err.classList.add("on");
+    return;
+  }
+  err.classList.remove("on");
+  SESSION_PIN = pin;
+  // Remember PIN
+  if (SELECTED.kind === "station") localStorage.setItem("wat_pin_" + SELECTED.id, pin);
+  else localStorage.setItem("wat_amphoe_pin_" + SELECTED.name, pin);
+  // Save context returned from backend
+  if (resp.station) Object.assign(SELECTED, resp.station);
+  if (resp.amphoe)  Object.assign(SELECTED, resp.amphoe);
+  enterRecord();
+}
+
+/* ============================================================
+ *  RECORD SCREEN
+ * ============================================================ */
+function enterRecord() {
+  showScreen("scr-record");
+  if (SELECTED.kind === "station") enterWaterForm();
+  else enterRainForm();
+}
+
+function enterWaterForm() {
+  document.getElementById("water-form").style.display = "block";
+  document.getElementById("rain-form").style.display = "none";
+  const s = SELECTED;
+  document.getElementById("w-code").textContent = s.id;
+  document.getElementById("w-name").textContent = s.name;
+  document.getElementById("w-meta").textContent = "📍 " + s.amphoe + " · " + s.river + " · ตลิ่ง " + s.bank.toFixed(1) + " ม. · เฝ้าระวัง " + s.warn.toFixed(1) + " ม.";
+  document.getElementById("side-title").textContent = "📊 ประวัติ " + s.id;
+  // default datetime
+  const now = new Date();
+  document.getElementById("w-date").value = now.toISOString().slice(0,10);
+  document.getElementById("w-time").value = now.toTimeString().slice(0,5);
+  document.getElementById("w-level").value = "";
+  document.getElementById("w-flow").value = "";
+  document.getElementById("w-remark").value = "";
+  // restore recorder name
+  const rname = localStorage.getItem("wat_recorder_" + s.id) || "";
+  document.getElementById("w-recorder").value = rname;
+  // Reset status
+  updateWaterStatus();
+  // Load context from backend
+  loadStationContext();
+}
+
+function enterRainForm() {
+  document.getElementById("water-form").style.display = "none";
+  document.getElementById("rain-form").style.display = "block";
+  const a = SELECTED;
+  document.getElementById("r-name").textContent = "🌧️ " + a.name + (a.amphoe?"":"");
+  document.getElementById("r-meta").textContent = "บันทึกปริมาณฝน — " + a.name;
+  document.getElementById("side-title").textContent = "📊 ประวัติฝน " + a.name;
+  const now = new Date();
+  document.getElementById("r-date").value = now.toISOString().slice(0,10);
+  document.getElementById("r-24").value = "";
+  document.getElementById("r-7").value = "";
+  document.getElementById("r-mo").value = "";
+  document.getElementById("r-remark").value = "";
+  const rname = localStorage.getItem("wat_recorder_amphoe_" + a.name) || "";
+  document.getElementById("r-recorder").value = rname;
+  updateRainStatus();
+  loadAmphoeContext();
+}
+
+async function loadStationContext() {
+  const resp = await api({ action:"stationcontext", station_id:SELECTED.id, pin:SESSION_PIN });
+  if (!resp.ok) {
+    document.getElementById("recent-list").innerHTML = '<div class="side-empty">⚠️ โหลดประวัติไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const ctx = resp.station;
+  // Last reading card
+  if (ctx.last_level != null) {
+    document.getElementById("w-last").style.display = "flex";
+    document.getElementById("w-last-val").textContent = parseFloat(ctx.last_level).toFixed(2) + " ม.";
+    document.getElementById("w-last-meta").textContent = (ctx.last_date||"-") + " " + (ctx.last_time||"") + " · " + (ctx.last_recorder||"-") + " · " + ctx.status;
+  } else {
+    document.getElementById("w-last").style.display = "none";
+  }
+  renderRecentWater(ctx.recent || []);
+}
+
+async function loadAmphoeContext() {
+  const resp = await api({ action:"amphoecontext", amphoe:SELECTED.name, pin:SESSION_PIN });
+  if (!resp.ok) {
+    document.getElementById("recent-list").innerHTML = '<div class="side-empty">⚠️ โหลดประวัติไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const ctx = resp.amphoe;
+  if (ctx.last_rain_24hr != null) {
+    document.getElementById("r-last").style.display = "flex";
+    document.getElementById("r-last-val").textContent = parseFloat(ctx.last_rain_24hr).toFixed(1) + " มม. (24 ชม.)";
+    document.getElementById("r-last-meta").textContent = (ctx.last_date||"-") + " · " + (ctx.last_recorder||"-");
+  } else {
+    document.getElementById("r-last").style.display = "none";
+  }
+  renderRecentRain(ctx.recent || []);
+}
+
+function renderRecentWater(arr) {
+  const wrap = document.getElementById("recent-list");
+  if (!arr.length) {
+    wrap.innerHTML = '<div class="side-empty">ยังไม่มีข้อมูลบันทึก<br><small>การบันทึกครั้งแรกของสถานีนี้</small></div>';
+    document.getElementById("side-badge").textContent = "0 รายการ";
+    drawChart([]);
+    return;
+  }
+  const s = SELECTED;
+  wrap.innerHTML = arr.map(r => {
+    const lv = parseFloat(r.level);
+    let color = "#10b981";
+    if (!isNaN(lv)) {
+      if (lv >= s.bank) color = "#dc2626";
+      else if (lv >= s.warn) color = "#f59e0b";
+    }
+    return `
+      <div class="side-row">
+        <span class="dot" style="background:${color};"></span>
+        <div class="left">
+          <div class="dt">${r.date||"-"} ${r.time||""}</div>
+          <div class="lv">${isNaN(lv)?"-":lv.toFixed(2)} ม.</div>
+          <div class="rec">${r.recorder||"-"}${r.remark?" · "+r.remark:""}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("side-badge").textContent = arr.length + " รายการ";
+  // Chart
+  const chartData = [...arr].reverse(); // chronological
+  drawChart(chartData);
+}
+
+function renderRecentRain(arr) {
+  const wrap = document.getElementById("recent-list");
+  if (!arr.length) {
+    wrap.innerHTML = '<div class="side-empty">ยังไม่มีข้อมูลฝน</div>';
+    document.getElementById("side-badge").textContent = "0 รายการ";
+    drawChart([]);
+    return;
+  }
+  wrap.innerHTML = arr.map(r => {
+    const v = parseFloat(r.rain_24hr) || 0;
+    let color = "#0ea5e9";
+    if (v >= 35) color = "#dc2626";
+    else if (v >= 20) color = "#f59e0b";
+    return `
+      <div class="side-row">
+        <span class="dot" style="background:${color};"></span>
+        <div class="left">
+          <div class="dt">${r.date||"-"}</div>
+          <div class="lv">${v.toFixed(1)} มม.</div>
+          <div class="rec">${r.recorder||"-"}${r.remark?" · "+r.remark:""}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("side-badge").textContent = arr.length + " รายการ";
+  drawChart([...arr].reverse(), "rain");
+}
+
+function drawChart(rows, kind="water") {
+  const ctx = document.getElementById("historyChart").getContext("2d");
+  if (historyChart) historyChart.destroy();
+  if (!rows.length) {
+    historyChart = null;
+    return;
+  }
+  const labels = rows.map(r => r.date ? r.date.slice(5) : "");
+  const data = rows.map(r => kind==="water" ? parseFloat(r.level)||null : parseFloat(r.rain_24hr)||0);
+  const isWater = kind === "water";
+  historyChart = new Chart(ctx, {
+    type: isWater ? "line" : "bar",
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: isWater ? "#0284c7" : undefined,
+        backgroundColor: isWater ? "rgba(2,132,199,.1)" : data.map(v=>v>=35?"#dc2626":v>=20?"#f59e0b":"#0ea5e9"),
+        borderWidth: 2,
+        tension: .35,
+        fill: isWater,
+        pointBackgroundColor: "#0284c7",
+        pointRadius: 3,
+        borderRadius: isWater ? 0 : 4,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{titleFont:{family:"Sarabun"},bodyFont:{family:"Sarabun"}}},
+      scales:{
+        x:{ticks:{font:{family:"Sarabun",size:10},maxRotation:0,autoSkip:true,maxTicksLimit:7}},
+        y:{ticks:{font:{family:"Sarabun",size:10}}}
+      }
+    }
+  });
+}
+
+/* ============================================================
+ *  LIVE STATUS BANNER while typing
+ * ============================================================ */
+function updateWaterStatus() {
+  const v = parseFloat(document.getElementById("w-level").value);
+  const s = SELECTED;
+  const banner = document.getElementById("w-status");
+  if (isNaN(v) || !s) {
+    banner.className = "status-banner neutral";
+    banner.querySelector(".msg").textContent = "กรอกระดับน้ำเพื่อตรวจสอบสถานะ";
+    return;
+  }
+  const diff = v - s.bank;
+  if (v >= s.bank) {
+    banner.className = "status-banner crit";
+    banner.querySelector(".msg").innerHTML = `<strong>🚨 วิกฤติ — ล้นตลิ่ง</strong> · เกินระดับตลิ่ง ${diff.toFixed(2)} ม. (ตลิ่ง ${s.bank.toFixed(2)} ม.)`;
+  } else if (v >= s.warn) {
+    banner.className = "status-banner warn";
+    banner.querySelector(".msg").innerHTML = `<strong>⚠️ เฝ้าระวัง</strong> · ใกล้ตลิ่ง ${Math.abs(diff).toFixed(2)} ม. (เฝ้าระวัง ${s.warn.toFixed(2)} ม.)`;
+  } else {
+    banner.className = "status-banner ok";
+    banner.querySelector(".msg").innerHTML = `<strong>✅ ปกติ</strong> · ต่ำกว่าตลิ่ง ${Math.abs(diff).toFixed(2)} ม.`;
+  }
+}
+
+function updateRainStatus() {
+  const v = parseFloat(document.getElementById("r-24").value);
+  const banner = document.getElementById("r-status");
+  if (isNaN(v)) {
+    banner.className = "status-banner neutral";
+    banner.querySelector(".msg").textContent = "กรอกฝน 24 ชม. เพื่อตรวจสอบความรุนแรง";
+    return;
+  }
+  if (v >= 90) {
+    banner.className = "status-banner crit";
+    banner.querySelector(".msg").innerHTML = `<strong>🚨 ฝนหนักมาก</strong> · ${v.toFixed(1)} มม. — เกินเกณฑ์เฝ้าระวังพิเศษ`;
+  } else if (v >= 35) {
+    banner.className = "status-banner crit";
+    banner.querySelector(".msg").innerHTML = `<strong>🌧️ ฝนหนัก</strong> · ${v.toFixed(1)} มม. — ติดตามใกล้ชิด (เกณฑ์ ≥35 มม.)`;
+  } else if (v >= 20) {
+    banner.className = "status-banner warn";
+    banner.querySelector(".msg").innerHTML = `<strong>🌦️ ฝนปานกลาง</strong> · ${v.toFixed(1)} มม.`;
+  } else {
+    banner.className = "status-banner ok";
+    banner.querySelector(".msg").innerHTML = `<strong>☁️ ฝนน้อย</strong> · ${v.toFixed(1)} มม.`;
+  }
+}
+
+/* ============================================================
+ *  SAVE
+ * ============================================================ */
+function showToast(id, msg, ok) {
+  const t = document.getElementById(id);
+  t.textContent = msg;
+  t.className = "toast on " + (ok ? "ok" : "err");
+  setTimeout(() => t.classList.remove("on"), 6000);
+}
+
+async function saveWater() {
+  const s = SELECTED;
+  const date = document.getElementById("w-date").value;
+  const time = document.getElementById("w-time").value;
+  const level = document.getElementById("w-level").value.trim();
+  const flow = document.getElementById("w-flow").value.trim();
+  const recorder = document.getElementById("w-recorder").value.trim();
+  const remark = document.getElementById("w-remark").value.trim();
+  if (!date || !time) return showToast("w-toast", "กรุณากรอกวันที่และเวลา", false);
+  if (!level || isNaN(parseFloat(level))) return showToast("w-toast", "กรุณากรอกระดับน้ำเป็นตัวเลข", false);
+
+  const btn = document.getElementById("w-save");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
+
+  const resp = await api({
+    action:"savewater", pin:SESSION_PIN, station_id:s.id, date, time,
+    level: parseFloat(level),
+    flow: flow ? parseFloat(flow) : "",
+    recorder, remark
+  });
+
+  btn.disabled = false; btn.innerHTML = "💾 บันทึกข้อมูล";
+
+  if (!resp.ok) {
+    showToast("w-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
+    if (resp.code === "INVALID_PIN") {
+      // Force re-login
+      localStorage.removeItem("wat_pin_" + s.id);
+      SESSION_PIN = "";
+    }
+    return;
+  }
+  // remember recorder
+  if (recorder) localStorage.setItem("wat_recorder_" + s.id, recorder);
+  showToast("w-toast", "✅ บันทึกเรียบร้อย · Dashboard จะอัปเดตทันที", true);
+  // Clear level for next entry
+  document.getElementById("w-level").value = "";
+  document.getElementById("w-flow").value = "";
+  document.getElementById("w-remark").value = "";
+  updateWaterStatus();
+  // Reload context to show new record
+  loadStationContext();
+}
+
+async function saveRain() {
+  const a = SELECTED;
+  const date = document.getElementById("r-date").value;
+  const r24 = document.getElementById("r-24").value.trim();
+  const r7 = document.getElementById("r-7").value.trim();
+  const rmo = document.getElementById("r-mo").value.trim();
+  const recorder = document.getElementById("r-recorder").value.trim();
+  const remark = document.getElementById("r-remark").value.trim();
+  if (!date) return showToast("r-toast", "กรุณากรอกวันที่", false);
+  if (!r24 || isNaN(parseFloat(r24))) return showToast("r-toast", "กรุณากรอกฝน 24 ชม.", false);
+
+  const btn = document.getElementById("r-save");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
+
+  const resp = await api({
+    action:"saverain", pin:SESSION_PIN, amphoe:a.name, date,
+    rain_24hr: parseFloat(r24),
+    rain_7day: r7 ? parseFloat(r7) : "",
+    rain_month: rmo ? parseFloat(rmo) : "",
+    recorder, remark
+  });
+
+  btn.disabled = false; btn.innerHTML = "💾 บันทึกข้อมูล";
+
+  if (!resp.ok) {
+    showToast("r-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
+    if (resp.code === "INVALID_PIN") {
+      localStorage.removeItem("wat_amphoe_pin_" + a.name);
+      SESSION_PIN = "";
+    }
+    return;
+  }
+  if (recorder) localStorage.setItem("wat_recorder_amphoe_" + a.name, recorder);
+  showToast("r-toast", "✅ บันทึกฝนเรียบร้อย · หน้า rainfall.html จะอัปเดตทันที", true);
+  document.getElementById("r-24").value = "";
+  document.getElementById("r-7").value = "";
+  document.getElementById("r-mo").value = "";
+  document.getElementById("r-remark").value = "";
+  updateRainStatus();
+  loadAmphoeContext();
+}
+
+function logout() {
+  if (SELECTED) {
+    if (SELECTED.kind === "station") localStorage.removeItem("wat_pin_" + SELECTED.id);
+    else if (SELECTED.kind === "amphoe") localStorage.removeItem("wat_amphoe_pin_" + SELECTED.name);
+  }
+  SELECTED = null;
+  SESSION_PIN = "";
+  showScreen("scr-choose");
+}
+
+/* ============================================================
+ *  ADMIN
+ * ============================================================ */
+function openAdmin() {
+  const stored = sessionStorage.getItem("wat_admin_pin");
+  if (stored) {
+    ADMIN_PIN = stored;
+    document.getElementById("admin-login").classList.add("hidden");
+    document.getElementById("admin-panel").classList.remove("hidden");
+    showScreen("scr-admin");
+    setAdminTab("stations");
+    return;
+  }
+  document.getElementById("admin-login").classList.remove("hidden");
+  document.getElementById("admin-panel").classList.add("hidden");
+  document.getElementById("admin-pin-input").value = "";
+  document.getElementById("admin-pin-error").classList.remove("on");
+  showScreen("scr-admin");
+  setTimeout(()=>document.getElementById("admin-pin-input").focus(),200);
+}
+
+function toggleAdminEye() {
+  const i = document.getElementById("admin-pin-input");
+  i.type = i.type === "password" ? "text" : "password";
+}
+
+async function adminLogin() {
+  const pin = document.getElementById("admin-pin-input").value.trim();
+  const err = document.getElementById("admin-pin-error");
+  const errMsg = document.getElementById("admin-pin-error-msg");
+  if (!pin) { errMsg.textContent = "กรุณากรอก Admin PIN"; err.classList.add("on"); return; }
+  const btn = document.getElementById("admin-submit");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ตรวจสอบ...';
+  const resp = await api({ action:"adminlogin", pin });
+  btn.disabled = false; btn.innerHTML = "✓ เข้าระบบผู้ดูแล";
+  if (!resp.ok) {
+    errMsg.textContent = resp.error || "PIN ไม่ถูกต้อง";
+    err.classList.add("on");
+    return;
+  }
+  ADMIN_PIN = pin;
+  sessionStorage.setItem("wat_admin_pin", pin);
+  document.getElementById("admin-login").classList.add("hidden");
+  document.getElementById("admin-panel").classList.remove("hidden");
+  setAdminTab("stations");
+}
+
+function adminLogout() {
+  ADMIN_PIN = "";
+  sessionStorage.removeItem("wat_admin_pin");
+  showScreen("scr-choose");
+}
+
+function setAdminTab(t) {
+  document.querySelectorAll(".admin-tab").forEach((b,i) => b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1)));
+  document.getElementById("admin-tab-stations").classList.toggle("hidden", t!=="stations");
+  document.getElementById("admin-tab-amphoes").classList.toggle("hidden", t!=="amphoes");
+  if (t === "stations") loadStationPins();
+  else loadAmphoePins();
+}
+
+async function loadStationPins() {
+  const wrap = document.getElementById("station-pin-content");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังโหลด PIN รายสถานี...</div>';
+  const resp = await api({ action:"liststationpins", adminpin:ADMIN_PIN });
+  if (!Array.isArray(resp) && resp && resp.ok === false) {
+    if (resp.code === "INVALID_PIN" || (resp.error||"").includes("ผู้ดูแล")) {
+      adminLogout(); openAdmin(); return;
+    }
+    wrap.innerHTML = '<div class="admin-empty">⚠️ โหลดไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const rows = Array.isArray(resp) ? resp : [];
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มี PIN ในระบบ — กดสร้างค่าเริ่มต้นเพื่อสร้าง PIN ให้ทุกสถานี (Default: รหัสสถานี + 1234)<br><button class="btn btn-pri" onclick="initStationPins()" style="background:#b45309;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกสถานี</button></div>`;
+    return;
+  }
+  const hasNone = rows.some(r => !r.has_pin);
+  let topHtml = "";
+  if (hasNone) {
+    topHtml = `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:12px 16px;border-radius:11px;margin-bottom:14px;font-size:13px;">
+      ⚠️ มี ${rows.filter(r=>!r.has_pin).length} สถานียังไม่มี PIN · 
+      <button class="btn-mini gen" onclick="initStationPins()" style="margin-left:8px;">สร้าง PIN เริ่มต้นให้ทุกสถานี</button>
+    </div>`;
+  }
+  wrap.innerHTML = topHtml + `
+    <div class="tbl-wrap">
+      <table class="atbl">
+        <thead><tr>
+          <th>รหัส</th><th>สถานี · ลำน้ำ</th><th>อำเภอ</th><th>PIN</th><th>ผู้รับผิดชอบ</th><th>ใช้ล่าสุด</th><th></th>
+        </tr></thead>
+        <tbody>
+        ${rows.map(r => `
+          <tr data-id="${r.station_id}">
+            <td><span class="code">${r.station_id}</span></td>
+            <td><strong>${r.name||"-"}</strong><br><span class="small muted">${r.river||""}</span></td>
+            <td>${r.amphoe||"-"}</td>
+            <td>
+              <input class="pin-edit" type="text" value="${r.pin||""}" placeholder="ใส่ PIN ใหม่" data-field="pin" />
+              <span class="pill-st ${r.has_pin?"has":"no"}" style="margin-left:6px;">${r.has_pin?"มี PIN":"ไม่มี"}</span>
+            </td>
+            <td><input class="txt-edit" type="text" value="${escapeHtml(r.recorder_name||"")}" placeholder="ชื่อ" data-field="recorder" /></td>
+            <td class="small muted">${r.last_used||"-"}</td>
+            <td>
+              <button class="btn-mini gen" onclick="generatePin(this,'station')" title="สุ่ม PIN">🎲</button>
+              <button class="btn-mini save" onclick="saveStationPinRow(this,'${r.station_id}')">บันทึก</button>
+            </td>
+          </tr>
+        `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function loadAmphoePins() {
+  const wrap = document.getElementById("amphoe-pin-content");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังโหลด PIN รายอำเภอ...</div>';
+  const resp = await api({ action:"listamphoepins", adminpin:ADMIN_PIN });
+  if (!Array.isArray(resp) && resp && resp.ok === false) {
+    if (resp.code === "INVALID_PIN" || (resp.error||"").includes("ผู้ดูแล")) { adminLogout(); openAdmin(); return; }
+    wrap.innerHTML = '<div class="admin-empty">⚠️ โหลดไม่สำเร็จ</div>';
+    return;
+  }
+  const rows = Array.isArray(resp) ? resp : [];
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มี PIN รายอำเภอ — กดสร้างค่าเริ่มต้นเพื่อสร้าง PIN ทั้ง 6 อำเภอ<br><button class="btn btn-pri" onclick="initAmphoePins()" style="background:#b45309;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกอำเภอ</button></div>`;
+    return;
+  }
+  const hasNone = rows.some(r => !r.has_pin);
+  let topHtml = "";
+  if (hasNone) {
+    topHtml = `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:12px 16px;border-radius:11px;margin-bottom:14px;font-size:13px;">
+      ⚠️ มี ${rows.filter(r=>!r.has_pin).length} อำเภอยังไม่มี PIN · 
+      <button class="btn-mini gen" onclick="initAmphoePins()" style="margin-left:8px;">สร้าง PIN เริ่มต้นให้ทุกอำเภอ</button>
+    </div>`;
+  }
+  wrap.innerHTML = topHtml + `
+    <div class="tbl-wrap">
+      <table class="atbl">
+        <thead><tr><th>อำเภอ</th><th>PIN</th><th>ผู้รับผิดชอบ</th><th>ใช้ล่าสุด</th><th></th></tr></thead>
+        <tbody>
+        ${rows.map(r => `
+          <tr data-am="${escapeHtml(r.amphoe)}">
+            <td><strong>${r.amphoe||"-"}</strong></td>
+            <td>
+              <input class="pin-edit" type="text" value="${r.pin||""}" placeholder="ใส่ PIN ใหม่" data-field="pin" />
+              <span class="pill-st ${r.has_pin?"has":"no"}" style="margin-left:6px;">${r.has_pin?"มี PIN":"ไม่มี"}</span>
+            </td>
+            <td><input class="txt-edit" type="text" value="${escapeHtml(r.recorder_name||"")}" data-field="recorder" placeholder="ชื่อ" /></td>
+            <td class="small muted">${r.last_used||"-"}</td>
+            <td>
+              <button class="btn-mini gen" onclick="generatePin(this,'amphoe')">🎲</button>
+              <button class="btn-mini save" onclick="saveAmphoePinRow(this,'${escapeHtml(r.amphoe)}')">บันทึก</button>
+            </td>
+          </tr>
+        `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function generatePin(btn, kind) {
+  const tr = btn.closest("tr");
+  const inp = tr.querySelector('input[data-field="pin"]');
+  inp.value = Math.floor(1000 + Math.random()*9000).toString();
+  inp.focus();
+}
+
+function escapeHtml(s) {
+  return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function saveStationPinRow(btn, stid) {
+  const tr = btn.closest("tr");
+  const pin = tr.querySelector('input[data-field="pin"]').value.trim();
+  const rec = tr.querySelector('input[data-field="recorder"]').value.trim();
+  if (!pin || pin.length < 3) { alert("PIN ต้องมีอย่างน้อย 3 ตัวอักษร"); return; }
+  btn.disabled = true; btn.textContent = "...";
+  const resp = await api({ action:"setstationpin", adminpin:ADMIN_PIN, station_id:stid, new_pin:pin, recorder_name:rec });
+  btn.disabled = false; btn.textContent = "บันทึก";
+  if (!resp.ok) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  btn.textContent = "✓ แล้ว";
+  btn.style.background = "#10b981"; btn.style.color = "#fff";
+  setTimeout(()=>{btn.textContent="บันทึก";btn.style.background="";btn.style.color="";},2000);
+  loadStationPins();
+}
+
+async function saveAmphoePinRow(btn, am) {
+  const tr = btn.closest("tr");
+  const pin = tr.querySelector('input[data-field="pin"]').value.trim();
+  const rec = tr.querySelector('input[data-field="recorder"]').value.trim();
+  if (!pin || pin.length < 3) { alert("PIN ต้องมีอย่างน้อย 3 ตัวอักษร"); return; }
+  btn.disabled = true; btn.textContent = "...";
+  const resp = await api({ action:"setamphoepin", adminpin:ADMIN_PIN, amphoe:am, new_pin:pin, recorder_name:rec });
+  btn.disabled = false; btn.textContent = "บันทึก";
+  if (!resp.ok) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  btn.textContent = "✓ แล้ว";
+  btn.style.background = "#10b981"; btn.style.color = "#fff";
+  setTimeout(()=>{btn.textContent="บันทึก";btn.style.background="";btn.style.color="";},2000);
+  loadAmphoePins();
+}
+
+async function initStationPins() {
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกสถานี?\n(เฉพาะสถานีที่ยังไม่มี PIN — จะใช้รหัสสถานี + 4 หลักสุ่ม)")) return;
+  const resp = await api({ action:"initstationpins", adminpin:ADMIN_PIN });
+  if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  loadStationPins();
+}
+
+async function initAmphoePins() {
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกอำเภอ?\n(เฉพาะอำเภอที่ยังไม่มี PIN)")) return;
+  const resp = await api({ action:"initamphoepins", adminpin:ADMIN_PIN });
+  if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  loadAmphoePins();
+}
+
+/* ============================================================
+ *  INIT
+ * ============================================================ */
+renderChoose();
+</script>
+</body>
+</html>

@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อ่างเก็บน้ำ | สถานการณ์น้ำ จ.หนองบัวลำภู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #f0fdfa;
+  --card: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #ccfbf1;
+  --river: #0891b2;
+  --river-deep: #164e63;
+  --river-light: #cffafe;
+  --full: #0284c7;
+  --normal: #0d9488;
+  --warn: #f59e0b;
+  --crit: #dc2626;
+  --brand: #164e63;
+  --shadow: 0 2px 12px rgba(6,78,59,.07);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+/* HEADER */
+header {
+  background: linear-gradient(135deg, #083344 0%, #155e75 50%, #0e7490 100%);
+  color: #fff; position: sticky; top: 0; z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+}
+header::after {
+  content: ""; display: block; height: 3px;
+  background: linear-gradient(90deg, #06b6d4, #67e8f9, #a5f3fc, #06b6d4);
+  background-size: 200% 100%; animation: shimmer 3s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+.hdr-inner {
+  max-width: 1600px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; gap: 16px; flex-wrap: wrap;
+}
+.hdr-brand { display: flex; align-items: center; gap: 14px; }
+.hdr-logo {
+  width: 50px; height: 50px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(6,182,212,.35), rgba(8,51,68,.2));
+  border: 1px solid rgba(103,232,249,.4);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(6,182,212,.3);
+  animation: logoGlow 3s ease-in-out infinite;
+}
+@keyframes logoGlow { 50% { box-shadow: 0 0 32px rgba(6,182,212,.55); } }
+.hdr-title { font-size: 20px; font-weight: 800; font-family: 'Kanit', sans-serif; }
+.hdr-sub { font-size: 11px; color: #a5f3fc; opacity: .85; margin-top: 2px; letter-spacing: .5px; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+.hdr-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,.25); border: 1px solid rgba(103,232,249,.3);
+  padding: 7px 14px; border-radius: 10px; font-size: 12px; color: #cffafe;
+}
+.hdr-badge .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+  box-shadow: 0 0 8px #22c55e; animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 50% { opacity: .4; transform: scale(.8); } }
+.hdr-time { font-family: 'Courier New', monospace; font-size: 13px; color: #67e8f9; letter-spacing: 1px; }
+
+/* NAV */
+nav { background: #fff; border-bottom: 1px solid var(--line); }
+.nav-inner { max-width: 1600px; margin: 0 auto; display: flex; padding: 0 24px; overflow-x: auto; }
+nav a { padding: 14px 20px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; border-bottom: 3px solid transparent; transition: all .2s; }
+nav a:hover { color: var(--river); }
+nav a.active { color: var(--brand); border-bottom-color: var(--river); font-weight: 700; }
+
+/* MAIN */
+main { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+/* SUMMARY ROW */
+.summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.sc { background: #fff; border-radius: 14px; padding: 16px 18px; border: 1px solid var(--line); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.sc::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 14px 0 0 14px; }
+.sc.info::before   { background: var(--river); }
+.sc.full::before   { background: var(--full); }
+.sc.normal::before { background: var(--normal); }
+.sc.warn::before   { background: var(--warn); }
+.sc.crit::before   { background: var(--crit); }
+.sc-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.sc-value { font-size: 32px; font-weight: 800; line-height: 1; }
+.sc.info .sc-value   { color: var(--river-deep); }
+.sc.full .sc-value   { color: #1e40af; }
+.sc.normal .sc-value { color: #0f766e; }
+.sc.warn .sc-value   { color: #92400e; }
+.sc.crit .sc-value   { color: #991b1b; }
+.sc-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* GRID MAIN */
+.grid-main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media(max-width:1100px) { .grid-main { grid-template-columns: 1fr; } }
+
+/* MAP PANEL */
+.panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { padding: 13px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #f0fdfa, #fff); display: flex; align-items: center; justify-content: space-between; }
+.panel-head h2 { font-size: 14px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+.panel-head h2::before { content: ""; width: 3px; height: 16px; background: var(--river); border-radius: 2px; }
+#resMap { height: 480px; }
+
+/* RESERVOIR LIST */
+.res-list { max-height: 480px; overflow-y: auto; }
+.res-item { padding: 11px 16px; border-bottom: 1px solid #f0fdfa; cursor: pointer; display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; transition: background .15s; }
+.res-item:hover { background: #f0fdfa; }
+.res-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.res-dot.full   { background: #2563eb; }
+.res-dot.normal { background: #0d9488; }
+.res-dot.warn   { background: #f59e0b; }
+.res-dot.crit   { background: #dc2626; }
+.res-name { font-size: 13px; font-weight: 600; }
+.res-sub  { font-size: 10px; color: var(--muted); }
+.res-pct  { font-size: 15px; font-weight: 800; color: var(--brand); text-align: right; }
+.res-pct small { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+
+/* GAUGE CARDS SCROLLER */
+.scene-wrap { background: #fff; border-radius: 16px; border: 1px solid #a5f3fc; box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+.scene-head { padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #f0fdfa, #fff); }
+.scene-head h2 { font-size: 14px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+.scene-head h2::before { content: ""; width: 3px; height: 16px; background: var(--river); border-radius: 2px; }
+.gauges-scroll { overflow-x: auto; padding: 18px 20px 20px; }
+.gauges-row { display: flex; gap: 12px; min-width: max-content; }
+
+/* GAUGE CARD — same structure as paneang */
+.gauge-card {
+  background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px;
+  padding: 14px 12px 12px; width: 148px; flex-shrink: 0;
+  cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s; position: relative;
+}
+.gauge-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(6,182,212,.2); border-color: var(--river); }
+.gauge-card.full   { border-top: 4px solid #2563eb; }
+.gauge-card.normal { border-top: 4px solid var(--normal); }
+.gauge-card.warn   { border-top: 4px solid var(--warn); }
+.gauge-card.crit   { border-top: 4px solid var(--crit); animation: cardPulse 2s ease-in-out infinite; }
+@keyframes cardPulse { 50% { box-shadow: 0 4px 20px rgba(220,38,38,.3); } }
+.gc-no   { position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 700; color: var(--muted); background: rgba(0,0,0,.06); padding: 2px 6px; border-radius: 5px; }
+.gc-name { font-size: 11.5px; font-weight: 700; color: var(--ink); margin-bottom: 2px; padding-right: 28px; line-height: 1.3; }
+.gc-loc  { font-size: 10px; color: var(--muted); margin-bottom: 10px; }
+
+.gc-tube-area { display: flex; justify-content: center; margin-bottom: 10px; }
+.gc-tube-inner { position: relative; }
+.gc-tube {
+  width: 32px; height: 110px; background: #e2e8f0; border-radius: 16px;
+  overflow: hidden; border: 2px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,.1); position: relative;
+}
+.gc-fill { position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0 0 14px 14px; transition: height 1.4s cubic-bezier(.34,1.26,.64,1); }
+.gc-fill::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,.4); border-radius: 50%; animation: wave 2.2s ease-in-out infinite; }
+@keyframes wave { 50% { transform: scaleX(1.1) translateY(2px); } }
+.gc-fill.full   { background: linear-gradient(180deg, #93c5fd, #2563eb); }
+.gc-fill.normal { background: linear-gradient(180deg, #99f6e4, #0d9488); }
+.gc-fill.warn   { background: linear-gradient(180deg, #fde68a, #f59e0b); }
+.gc-fill.crit   { background: linear-gradient(180deg, #fca5a5, #dc2626); }
+.gc-line { position: absolute; left: 0; right: 0; height: 2px; z-index: 5; }
+.gc-line.warn-line { background: rgba(245,158,11,.7); }
+.gc-line.crit-line { background: rgba(220,38,38,.75); }
+.gc-ticks { position: absolute; top: 4px; right: 3px; bottom: 4px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.gc-tick { width: 5px; height: 1px; background: rgba(0,0,0,.18); }
+.gc-tick:nth-child(5n+1) { width: 8px; background: rgba(0,0,0,.3); }
+.gc-val-bbl {
+  position: absolute; right: -56px; top: 50%; transform: translateY(-50%);
+  background: var(--brand); color: #fff; font-size: 9.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.2); pointer-events: none;
+}
+.gc-val-bbl::before { content: ""; position: absolute; left: -5px; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-right-color: var(--brand); }
+.gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.gc-stat { text-align: center; background: rgba(0,0,0,.03); border-radius: 7px; padding: 5px 3px; }
+.gc-stat .sv { font-size: 14px; font-weight: 800; color: var(--brand); line-height: 1; }
+.gc-stat .sv.warn-v { color: var(--warn); }
+.gc-stat .sv.crit-v { color: var(--crit); }
+.gc-stat .sl { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.gc-badge { display: flex; align-items: center; justify-content: center; width: 100%; padding: 5px; border-radius: 8px; margin-top: 8px; font-size: 11px; font-weight: 700; }
+.gc-badge.full   { background: #dbeafe; color: #1e40af; }
+.gc-badge.normal { background: #ccfbf1; color: #0f766e; }
+.gc-badge.warn   { background: #fef3c7; color: #a16207; }
+.gc-badge.crit   { background: #fee2e2; color: #b91c1c; }
+
+/* DETAIL PANEL */
+.detail-panel { background: #fff; border-radius: 16px; border: 1px solid #a5f3fc; box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; display: none; }
+.detail-panel.show { display: block; animation: slideIn .3s ease-out; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } }
+.dp-head { padding: 14px 20px; background: linear-gradient(135deg, #164e63, #0891b2); color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.dp-head h3 { font-size: 15px; font-weight: 700; }
+.dp-close { width: 30px; height: 30px; background: rgba(255,255,255,.2); border: none; border-radius: 8px; color: #fff; font-size: 20px; cursor: pointer; }
+.dp-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+@media(max-width:800px) { .dp-body { grid-template-columns: 1fr; } }
+.dp-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dp-info-item { background: #f0fdfa; border-radius: 10px; padding: 12px; border: 1px solid #ccfbf1; }
+.dp-info-item .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.dp-info-item .value { font-size: 18px; font-weight: 800; color: var(--brand); }
+.dp-info-item .unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+.dp-chart-wrap { height: 190px; }
+.dp-info-list { display: flex; flex-direction: column; gap: 7px; }
+.dp-info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f0fdfa; border-radius: 8px; border: 1px solid #ccfbf1; font-size: 12px; }
+.dp-info-row .dr-label { color: var(--muted); }
+.dp-info-row .dr-val { font-weight: 700; }
+
+/* INPUT FORM */
+.input-panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+.input-head { padding: 13px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #f0fdfa, #fff); display: flex; align-items: center; justify-content: space-between; }
+.input-head h2 { font-size: 14px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+.input-head h2::before { content: ""; width: 3px; height: 16px; background: var(--river); border-radius: 2px; }
+.input-body { padding: 20px 24px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+.form-group input, .form-group select {
+  width: 100%; padding: 9px 12px; border: 1.5px solid var(--line);
+  border-radius: 8px; font-family: 'Sarabun', sans-serif; font-size: 13px;
+  color: var(--ink); background: #f8fffe;
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--river); box-shadow: 0 0 0 3px rgba(8,145,178,.12);
+}
+.form-actions { display: flex; gap: 10px; align-items: center; }
+.btn-save {
+  padding: 10px 24px; background: linear-gradient(135deg, #0891b2, #0e7490);
+  color: #fff; border: none; border-radius: 10px;
+  font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 12px rgba(8,145,178,.3);
+}
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(8,145,178,.4); }
+.btn-save:active { transform: translateY(0); }
+.btn-save:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.save-status { font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: none; }
+.save-status.success { background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; gap: 6px; }
+.save-status.error   { background: #fee2e2; color: #b91c1c; display: inline-flex; align-items: center; gap: 6px; }
+
+/* CHARTS */
+.charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media(max-width:900px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
+.cp-head { padding: 13px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #f0fdfa, #fff); }
+.cp-head h3 { font-size: 13px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+.cp-head h3::before { content: ""; width: 3px; height: 14px; background: var(--river); border-radius: 2px; }
+.cp-body { padding: 14px 18px; height: 250px; }
+
+/* TABLE */
+.table-panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+.tp-head { padding: 13px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #f0fdfa, #fff); display: flex; align-items: center; justify-content: space-between; }
+.tp-head h3 { font-size: 13px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+.tp-head h3::before { content: ""; width: 3px; height: 14px; background: var(--river); border-radius: 2px; }
+.tp-head span { font-size: 12px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f0fdfa; color: var(--muted); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; letter-spacing: .3px; position: sticky; top: 0; }
+td { padding: 9px 14px; border-bottom: 1px solid #f0fdfa; vertical-align: middle; }
+tbody tr:hover { background: #f0fdfa; cursor: pointer; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.pill.full   { background: #dbeafe; color: #1e40af; }
+.pill.normal { background: #ccfbf1; color: #0f766e; }
+.pill.warn   { background: #fef3c7; color: #a16207; }
+.pill.crit   { background: #fee2e2; color: #b91c1c; }
+.pct-bar-wrap { width: 80px; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.pct-bar { height: 100%; border-radius: 4px; }
+.pct-bar.full   { background: #2563eb; }
+.pct-bar.normal { background: var(--normal); }
+.pct-bar.warn   { background: var(--warn); }
+.pct-bar.crit   { background: var(--crit); }
+
+/* TOOLTIP */
+.leaflet-popup-content { font-family: 'Sarabun', sans-serif; min-width: 200px; }
+.pop-title { font-weight: 800; font-size: 14px; color: var(--brand); margin-bottom: 4px; }
+.pop-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-bottom: 1px dashed #e2e8f0; }
+.pop-row:last-child { border: none; }
+
+footer { background: #083344; color: #67e8f9; padding: 24px; text-align: center; font-size: 12px; }
+footer strong { color: #fff; }
+::-webkit-scrollbar { width: 8px; height: 6px; }
+::-webkit-scrollbar-track { background: #f0fdfa; }
+::-webkit-scrollbar-thumb { background: #67e8f9; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-inner">
+    <div class="hdr-brand">
+      <div class="hdr-logo">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7c3-2 6-2 9 0s6 2 9 0"/><path d="M3 12c3-2 6-2 9 0s6 2 9 0"/>
+          <path d="M3 17c3-2 6-2 9 0s6 2 9 0"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hdr-title">อ่างเก็บน้ำ จ.หนองบัวลำภู</div>
+        <div class="hdr-sub">โครงการชลประทานหนองบัวลำภู · 14 อ่างเก็บน้ำ · รวมความจุ 31.50 ล้าน ลบ.ม.</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-badge">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusLabel">กำลังโหลด...</span>
+      </div>
+      <div class="hdr-time" id="liveTime">--:--:--</div>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
+    <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
+    <a href="mong.html">🌿 ลำน้ำโมง</a>
+    <a href="mo.html">💧 ลำน้ำมอ</a>
+    <a href="phuay.html">🌀 ลำน้ำพวย</a>
+    <a href="rainfall.html">🌧️ ปริมาณฝน</a>
+    <a href="reservoir.html" class="active">🏞️ อ่างเก็บน้ำ</a>
+    <a href="input.html">📝 บันทึกข้อมูล</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- Summary -->
+<div class="summary-row" id="summaryRow">
+  <div class="sc info"><div class="sc-label">อ่างเก็บน้ำทั้งหมด</div><div class="sc-value">14</div><div class="sc-sub">โครงการชลประทานหนองบัวลำภู</div></div>
+  <div class="sc info"><div class="sc-label">ความจุรวม</div><div class="sc-value">31.50</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
+  <div class="sc normal"><div class="sc-label">ปริมาณน้ำรวม</div><div class="sc-value" id="scVolume">—</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
+  <div class="sc full"><div class="sc-label">% เก็บกักเฉลี่ย</div><div class="sc-value" id="scAvgPct">—</div><div class="sc-sub">% ของความจุ</div></div>
+  <div class="sc warn"><div class="sc-label">อ่างน้ำน้อย (&lt;30%)</div><div class="sc-value" id="scLow">—</div><div class="sc-sub">แห่ง</div></div>
+  <div class="sc normal"><div class="sc-label">อัปเดตล่าสุด</div><div class="sc-value" style="font-size:18px;" id="scUpdate">—</div><div class="sc-sub">น.</div></div>
+</div>
+
+<!-- Map + List -->
+<div class="grid-main">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>แผนที่อ่างเก็บน้ำ 14 แห่ง</h2>
+      <span style="font-size:11px;color:var(--muted)">พิกัดจริงจากโครงการชลประทาน</span>
+    </div>
+    <div id="resMap"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>รายการอ่างเก็บน้ำ</h2>
+      <span style="font-size:12px;color:var(--muted)" id="listInfo">14 แห่ง</span>
+    </div>
+    <div class="res-list" id="resList"></div>
+  </div>
+</div>
+
+<!-- Gauge Cards -->
+<div class="scene-wrap">
+  <div class="scene-head">
+    <h2>🏞️ ระดับน้ำในอ่างเก็บน้ำ — % เก็บกัก</h2>
+    <span style="font-size:12px;color:var(--muted)" id="lastUpdate">—</span>
+  </div>
+  <div class="gauges-scroll">
+    <div class="gauges-row" id="gaugesRow"></div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="dp-head">
+    <h3 id="dpTitle">—</h3>
+    <button class="dp-close" onclick="closeDetail()">×</button>
+  </div>
+  <div class="dp-body">
+    <div class="dp-info-grid" id="dpInfo"></div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">กราฟ % เก็บกักเทียบความจุ</div>
+      <div class="dp-chart-wrap"><canvas id="dpChart"></canvas></div>
+    </div>
+    <div class="dp-info-list" id="dpInfoList"></div>
+  </div>
+</div>
+
+<!-- Input Form -->
+<div class="input-panel">
+  <div class="input-head">
+    <h2>📝 บันทึกข้อมูลปริมาณน้ำในอ่าง</h2>
+    <span style="font-size:11px;color:var(--muted)">เชื่อมต่อ Google Sheets อัตโนมัติ</span>
+  </div>
+  <div class="input-body">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>วันที่บันทึก</label>
+        <input type="date" id="fDate"/>
+      </div>
+      <div class="form-group">
+        <label>เลือกอ่างเก็บน้ำ</label>
+        <select id="fReservoir">
+          <option value="">— เลือกอ่าง —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ปริมาณน้ำปัจจุบัน (ล้าน ลบ.ม.)</label>
+        <input type="number" id="fVolume" step="0.001" min="0" placeholder="เช่น 1.250"/>
+      </div>
+      <div class="form-group">
+        <label>ระดับน้ำ (ม.รทก.) — ถ้ามี</label>
+        <input type="number" id="fLevel" step="0.01" placeholder="ไม่บังคับ"/>
+      </div>
+      <div class="form-group">
+        <label>น้ำไหลเข้า (ล้าน ลบ.ม./วัน) — ถ้ามี</label>
+        <input type="number" id="fInflow" step="0.001" placeholder="ไม่บังคับ"/>
+      </div>
+      <div class="form-group">
+        <label>น้ำระบาย (ล้าน ลบ.ม./วัน) — ถ้ามี</label>
+        <input type="number" id="fOutflow" step="0.001" placeholder="ไม่บังคับ"/>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="btnSave" onclick="saveReservoirData()">💾 บันทึกข้อมูล</button>
+      <div class="save-status" id="saveStatus"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;">
+      ⚠️ ต้องตั้งค่า <code>API_URL</code> ในไฟล์นี้ก่อน จึงจะบันทึกไปยัง Google Sheets ได้
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-row">
+  <div class="chart-panel">
+    <div class="cp-head"><h3>% เก็บกักรายอ่าง</h3></div>
+    <div class="cp-body"><canvas id="pctChart"></canvas></div>
+  </div>
+  <div class="chart-panel">
+    <div class="cp-head"><h3>ปริมาณน้ำแยกตามอำเภอ (ล้าน ลบ.ม.)</h3></div>
+    <div class="cp-body"><canvas id="amphoeChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-panel">
+  <div class="tp-head">
+    <h3>ตารางข้อมูลอ่างเก็บน้ำทั้งหมด 14 แห่ง</h3>
+    <span id="tableTime">—</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>ชื่ออ่าง</th><th>ที่ตั้ง</th><th>ประเภท</th>
+          <th style="text-align:right">ความจุ (ล้าน ลบ.ม.)</th>
+          <th style="text-align:right">ปริมาณน้ำปัจจุบัน</th>
+          <th>% เก็บกัก</th>
+          <th style="text-align:right">สร้างเสร็จ</th>
+          <th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong><br>
+  ข้อมูลอ้างอิงจากโครงการชลประทานหนองบัวลำภู สำนักงานชลประทานที่ 5<br>
+  © 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู
+</footer>
+
+<script>
+/* =============================================================
+ *  CONFIG
+ * ============================================================= */
+const API_URL = window.APP_CONFIG?.API_URL || ""; // ตั้งค่าใน config.js
+
+/* =============================================================
+ *  RESERVOIR DATA — พิกัดจริงจาก XLS โครงการชลประทาน
+ * ============================================================= */
+const RESERVOIRS = [
+  {id:"R01", no:1,  name:"ห้วยยางเงาะ",      village:"ถ้ำกลองเพล",    tambon:"โนนทัน",    amphoe:"เมืองหนองบัวลำภู", lat:17.22588, lon:102.51815, type:"เล็ก พระราชดำริ",   capacity:0.400,  year:2525},
+  {id:"R02", no:2,  name:"ห้วยซับม่วง",       village:"หนองกุงแก้ว",  tambon:"หนองกุงแก้ว",amphoe:"ศรีบุญเรือง",       lat:17.14711, lon:102.09072, type:"เล็ก เงินกู้KEW",  capacity:0.750,  year:2532},
+  {id:"R03", no:3,  name:"ห้วยเหล่ายาง",      village:"ภูพานทอง",     tambon:"หนองบัว",   amphoe:"เมืองหนองบัวลำภู", lat:17.23760, lon:102.46250, type:"กลาง พระราชดำริ",  capacity:2.469,  year:2534},
+  {id:"R04", no:4,  name:"อ่างน้ำบอง",        village:"ตาดไฮ",        tambon:"โคกม่วง",   amphoe:"โนนสัง",            lat:16.90712, lon:102.41704, type:"กลาง พระราชดำริ",  capacity:20.800, year:2560},
+  {id:"R05", no:5,  name:"ห้วยสนามชัย",       village:"สนามชัย",      tambon:"กุดแห่",    amphoe:"นากลาง",            lat:17.43410, lon:102.13761, type:"เล็ก พระราชดำริ",  capacity:0.330,  year:2527},
+  {id:"R06", no:6,  name:"ผาวัง",             village:"โคกนาเหล่า",   tambon:"นาเหล่า",   amphoe:"นาวัง",             lat:17.30870, lon:102.04330, type:"เล็ก เงินกู้KEW",  capacity:2.122,  year:2531},
+  {id:"R07", no:7,  name:"ห้วยลาดกั่ว",       village:"นาแก",         tambon:"นาแก",      amphoe:"นาวัง",             lat:17.40610, lon:102.07699, type:"เล็ก เงินกู้KEW",  capacity:0.842,  year:2531},
+  {id:"R08", no:8,  name:"ห้วยโซ่",           village:"โคกนกพัฒนา",   tambon:"บุญทัน",    amphoe:"สุวรรณคูหา",        lat:17.60320, lon:102.11548, type:"เล็ก พระราชดำริ",  capacity:1.430,  year:2534},
+  {id:"R09", no:9,  name:"ห้วยไร่ 1",         village:"โนนธาตุพัฒนา", tambon:"ดงสวรรค์",  amphoe:"นากลาง",            lat:17.48270, lon:102.17845, type:"โครงการ คจก.",     capacity:0.200,  year:2535},
+  {id:"R10", no:10, name:"ห้วยไร่ 2",         village:"สระแก้ว",      tambon:"ดงสวรรค์",  amphoe:"นากลาง",            lat:17.46310, lon:102.21227, type:"โครงการ คจก.",     capacity:0.695,  year:2535},
+  {id:"R11", no:11, name:"ห้วยลำใย",          village:"เกษมมณี",      tambon:"ดงสวรรค์",  amphoe:"นากลาง",            lat:17.44550, lon:102.22660, type:"โครงการ คจก.",     capacity:0.450,  year:2535},
+  {id:"R12", no:12, name:"ห้วยโป่งซาง",       village:"ป่าแดงงาม",    tambon:"กุดแห่",    amphoe:"นากลาง",            lat:17.39440, lon:102.17153, type:"เล็ก พระราชดำริ",  capacity:0.300,  year:2536},
+  {id:"R13", no:13, name:"ห้วยบ้านคลองเจริญ", village:"คลองเจริญ",    tambon:"บุญทัน",    amphoe:"สุวรรณคูหา",        lat:17.59880, lon:102.14758, type:"เล็ก พระราชดำริ",  capacity:0.623,  year:2536},
+  {id:"R14", no:14, name:"ผาจ้ำน้ำ",          village:"ภูเขาวง",      tambon:"เทพคีรี",   amphoe:"นาวัง",             lat:17.26380, lon:102.11873, type:"เล็ก พระราชดำริ",  capacity:0.085,  year:2555},
+];
+
+const TOTAL_CAPACITY = RESERVOIRS.reduce((a, r) => a + r.capacity, 0);
+
+/* current data store — ตำแหน่งนี้จะถูก override จาก API */
+let resData = {};
+
+function initDemoData() {
+  // ค่า demo คร่าวๆ ราว 40–85% ของความจุ
+  const demos = [0.72, 0.60, 0.55, 0.48, 0.68, 0.82, 0.73, 0.65, 0.50, 0.70, 0.55, 0.62, 0.78, 0.44];
+  RESERVOIRS.forEach((r, i) => {
+    resData[r.id] = { current: +(r.capacity * demos[i]).toFixed(3) };
+  });
+}
+
+function pctOf(r) {
+  const c = resData[r.id]?.current ?? r.capacity * 0.6;
+  return Math.round((c / r.capacity) * 100);
+}
+
+function statusOf(r) {
+  const p = pctOf(r);
+  if (p >= 80) return "full";
+  if (p >= 40) return "normal";
+  if (p >= 20) return "warn";
+  return "crit";
+}
+
+const ST_LABEL = { full:"สูง/เต็ม", normal:"ปกติ", warn:"น้ำน้อย", crit:"วิกฤติ" };
+const ST_EMOJI = { full:"💧", normal:"🟢", warn:"🟡", crit:"🔴" };
+
+/* CLOCK */
+function tick() {
+  const t = new Date().toLocaleTimeString("th-TH", {hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false});
+  const el = document.getElementById("liveTime");
+  if (el) el.textContent = t;
+}
+setInterval(tick, 1000); tick();
+
+/* SUMMARY */
+function renderSummary() {
+  let totalVol = 0, lowCount = 0;
+  RESERVOIRS.forEach(r => {
+    const cur = resData[r.id]?.current ?? r.capacity * 0.6;
+    totalVol += cur;
+    if (pctOf(r) < 30) lowCount++;
+  });
+  const avgPct = Math.round((totalVol / TOTAL_CAPACITY) * 100);
+
+  document.getElementById("scVolume").textContent  = totalVol.toFixed(2);
+  document.getElementById("scAvgPct").textContent   = avgPct + "%";
+  document.getElementById("scLow").textContent      = lowCount;
+
+  const now = new Date().toLocaleTimeString("th-TH", {hour:"2-digit", minute:"2-digit"});
+  document.getElementById("scUpdate").textContent   = now;
+  document.getElementById("lastUpdate").textContent = "อัปเดต " + now + " น.";
+  document.getElementById("tableTime").textContent  = "ข้อมูล ณ " + now + " น.";
+
+  const dot = document.getElementById("statusDot");
+  const lbl = document.getElementById("statusLabel");
+  if (lowCount > 0) {
+    dot.className = "dot warn";
+    lbl.textContent = `⚠ น้ำน้อย ${lowCount} อ่าง`;
+  } else {
+    dot.className = "dot";
+    lbl.textContent = `เฉลี่ย ${avgPct}% · ปกติ`;
+  }
+}
+
+/* MAP */
+let mapInst = null, leafletMarkers = {};
+function initMap() {
+  if (mapInst) return;
+  mapInst = L.map("resMap").setView([17.20, 102.25], 10);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "Tiles © Esri", maxNativeZoom:16, maxZoom:19
+  }).addTo(mapInst);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+    attribution:"", maxNativeZoom:16, maxZoom:19, opacity:.85
+  }).addTo(mapInst);
+  renderMapMarkers();
+}
+
+function markerIcon(r) {
+  const p = pctOf(r);
+  const st = statusOf(r);
+  const color = st==="full"?"#2563eb":st==="normal"?"#0d9488":st==="warn"?"#f59e0b":"#dc2626";
+  const size = r.capacity >= 2 ? 36 : 28;
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
+                        border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,.35);
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:${size<30?9:10}px;font-weight:800;color:white;font-family:Sarabun,sans-serif;">
+              ${p}%</div>`,
+    iconSize: [size, size], iconAnchor: [size/2, size/2]
+  });
+}
+
+function renderMapMarkers() {
+  Object.values(leafletMarkers).forEach(m => mapInst.removeLayer(m));
+  leafletMarkers = {};
+  RESERVOIRS.forEach(r => {
+    const m = L.marker([r.lat, r.lon], { icon: markerIcon(r) });
+    const p = pctOf(r);
+    const st = statusOf(r);
+    const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+    m.bindPopup(`<div class="pop-title">💧 ${r.name}</div>
+      <div class="pop-row"><span>อำเภอ</span><strong>อ.${r.amphoe}</strong></div>
+      <div class="pop-row"><span>ความจุ</span><strong>${r.capacity.toFixed(3)} ล้าน ลบ.ม.</strong></div>
+      <div class="pop-row"><span>ปริมาณน้ำ</span><strong>${cur} ล้าน ลบ.ม.</strong></div>
+      <div class="pop-row"><span>% เก็บกัก</span><strong style="color:${p<30?"#dc2626":p<80?"#0d9488":"#2563eb"}">${p}%</strong></div>
+      <div class="pop-row"><span>สถานะ</span><strong>${ST_EMOJI[st]} ${ST_LABEL[st]}</strong></div>
+      <div class="pop-row"><span>ประเภท</span><span>${r.type}</span></div>`);
+    m.on("click", () => openDetail(r.id));
+    m.addTo(mapInst);
+    leafletMarkers[r.id] = m;
+  });
+}
+
+/* RESERVOIR LIST */
+function renderList() {
+  const el = document.getElementById("resList");
+  el.innerHTML = RESERVOIRS.map(r => {
+    const p = pctOf(r);
+    const st = statusOf(r);
+    const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+    return `<div class="res-item" onclick="openDetail('${r.id}')">
+      <div class="res-dot ${st}"></div>
+      <div>
+        <div class="res-name">${r.name}</div>
+        <div class="res-sub">อ.${r.amphoe} · ${cur} / ${r.capacity.toFixed(3)} ล้าน ลบ.ม.</div>
+      </div>
+      <div class="res-pct">${p}%<small>${ST_LABEL[st]}</small></div>
+    </div>`;
+  }).join("");
+}
+
+/* GAUGES */
+function renderGauges() {
+  const row = document.getElementById("gaugesRow");
+  row.innerHTML = RESERVOIRS.map(r => {
+    const p   = pctOf(r);
+    const st  = statusOf(r);
+    const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+    const fillPx = Math.round(Math.min(p * 1.1, 110));
+    const warn80Px = Math.round(80 * 1.1);
+    const warn30Px = Math.round(30 * 1.1);
+    const nm = r.name.length > 8 ? r.name.slice(0,7)+"…" : r.name;
+    return `
+      <div class="gauge-card ${st}" onclick="openDetail('${r.id}')">
+        <div class="gc-no">R${String(r.no).padStart(2,"0")}</div>
+        <div class="gc-name">${r.name}</div>
+        <div class="gc-loc">อ.${r.amphoe}</div>
+        <div class="gc-tube-area">
+          <div class="gc-tube-inner">
+            <div class="gc-tube">
+              <div class="gc-ticks">${Array.from({length:22},()=>'<div class="gc-tick"></div>').join("")}</div>
+              <div class="gc-line warn-line" style="bottom:${warn30Px}px;" title="30%"></div>
+              <div class="gc-line crit-line" style="bottom:${warn80Px}px;" title="80%"></div>
+              <div class="gc-fill ${st}" style="height:${fillPx}px;"></div>
+            </div>
+            <div class="gc-val-bbl">${p}% · ${cur}</div>
+          </div>
+        </div>
+        <div class="gc-stats">
+          <div class="gc-stat"><div class="sv">${p}%</div><div class="sl">เก็บกัก</div></div>
+          <div class="gc-stat"><div class="sv ${p<30?"crit-v":p<40?"warn-v":""}">${cur}</div><div class="sl">ล้าน ลบ.ม.</div></div>
+        </div>
+        <div class="gc-badge ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>
+      </div>`;
+  }).join("");
+}
+
+/* DETAIL PANEL */
+let dpChartInst = null;
+function openDetail(id) {
+  const r = RESERVOIRS.find(x => x.id === id);
+  if (!r) return;
+  const p   = pctOf(r);
+  const st  = statusOf(r);
+  const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+  const stColor = st==="full"?"#2563eb":st==="normal"?"#0d9488":st==="warn"?"#f59e0b":"#dc2626";
+
+  document.getElementById("dpTitle").textContent = `💧 ${r.name} — อ.${r.amphoe} (${p}% เก็บกัก)`;
+  document.getElementById("dpInfo").innerHTML = `
+    <div class="dp-info-item"><div class="label">ปริมาณน้ำปัจจุบัน</div><div class="value" style="color:${stColor}">${cur}<span class="unit">ล้าน ลบ.ม.</span></div></div>
+    <div class="dp-info-item"><div class="label">ความจุอ่าง</div><div class="value">${r.capacity.toFixed(3)}<span class="unit">ล้าน ลบ.ม.</span></div></div>
+    <div class="dp-info-item"><div class="label">% เก็บกัก</div><div class="value" style="color:${stColor}">${p}<span class="unit">%</span></div></div>
+    <div class="dp-info-item"><div class="label">สถานะ</div><div class="value" style="font-size:16px;">${ST_EMOJI[st]} ${ST_LABEL[st]}</div></div>`;
+
+  // Donut chart
+  if (dpChartInst) dpChartInst.destroy();
+  dpChartInst = new Chart(document.getElementById("dpChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["ปริมาณน้ำ", "ว่าง"],
+      datasets: [{
+        data: [parseFloat(cur), Math.max(0, r.capacity - parseFloat(cur))],
+        backgroundColor: [stColor, "#e2e8f0"],
+        borderWidth: 0, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "68%",
+      plugins: {
+        legend: { position:"bottom", labels:{ font:{family:"Sarabun",size:11}, boxWidth:12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.toFixed(3)} ล้าน ลบ.ม.` } }
+      }
+    }
+  });
+
+  document.getElementById("dpInfoList").innerHTML = [
+    ["ที่ตั้ง", `${r.village} ต.${r.tambon} อ.${r.amphoe}`],
+    ["ประเภทโครงการ", r.type],
+    ["ปีก่อสร้างเสร็จ", `พ.ศ. ${r.year}`],
+    ["พิกัด", `${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}`],
+    ["R No.", `R${String(r.no).padStart(2,"0")}`],
+    ["ความจุ", `${r.capacity.toFixed(3)} ล้าน ลบ.ม.`],
+  ].map(([l,v]) => `
+    <div class="dp-info-row"><span class="dr-label">${l}</span><span class="dr-val">${v}</span></div>`).join("");
+
+  const panel = document.getElementById("detailPanel");
+  panel.classList.add("show");
+  panel.scrollIntoView({ behavior:"smooth", block:"start" });
+
+  // Fly map to marker
+  if (mapInst) {
+    mapInst.flyTo([r.lat, r.lon], 13, { duration: 1 });
+    setTimeout(() => leafletMarkers[id]?.openPopup(), 900);
+  }
+}
+function closeDetail() {
+  document.getElementById("detailPanel").classList.remove("show");
+  if (dpChartInst) { dpChartInst.destroy(); dpChartInst = null; }
+}
+
+/* TABLE */
+function renderTable() {
+  const body = document.getElementById("tableBody");
+  body.innerHTML = RESERVOIRS.map(r => {
+    const p  = pctOf(r);
+    const st = statusOf(r);
+    const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+    return `<tr onclick="openDetail('${r.id}')">
+      <td><strong style="color:var(--muted)">R${String(r.no).padStart(2,"0")}</strong></td>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.village}<br><small style="color:var(--muted)">ต.${r.tambon} · อ.${r.amphoe}</small></td>
+      <td><span style="font-size:11px;background:#f0fdfa;padding:2px 7px;border-radius:5px;">${r.type}</span></td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;">${r.capacity.toFixed(3)}</td>
+      <td style="text-align:right;font-weight:800;font-family:monospace;color:${p<30?"#dc2626":p<40?"#f59e0b":"#0d9488"};">${cur}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div class="pct-bar-wrap"><div class="pct-bar ${st}" style="width:${Math.min(p,100)}%;"></div></div>
+          <span style="font-size:11px;font-weight:700;">${p}%</span>
+        </div>
+      </td>
+      <td style="text-align:right;color:var(--muted);">พ.ศ. ${r.year}</td>
+      <td><span class="pill ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+/* CHARTS */
+let _pc = null, _ac = null;
+function renderCharts() {
+  const labels = RESERVOIRS.map(r => r.name.length > 7 ? r.name.slice(0,6)+"…" : r.name);
+  const pcts   = RESERVOIRS.map(r => pctOf(r));
+  const colors = RESERVOIRS.map(r => {
+    const st = statusOf(r);
+    return st==="full"?"#2563eb":st==="normal"?"#0d9488":st==="warn"?"#f59e0b":"#dc2626";
+  });
+
+  if (_pc) _pc.destroy();
+  _pc = new Chart(document.getElementById("pctChart"), {
+    type: "bar",
+    data: { labels, datasets: [{ label:"% เก็บกัก", data:pcts, backgroundColor:colors, borderRadius:4 }] },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{font:{family:"Sarabun",size:9}}, grid:{display:false} },
+        y:{ max:110, ticks:{callback:v=>v+"%",font:{family:"Sarabun",size:10}} }
+      }
+    }
+  });
+
+  // Stacked by amphoe
+  const amphoeMap = {};
+  RESERVOIRS.forEach(r => {
+    const a = r.amphoe.replace("หนองบัวลำภู","NBL");
+    if (!amphoeMap[a]) amphoeMap[a] = { capacity:0, current:0 };
+    amphoeMap[a].capacity += r.capacity;
+    amphoeMap[a].current  += resData[r.id]?.current ?? r.capacity * 0.6;
+  });
+  const aLabels = Object.keys(amphoeMap);
+  const aCur    = aLabels.map(a => +amphoeMap[a].current.toFixed(3));
+  const aCap    = aLabels.map(a => +Math.max(0, amphoeMap[a].capacity - amphoeMap[a].current).toFixed(3));
+
+  if (_ac) _ac.destroy();
+  _ac = new Chart(document.getElementById("amphoeChart"), {
+    type:"bar",
+    data:{
+      labels: aLabels,
+      datasets:[
+        {label:"ปริมาณน้ำ",data:aCur,backgroundColor:"#0d9488",borderRadius:{topLeft:4,topRight:4},stack:"s"},
+        {label:"ว่าง",data:aCap,backgroundColor:"#e2e8f0",stack:"s"},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom",labels:{font:{family:"Sarabun",size:10},boxWidth:12}}},
+      scales:{
+        x:{ticks:{font:{family:"Sarabun",size:9}},grid:{display:false}},
+        y:{ticks:{font:{family:"Sarabun",size:10},callback:v=>v+"M"},title:{display:true,text:"ล้าน ลบ.ม.",font:{family:"Sarabun",size:10}}}
+      }
+    }
+  });
+}
+
+/* INPUT FORM — populate dropdown */
+function initForm() {
+  const sel = document.getElementById("fReservoir");
+  RESERVOIRS.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r.id;
+    opt.textContent = `R${String(r.no).padStart(2,"0")} · ${r.name} (${r.amphoe}) — ความจุ ${r.capacity.toFixed(3)} ล้าน ลบ.ม.`;
+    sel.appendChild(opt);
+  });
+  // Set today
+  document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
+}
+
+async function saveReservoirData() {
+  const btn = document.getElementById("btnSave");
+  const status = document.getElementById("saveStatus");
+  const rid   = document.getElementById("fReservoir").value;
+  const date  = document.getElementById("fDate").value;
+  const vol   = document.getElementById("fVolume").value;
+
+  if (!rid)  { alert("กรุณาเลือกอ่างเก็บน้ำ"); return; }
+  if (!date) { alert("กรุณาระบุวันที่"); return; }
+  if (!vol)  { alert("กรุณาระบุปริมาณน้ำ"); return; }
+
+  const r = RESERVOIRS.find(x => x.id === rid);
+  const payload = {
+    action: "savereservoir",
+    pin: sessionStorage.getItem("wat_pin") || "",  // ← Backend บังคับ PIN
+    reservoir_id: rid,
+    reservoir_name: r.name,
+    amphoe: r.amphoe,
+    date:   date,
+    current_volume: parseFloat(vol),
+    level:    document.getElementById("fLevel").value   || "",
+    inflow:   document.getElementById("fInflow").value  || "",
+    outflow:  document.getElementById("fOutflow").value || "",
+    capacity: r.capacity,
+  };
+
+  // อัปเดต local store ทันที
+  resData[rid] = { current: parseFloat(vol) };
+
+  if (!API_URL) {
+    // Demo mode — แสดงว่าบันทึกแล้ว อัปเดต UI
+    status.className = "save-status success";
+    status.style.display = "inline-flex";
+    status.textContent = `✅ บันทึกแล้ว (demo) — ${r.name} ${parseFloat(vol).toFixed(3)} ล้าน ลบ.ม.`;
+    renderAll();
+    setTimeout(() => { status.style.display = "none"; }, 4000);
+    return;
+  }
+
+  // ตรวจสอบ PIN ก่อนยิง
+  if (!payload.pin) {
+    status.className = "save-status error";
+    status.style.display = "inline-flex";
+    status.textContent = "❌ ยังไม่ได้เข้าสู่ระบบ — กรุณาเปิดหน้า input.html ใส่ PIN ก่อน";
+    setTimeout(() => { status.style.display = "none"; }, 5000);
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = "⏳ กำลังบันทึก...";
+  status.style.display = "none";
+  try {
+    // ส่งผ่าน GET query string — เลี่ยง CORS preflight + 302 redirect body-stripping
+    // Code.gs ต้องรับ savereservoir ใน doGet (อัปเดต Code.gs ฉบับใหม่แล้ว)
+    const qs = new URLSearchParams();
+    Object.keys(payload).forEach(k=>{
+      const v = payload[k];
+      if(v===undefined||v===null||v==="") return;
+      qs.append(k, String(v));
+    });
+    const url = API_URL + (API_URL.includes("?")?"&":"?") + qs.toString();
+    const res  = await fetch(url, { method:"GET", redirect:"follow" });
+    const data = await res.json();
+    if (data.ok) {
+      status.className = "save-status success";
+      status.textContent = `✅ ${data.message}`;
+      renderAll();
+    } else {
+      status.className = "save-status error";
+      status.textContent = `❌ ${data.error || "บันทึกไม่สำเร็จ"}`;
+    }
+  } catch(e) {
+    status.className = "save-status error";
+    status.textContent = "❌ เชื่อมต่อ API ไม่ได้: " + e.message;
+  }
+  status.style.display = "inline-flex";
+  btn.disabled = false; btn.textContent = "💾 บันทึกข้อมูล";
+  setTimeout(() => { status.style.display = "none"; }, 5000);
+}
+
+/* FETCH FROM API */
+async function loadData() {
+  if (API_URL) {
+    try {
+      const res  = await fetch(API_URL + "?action=reservoir");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          if (item.reservoir_id && item.current_volume !== undefined) {
+            resData[item.reservoir_id] = { current: parseFloat(item.current_volume) };
+          }
+        });
+      }
+    } catch(e) { console.warn("API unavailable, using demo data"); }
+  }
+  renderAll();
+}
+
+function renderAll() {
+  renderSummary();
+  renderList();
+  renderGauges();
+  renderTable();
+  renderCharts();
+  renderMapMarkers();
+}
+
+/* INIT */
+initDemoData();
+initForm();
+initMap();
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>

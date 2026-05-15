@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ปริมาณฝน | สถานการณ์น้ำจังหวัดหนองบัวลำภู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--brand:#0c4a6e;--brand2:#0284c7;--info:#0ea5e9;--warn:#f59e0b;--crit:#dc2626;--shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.06);}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+header{background:linear-gradient(135deg,#0c1e3d 0%,#0c4a6e 55%,#075985 100%);color:#fff;box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.header-inner{max-width:1400px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:12px;background:rgba(56,189,248,.22);border:1px solid rgba(125,211,252,.4);display:flex;align-items:center;justify-content:center;font-size:24px}
+h1{font-size:18px;line-height:1.25}
+.sub{font-size:11px;color:#bae6fd;margin-top:2px}
+nav{background:#fff;border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1400px;margin:0 auto;display:flex;gap:4px;padding:0 24px;overflow-x:auto}
+nav a{padding:14px 18px;color:var(--muted);text-decoration:none;font-weight:500;font-size:14px;border-bottom:3px solid transparent;white-space:nowrap}
+nav a:hover{color:var(--brand2)}
+nav a.active{color:var(--brand);border-bottom-color:var(--brand2);font-weight:700}
+main{max-width:1400px;margin:0 auto;padding:24px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+.metric-label{font-size:12px;color:var(--muted);font-weight:700}
+.metric-value{font-size:28px;font-weight:800;color:var(--brand);margin-top:6px}
+.metric-note{font-size:11px;color:var(--muted);margin-top:2px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.panel h2{font-size:16px;color:var(--brand)}
+.status{font-size:12px;color:var(--muted)}
+.chart-wrap{height:360px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;color:var(--muted);font-size:11px;text-align:left;padding:10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid #f1f5f9}
+tbody tr:hover{background:#f8fafc}
+.pill{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.pill.low{background:#e0f2fe;color:#075985}
+.pill.mid{background:#fef3c7;color:#92400e}
+.pill.high{background:#fee2e2;color:#991b1b}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+footer{background:#0f172a;color:#94a3b8;text-align:center;padding:18px;font-size:12px;margin-top:24px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chart-wrap{height:300px}}
+@media(max-width:560px){main{padding:16px}.grid{grid-template-columns:1fr}.header-inner{padding:14px 16px}.nav-inner{padding:0 16px}nav a{padding:12px 14px}.metric-value{font-size:24px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">🌧️</div>
+      <div>
+        <h1>ปริมาณฝนจังหวัดหนองบัวลำภู</h1>
+        <div class="sub">ติดตามฝน 24 ชั่วโมงและแนวโน้มรายอำเภอ</div>
+      </div>
+    </div>
+    <div class="status" id="updatedText">กำลังโหลดข้อมูล...</div>
+  </div>
+</header>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
+    <a href="mong.html">🌿 ลำน้ำโมง</a>
+    <a href="mo.html">🌊 ลำน้ำมอ</a>
+    <a href="phuay.html">🌊 ลำน้ำพวย</a>
+    <a href="rainfall.html" class="active">🌧️ ปริมาณฝน</a>
+    <a href="reservoir.html">🏞️ อ่างเก็บน้ำ</a>
+    <a href="input.html">📝 บันทึกข้อมูล</a>
+  </div>
+</nav>
+<main>
+  <section class="grid">
+    <div class="card"><div class="metric-label">ฝนเฉลี่ย 24 ชม.</div><div class="metric-value" id="avgRain">-</div><div class="metric-note">มิลลิเมตร</div></div>
+    <div class="card"><div class="metric-label">ฝนสูงสุด</div><div class="metric-value" id="maxRain">-</div><div class="metric-note" id="maxRainArea">-</div></div>
+    <div class="card"><div class="metric-label">พื้นที่ต้องติดตาม</div><div class="metric-value" id="watchCount">-</div><div class="metric-note">อำเภอที่ฝนเกิน 35 มม.</div></div>
+    <div class="card"><div class="metric-label">แหล่งข้อมูล</div><div class="metric-value" style="font-size:20px" id="sourceText">Demo</div><div class="metric-note">ตั้งค่า API_URL เพื่อใช้ข้อมูลจริง</div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>กราฟปริมาณฝน 24 ชั่วโมง</h2>
+      <div class="status">แยกตามอำเภอ</div>
+    </div>
+    <div class="chart-wrap"><canvas id="rainChart"></canvas></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>ตารางสรุปปริมาณฝน</h2>
+      <div class="status">ฝนสะสมล่าสุด</div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>อำเภอ</th><th>ฝน 24 ชม.</th><th>ฝน 7 วัน</th><th>ฝนเดือนนี้</th><th>สถานะ</th></tr></thead>
+        <tbody id="rainRows"><tr><td colspan="5" class="empty">กำลังโหลดข้อมูล...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<footer>ระบบติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู</footer>
+<script>
+const API_URL = window.APP_CONFIG?.API_URL || "";
+const DEMO_RAIN = [
+  {amphoe:"เมืองหนองบัวลำภู", rain_24hr:18.2, rain_7day:64.8, rain_month:142.5},
+  {amphoe:"นากลาง", rain_24hr:42.6, rain_7day:91.4, rain_month:188.7},
+  {amphoe:"นาวัง", rain_24hr:24.1, rain_7day:70.2, rain_month:155.1},
+  {amphoe:"ศรีบุญเรือง", rain_24hr:9.4, rain_7day:39.8, rain_month:104.3},
+  {amphoe:"โนนสัง", rain_24hr:31.7, rain_7day:86.5, rain_month:176.2},
+  {amphoe:"สุวรรณคูหา", rain_24hr:37.9, rain_7day:82.1, rain_month:169.9}
+];
+let rainChart;
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n}
+function rainStatus(v){
+  if(v>=35)return {label:"เฝ้าระวัง", cls:"high"};
+  if(v>=20)return {label:"ฝนปานกลาง", cls:"mid"};
+  return {label:"ฝนน้อย", cls:"low"};
+}
+async function loadRain(){
+  let rows = DEMO_RAIN, source = "Demo";
+  if(API_URL){
+    try{
+      const res = await fetch(API_URL + "?action=rain&days=7");
+      const data = await res.json();
+      if(Array.isArray(data) && data.length){
+        const latest = {};
+        data.forEach(r => { if(r.amphoe) latest[r.amphoe] = r; });
+        rows = Object.values(latest);
+        source = "API";
+      }
+    }catch(err){
+      console.warn("[Rainfall] API error", err);
+    }
+  }
+  renderRain(rows, source);
+}
+function renderRain(rows, source){
+  const avg = rows.reduce((a,r)=>a+num(r.rain_24hr),0) / Math.max(rows.length,1);
+  const max = rows.reduce((best,r)=>num(r.rain_24hr)>num(best.rain_24hr)?r:best, rows[0] || {});
+  document.getElementById("avgRain").textContent = avg.toFixed(1);
+  document.getElementById("maxRain").textContent = num(max.rain_24hr).toFixed(1);
+  document.getElementById("maxRainArea").textContent = max.amphoe || "-";
+  document.getElementById("watchCount").textContent = rows.filter(r=>num(r.rain_24hr)>=35).length;
+  document.getElementById("sourceText").textContent = source;
+  document.getElementById("updatedText").textContent = "อัปเดต " + new Date().toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"});
+  document.getElementById("rainRows").innerHTML = rows.map(r => {
+    const st = rainStatus(num(r.rain_24hr));
+    return `<tr><td>${r.amphoe || "-"}</td><td>${num(r.rain_24hr).toFixed(1)} มม.</td><td>${num(r.rain_7day).toFixed(1)} มม.</td><td>${num(r.rain_month).toFixed(1)} มม.</td><td><span class="pill ${st.cls}">${st.label}</span></td></tr>`;
+  }).join("");
+  const ctx = document.getElementById("rainChart");
+  if(rainChart) rainChart.destroy();
+  rainChart = new Chart(ctx,{type:"bar",data:{labels:rows.map(r=>r.amphoe),datasets:[{label:"ฝน 24 ชม. (มม.)",data:rows.map(r=>num(r.rain_24hr)),backgroundColor:rows.map(r=>num(r.rain_24hr)>=35?"#dc2626":num(r.rain_24hr)>=20?"#f59e0b":"#0ea5e9"),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{titleFont:{family:"Sarabun"},bodyFont:{family:"Sarabun"}}},scales:{x:{ticks:{font:{family:"Sarabun",size:11}}},y:{beginAtZero:true,ticks:{font:{family:"Sarabun"},callback:v=>v+" มม."}}}}});
+}
+loadRain();
+</script>
+</body>
+</html>
