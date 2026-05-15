@@ -503,9 +503,49 @@ function touchAmphoePinLastUsed(amphoe) {
   } catch(e) {}
 }
 
+/** Master list ของสถานีทั้งจังหวัด — ใช้สำหรับ initStationPins
+ *  จะทำงานได้แม้ Sheet Stations ยังว่าง (ไม่ต้องรัน runSetup ก่อน) */
+const STATION_MASTER_LIST = [
+  {station_id:"PN01",name:"วังปลาป้อม",       river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
+  {station_id:"PN02",name:"โคกกระทอ",         river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
+  {station_id:"PN03",name:"วังสามหาบ",        river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
+  {station_id:"PN04",name:"บ้านหนองด่าน",     river:"ลำน้ำพะเนียง",amphoe:"นากลาง"},
+  {station_id:"PN05",name:"บ้านฝั่งแดง",      river:"ลำน้ำพะเนียง",amphoe:"นากลาง"},
+  {station_id:"PN06",name:"ปตร.หนองหว้าใหญ่", river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
+  {station_id:"PN07",name:"วังหมื่น",          river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
+  {station_id:"PN08",name:"ปตร.ปู่หลอด",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
+  {station_id:"PN09",name:"บ้านข้องโป้",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
+  {station_id:"PN10",name:"ปตร.หัวนา",         river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
+  {station_id:"MG01",name:"คลองบุญทัน",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
+  {station_id:"MG02",name:"บ้านโคก",           river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
+  {station_id:"MG03",name:"บ้านนาตาแหลว",     river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
+  {station_id:"MG04",name:"บ้านกุดผึ้ง",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
+  {station_id:"MO01",name:"อ่างเก็บน้ำมอ",      river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
+  {station_id:"MO02",name:"บ้านวังคูณ",         river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
+  {station_id:"MO03",name:"บ้านโนนสูงเปลือย",   river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
+  {station_id:"PY01",name:"บ้านวังโปร่ง",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"},
+  {station_id:"PY02",name:"บ้านทุ่งโพธิ์",      river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"},
+  {station_id:"PY03",name:"บ้านโคกล่าม",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"}
+];
+
+/** รายการสถานีที่ใช้สำหรับจัดการ PIN — รวมข้อมูลจาก Sheet Stations (ถ้ามี) กับ master list
+ *  เพื่อให้ initStationPins ทำงานได้แม้ Sheet ยังว่างเปล่า */
+function getStationsForPinAdmin_() {
+  const fromSheet = getStations(); // อ่านจาก Sheet Stations
+  const byId = {};
+  // master list มาก่อน (เป็น default)
+  STATION_MASTER_LIST.forEach(s => { byId[s.station_id] = Object.assign({}, s); });
+  // sheet override (กรณีเจ้าหน้าที่แก้ใน Sheet เอง)
+  fromSheet.forEach(s => {
+    const id = String(s.station_id||"").toUpperCase();
+    if (id) byId[id] = Object.assign(byId[id]||{}, s, {station_id:id});
+  });
+  return Object.keys(byId).sort().map(k => byId[k]);
+}
+
 function listStationPins() {
   ensureStationPinsSheet_();
-  const stations = getStations();
+  const stations = getStationsForPinAdmin_();
   const out = [];
   stations.forEach(s => {
     const row = getStationPinRow_(s.station_id);
@@ -544,7 +584,10 @@ function setStationPin_(stationId, newPin, recorderName) {
 
 function initStationPins() {
   ensureStationPinsSheet_();
-  const stations = getStations();
+  const stations = getStationsForPinAdmin_();
+  if (!stations.length) {
+    return { ok:false, error:"ไม่พบรายการสถานี (master list ว่าง — เป็นไปไม่ได้ในสภาวะปกติ)" };
+  }
   const added = [];
   stations.forEach(s => {
     const existing = getStationPinRow_(s.station_id);
@@ -554,7 +597,7 @@ function initStationPins() {
       added.push({station_id: s.station_id, name: s.name, pin: pin});
     }
   });
-  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " สถานี (สถานีอื่นมี PIN อยู่แล้ว)", added: added };
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " สถานี (จากทั้งหมด " + stations.length + " สถานี — ที่เหลือมี PIN อยู่แล้ว)", added: added };
 }
 
 function listAmphoePins() {

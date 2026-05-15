@@ -624,7 +624,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 /* ============================================================
  *  CONFIG & STATE
  * ============================================================ */
-const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
 let MODE = "water";  // water | rain
 let SELECTED = null; // {kind:"station",id,name,..} or {kind:"amphoe",name,..}
 let SESSION_PIN = ""; // current session PIN for selected entity
@@ -1583,9 +1583,15 @@ async function saveAmphoePinRow(btn, am) {
 }
 
 async function initStationPins() {
-  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกสถานี?\n(เฉพาะสถานีที่ยังไม่มี PIN — จะใช้รหัสสถานี + 4 หลักสุ่ม)")) return;
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกสถานี?\n(เฉพาะสถานีที่ยังไม่มี PIN — สุ่ม 4 หลัก)")) return;
   const resp = await api({ action:"initstationpins", adminpin:ADMIN_PIN });
   if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  const n = (resp.added && resp.added.length) || 0;
+  if (n === 0) {
+    alert("ไม่ได้สร้าง PIN ใหม่ — ทุกสถานีมี PIN อยู่แล้ว");
+  } else {
+    alert("✅ สร้าง PIN ใหม่ " + n + " สถานีเรียบร้อย");
+  }
   loadStationPins();
 }
 
@@ -1593,6 +1599,9 @@ async function initAmphoePins() {
   if (!confirm("สร้าง PIN เริ่มต้นให้ทุกอำเภอ?\n(เฉพาะอำเภอที่ยังไม่มี PIN)")) return;
   const resp = await api({ action:"initamphoepins", adminpin:ADMIN_PIN });
   if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  const n = (resp.added && resp.added.length) || 0;
+  if (n === 0) alert("ไม่ได้สร้าง PIN ใหม่ — ทุกอำเภอมี PIN อยู่แล้ว");
+  else alert("✅ สร้าง PIN ใหม่ " + n + " อำเภอเรียบร้อย");
   loadAmphoePins();
 }
 
@@ -1668,6 +1677,9 @@ async function initReservoirPinsAdmin() {
   if (!confirm("สร้าง PIN เริ่มต้นให้ทุกอ่างเก็บน้ำ?\n(เฉพาะอ่างที่ยังไม่มี PIN — สุ่ม 4 หลัก)")) return;
   const resp = await api({ action:"initreservoirpins", adminpin:ADMIN_PIN });
   if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  const n = (resp.added && resp.added.length) || 0;
+  if (n === 0) alert("ไม่ได้สร้าง PIN ใหม่ — ทุกอ่างมี PIN อยู่แล้ว");
+  else alert("✅ สร้าง PIN ใหม่ " + n + " อ่างเก็บน้ำเรียบร้อย");
   loadReservoirPins();
 }
 
