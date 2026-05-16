@@ -694,7 +694,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 /* ============================================================
  *  CONFIG & STATE
  * ============================================================ */
-const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
 let MODE = "water";  // water | rain | reservoir
 let SELECTED = null; // {kind:"station",id,name,..} or {kind:"amphoe",name,..}
 let SESSION_PIN = ""; // current session PIN for selected entity
