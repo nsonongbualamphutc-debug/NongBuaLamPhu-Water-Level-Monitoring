@@ -1823,7 +1823,7 @@
  *  เปลี่ยน API_URL เป็น Google Apps Script Web App URL ของคุณ
  *  ถ้ายังไม่มีจะใช้ข้อมูลตัวอย่าง (DEMO_DATA)
  * ================================================================= */
-  const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
+  const API_URL = window.APP_CONFIG?.API_URL || ""; // ตั้งค่าใน config.js
 
 /* ====== DEMO DATA (จะถูกใช้เมื่อยังไม่ได้ตั้งค่า API_URL) ====== */
 const DEMO_STATIONS = [
@@ -2339,8 +2339,33 @@ async function loadData(){
     try{
       const res = await fetch(API_URL+"?action=summary");
       const data = await res.json();
-      if(data.stations) stations = data.stations;
-      if(data.rain) rain = data.rain;
+      if(data.stations && data.stations.length){
+        // Merge backend data กับ DEMO_STATIONS — รักษาค่า demo ถ้า backend ยังไม่มีข้อมูล (current = null)
+        // เพื่อไม่ให้ frontend พังเพราะ null.toFixed()
+        const demoMap = {};
+        DEMO_STATIONS.forEach(d => { demoMap[d.id] = d; });
+        stations = data.stations.map(bs => {
+          const demo = demoMap[bs.id] || demoMap[bs.station_id] || {};
+          return Object.assign({}, demo, bs, {
+            // ถ้า backend ส่ง null/undefined ให้ใช้ค่า demo แทน
+            current: (bs.current != null) ? bs.current : (demo.current || 0),
+            bank:    bs.bank    || demo.bank   || 0,
+            warn:    bs.warn    || demo.warn   || 0,
+            crit:    bs.crit    || demo.crit   || bs.bank || demo.bank || 0,
+            lat:     bs.lat     || demo.lat,
+            lon:     bs.lon     || demo.lon,
+            name:    bs.name    || demo.name,
+            river:   bs.river   || demo.river,
+            amphoe:  bs.amphoe  || demo.amphoe,
+            village: bs.village || demo.village,
+            id:      bs.id      || bs.station_id || demo.id,
+            // เพิ่ม flag เพื่อรู้ว่ามาจาก backend จริง หรือเป็น demo fallback
+            _isLive: (bs.current != null),
+            _lastUpdate: bs.last_update || null
+          });
+        });
+      }
+      if(data.rain && data.rain.length) rain = data.rain;
     }catch(e){console.warn("API failed, using demo data",e);}
   }
   render(stations, rain);
