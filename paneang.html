@@ -525,6 +525,7 @@ const STATIONS = [
 
 let stationData = {};
 
+
 function genDemo(s){
   const base = s.bank - 1.5;
   const cur = +(base + (Math.random() - 0.3) * 2.2).toFixed(2);
@@ -796,7 +797,7 @@ function renderTable(){
     const pct = Math.round((lv/s.bank)*100);
     return `<tr onclick="openDetail('${s.id}')">
       <td><strong style="color:var(--muted)">PN${String(s.no).padStart(2,"0")}</strong></td>
-      <td><strong>${s.name}</strong></td>
+      <td><strong>${s.name}</strong>${stationData[s.id]?._isLive ? '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#dcfce7;color:#15803d;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟢 LIVE</span>' : '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟡 DEMO</span>'}</td>
       <td>${s.village}<br><small style="color:var(--muted)">อ.${s.amphoe}</small></td>
       <td style="text-align:right;font-family:monospace;">${s.bank.toFixed(2)}</td>
       <td style="text-align:right;font-family:monospace;color:#f59e0b;">${s.warn.toFixed(2)}</td>
@@ -857,7 +858,15 @@ async function loadData(){
       const res = await fetch(API_URL + "?action=paneang");
       const data = await res.json();
       if(data.stations) data.stations.forEach(item => {
-        if(stationData[item.id] && item.current != null) stationData[item.id].current = item.current;
+        if(stationData[item.id]){
+          // ใช้ค่าจริงจาก backend ถ้ามี; ถ้า null คงค่า demo เดิมไว้ (ไม่ทับ)
+          if(item.current != null) {
+            stationData[item.id].current = parseFloat(item.current);
+            stationData[item.id]._isLive = true;
+          } else {
+            stationData[item.id]._isLive = false;
+          }
+        }
       });
     }catch(e){console.warn("API unavailable, using demo data");}
   }
