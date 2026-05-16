@@ -237,7 +237,19 @@ function doPost(e) {
 // ===== READ =====
 
 function getStations(river) {
-  const rows = sheetToObjects(ss().getSheetByName(SHEET_STATIONS));
+  let rows = sheetToObjects(ss().getSheetByName(SHEET_STATIONS));
+  // Fallback: ถ้า Sheet Stations ว่าง → ใช้ master list 20 สถานี
+  if (!rows.length && typeof STATION_MASTER_LIST !== 'undefined') {
+    rows = STATION_MASTER_LIST.map(s => ({
+      station_id: s.station_id, name: s.name, river: s.river,
+      village: "", amphoe: s.amphoe,
+      lat: s.lat || "", lon: s.lon || "",
+      bank_level: s.bank_level || s.bank || 0,
+      warn_level: s.warn_level || s.warn || 0,
+      crit_level: s.crit_level || s.bank || 0,
+      active: true
+    }));
+  }
   if (river) return rows.filter(r => String(r.river||"").indexOf(river)!==-1);
   return rows;
 }
@@ -253,12 +265,43 @@ function getSummary() {
       else if(parseFloat(st.warn_level)&&level>=parseFloat(st.warn_level)) status="เฝ้าระวัง";
     }
     if(status==="วิกฤติ") crit++; else if(status==="เฝ้าระวัง") warn++; else normal++;
-    return Object.assign({},st,{current_level:isNaN(level)?null:level,flow:w.flow||null,status,last_update:w.date?(w.date+" "+(w.time||"")):null});
+    // Output ทั้ง field name ใหม่ (station_id, current_level, bank_level) และ alias เก่า (id, current, bank, warn, crit)
+    // เพื่อรองรับทั้ง dashboard เก่าและใหม่
+    return Object.assign({}, st, {
+      id: st.station_id,                                  // alias for frontend
+      current_level: isNaN(level) ? null : level,
+      current:       isNaN(level) ? null : level,         // alias
+      bank:  parseFloat(st.bank_level)  || 0,             // alias
+      warn:  parseFloat(st.warn_level)  || 0,             // alias
+      crit:  parseFloat(st.crit_level)  || parseFloat(st.bank_level) || 0,  // alias
+      flow: w.flow||null,
+      status,
+      last_update: w.date?(w.date+" "+(w.time||"")):null
+    });
   });
   const rain=getRainfall(1);
+  // Build rain summary by amphoe (frontend index.html ต้องการ field "rain24")
+  const rainByAmphoe = {};
+  rain.forEach(r => {
+    const am = r.amphoe; if(!am) return;
+    if (!rainByAmphoe[am] || String(r.date||"") > String(rainByAmphoe[am].date||"")) {
+      rainByAmphoe[am] = r;
+    }
+  });
+  const rainOut = Object.keys(rainByAmphoe).map(am => {
+    const r = rainByAmphoe[am];
+    return {
+      amphoe: am,
+      rain24:      parseFloat(r.rain_24hr)  || 0,  // alias for frontend
+      rain_24hr:   parseFloat(r.rain_24hr)  || 0,
+      rain_7day:   parseFloat(r.rain_7day)  || 0,
+      rain_month:  parseFloat(r.rain_month) || 0,
+      date: r.date, recorder: r.recorder
+    };
+  });
   let avgRain=0;
   if(rain.length>0) avgRain=rain.reduce((a,r)=>a+(parseFloat(r.rain_24hr)||0),0)/rain.length;
-  return {total:stations.length,normal,warn,crit,avg_rain_24hr:avgRain,stations:merged,updated:new Date().toISOString()};
+  return {total:stations.length,normal,warn,crit,avg_rain_24hr:avgRain,stations:merged,rain:rainOut,updated:new Date().toISOString()};
 }
 
 function getRiverDashboard(riverKey) {
@@ -291,6 +334,9 @@ function getRiverDashboard(riverKey) {
       id: st.station_id,
       current: isNaN(level) ? null : level,
       current_level: isNaN(level) ? null : level,
+      bank:  parseFloat(st.bank_level)  || 0,
+      warn:  parseFloat(st.warn_level)  || 0,
+      crit:  parseFloat(st.crit_level)  || parseFloat(st.bank_level) || 0,
       flow: w.flow || null,
       status: status,
       last_update: w.date ? (w.date + " " + (w.time || "")) : null
@@ -569,29 +615,29 @@ function touchAmphoePinLastUsed(amphoe) {
   } catch(e) {}
 }
 
-/** Master list ของสถานีทั้งจังหวัด — ใช้สำหรับ initStationPins
- *  จะทำงานได้แม้ Sheet Stations ยังว่าง (ไม่ต้องรัน runSetup ก่อน) */
+/** Master list ของสถานีทั้งจังหวัด — ใช้เป็น fallback ถ้า Sheet Stations ว่าง
+ *  ครบทุก field สำหรับ Dashboard (bank, warn, lat, lon) */
 const STATION_MASTER_LIST = [
-  {station_id:"PN01",name:"วังปลาป้อม",       river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
-  {station_id:"PN02",name:"โคกกระทอ",         river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
-  {station_id:"PN03",name:"วังสามหาบ",        river:"ลำน้ำพะเนียง",amphoe:"นาวัง"},
-  {station_id:"PN04",name:"บ้านหนองด่าน",     river:"ลำน้ำพะเนียง",amphoe:"นากลาง"},
-  {station_id:"PN05",name:"บ้านฝั่งแดง",      river:"ลำน้ำพะเนียง",amphoe:"นากลาง"},
-  {station_id:"PN06",name:"ปตร.หนองหว้าใหญ่", river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
-  {station_id:"PN07",name:"วังหมื่น",          river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
-  {station_id:"PN08",name:"ปตร.ปู่หลอด",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
-  {station_id:"PN09",name:"บ้านข้องโป้",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
-  {station_id:"PN10",name:"ปตร.หัวนา",         river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู"},
-  {station_id:"MG01",name:"คลองบุญทัน",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
-  {station_id:"MG02",name:"บ้านโคก",           river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
-  {station_id:"MG03",name:"บ้านนาตาแหลว",     river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
-  {station_id:"MG04",name:"บ้านกุดผึ้ง",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา"},
-  {station_id:"MO01",name:"อ่างเก็บน้ำมอ",      river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
-  {station_id:"MO02",name:"บ้านวังคูณ",         river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
-  {station_id:"MO03",name:"บ้านโนนสูงเปลือย",   river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง"},
-  {station_id:"PY01",name:"บ้านวังโปร่ง",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"},
-  {station_id:"PY02",name:"บ้านทุ่งโพธิ์",      river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"},
-  {station_id:"PY03",name:"บ้านโคกล่าม",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง"}
+  {station_id:"PN01",name:"วังปลาป้อม",       river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.42065,lon:101.99304,bank_level:290.0,warn_level:289.5,crit_level:290.0},
+  {station_id:"PN02",name:"โคกกระทอ",         river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.34314,lon:102.07167,bank_level:266.0,warn_level:265.5,crit_level:266.0},
+  {station_id:"PN03",name:"วังสามหาบ",        river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.30990,lon:102.10789,bank_level:258.0,warn_level:257.5,crit_level:258.0},
+  {station_id:"PN04",name:"บ้านหนองด่าน",     river:"ลำน้ำพะเนียง",amphoe:"นากลาง",           lat:17.27936,lon:102.16552,bank_level:249.0,warn_level:248.5,crit_level:249.0},
+  {station_id:"PN05",name:"บ้านฝั่งแดง",      river:"ลำน้ำพะเนียง",amphoe:"นากลาง",           lat:17.26730,lon:102.22728,bank_level:237.0,warn_level:236.5,crit_level:237.0},
+  {station_id:"PN06",name:"ปตร.หนองหว้าใหญ่", river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.17981,lon:102.38617,bank_level:216.0,warn_level:215.5,crit_level:216.0},
+  {station_id:"PN07",name:"วังหมื่น",          river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.18317,lon:102.43244,bank_level:210.0,warn_level:209.5,crit_level:210.0},
+  {station_id:"PN08",name:"ปตร.ปู่หลอด",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.11487,lon:102.45435,bank_level:203.0,warn_level:202.5,crit_level:203.0},
+  {station_id:"PN09",name:"บ้านข้องโป้",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.08217,lon:102.45068,bank_level:201.0,warn_level:200.5,crit_level:201.0},
+  {station_id:"PN10",name:"ปตร.หัวนา",         river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.00067,lon:102.42400,bank_level:191.0,warn_level:190.5,crit_level:191.0},
+  {station_id:"MG01",name:"คลองบุญทัน",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.54512,lon:102.16832,bank_level:231.0,warn_level:230.5,crit_level:231.0},
+  {station_id:"MG02",name:"บ้านโคก",           river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.54952,lon:102.20425,bank_level:218.0,warn_level:217.5,crit_level:218.0},
+  {station_id:"MG03",name:"บ้านนาตาแหลว",     river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.57567,lon:102.27326,bank_level:202.0,warn_level:201.5,crit_level:202.0},
+  {station_id:"MG04",name:"บ้านกุดผึ้ง",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.56062,lon:102.31572,bank_level:192.0,warn_level:191.5,crit_level:192.0},
+  {station_id:"MO01",name:"อ่างเก็บน้ำมอ",      river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:17.16608,lon:102.18177,bank_level:242.0,warn_level:241.5,crit_level:242.0},
+  {station_id:"MO02",name:"บ้านวังคูณ",         river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:17.03214,lon:102.24920,bank_level:211.0,warn_level:210.5,crit_level:211.0},
+  {station_id:"MO03",name:"บ้านโนนสูงเปลือย",   river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:16.96934,lon:102.27002,bank_level:202.0,warn_level:201.5,crit_level:202.0},
+  {station_id:"PY01",name:"บ้านวังโปร่ง",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:17.01415,lon:102.19359,bank_level:212.0,warn_level:211.5,crit_level:212.0},
+  {station_id:"PY02",name:"บ้านทุ่งโพธิ์",      river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:16.97482,lon:102.22344,bank_level:197.0,warn_level:196.5,crit_level:197.0},
+  {station_id:"PY03",name:"บ้านโคกล่าม",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:16.91317,lon:102.23807,bank_level:193.0,warn_level:192.5,crit_level:193.0}
 ];
 
 /** รายการสถานีที่ใช้สำหรับจัดการ PIN — รวมข้อมูลจาก Sheet Stations (ถ้ามี) กับ master list
