@@ -47,25 +47,35 @@ function doGet(e) {
 
       if (PIN_REQUIRED) {
         // อนุญาต Admin master PIN override ทุก action
-        if (pin && verifyAdminPin(pin)) {
-          pinOk = true;
-        } else if (action === "savewater") {
+        if (action === "savewater") {
           const stid = String(params.station_id || "").toUpperCase();
           if (!stid) pinError = "ไม่ระบุรหัสสถานี (station_id)";
-          else if (verifyStationPin(stid, pin)) { pinOk = true; touchStationPinLastUsed(stid); }
-          else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
+          else {
+            const acc = verifyWaterAccess(stid, pin);
+            if (acc.ok) { pinOk = true; if(acc.role==="station") touchStationPinLastUsed(stid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
+          }
         } else if (action === "saverain") {
           const amphoe = String(params.amphoe || "");
           if (!amphoe) pinError = "ไม่ระบุอำเภอ";
-          else if (verifyAmphoePin(amphoe, pin)) { pinOk = true; touchAmphoePinLastUsed(amphoe); }
-          else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+          else {
+            const acc = verifyRainAccess(amphoe, pin);
+            if (acc.ok) { pinOk = true; if(acc.role==="amphoe") touchAmphoePinLastUsed(amphoe); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+          }
         } else if (action === "savereservoir") {
           const rid = String(params.reservoir_id || "").toUpperCase();
           if (!rid) pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ (reservoir_id)";
-          else if (verifyReservoirPin(rid, pin)) { pinOk = true; touchReservoirPinLastUsed(rid); }
-          else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
+          else {
+            const acc = verifyReservoirAccess(rid, pin);
+            if (acc.ok) { pinOk = true; if(acc.role==="reservoir") touchReservoirPinLastUsed(rid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
+          }
+        } else if (verifyAdminPin(pin)) {
+          // savedailyreport — Super admin
+          pinOk = true;
         } else {
-          // savedailyreport — fallback legacy APP_PIN หรือ Admin
+          // savedailyreport — fallback legacy APP_PIN
           const expected = getAppPin();
           if (expected && pin === expected) pinOk = true;
           else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับการบันทึก " + action;
@@ -95,29 +105,32 @@ function doGet(e) {
       const stid = String(params.station_id || "").toUpperCase();
       const pin  = String(params.pin || "").trim();
       if (!stid) return respond({ ok:false, error:"ไม่ระบุรหัสสถานี" }, callback);
-      if (!verifyStationPin(stid, pin) && !verifyAdminPin(pin)) {
-        return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      }
-      return respond({ ok:true, station: getStationContext(stid) }, callback);
+      const acc = verifyWaterAccess(stid, pin);
+      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok:true, role:acc.role, station: getStationContext(stid) }, callback);
     }
     if (action === "loginamphoe") {
       const am  = String(params.amphoe || "");
       const pin = String(params.pin || "").trim();
       if (!am) return respond({ ok:false, error:"ไม่ระบุอำเภอ" }, callback);
-      if (!verifyAmphoePin(am, pin) && !verifyAdminPin(pin)) {
-        return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      }
-      return respond({ ok:true, amphoe: getAmphoeContext(am) }, callback);
+      const acc = verifyRainAccess(am, pin);
+      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok:true, role:acc.role, amphoe: getAmphoeContext(am) }, callback);
     }
     if (action === "loginreservoir") {
       const rid = String(params.reservoir_id || "").toUpperCase();
       const pin = String(params.pin || "").trim();
       if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
-      if (!verifyReservoirPin(rid, pin) && !verifyAdminPin(pin)) {
-        return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      }
-      return respond({ ok:true, reservoir: getReservoirContext(rid) }, callback);
+      const acc = verifyReservoirAccess(rid, pin);
+      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok:true, role:acc.role, reservoir: getReservoirContext(rid) }, callback);
     }
+
+    // ===== Sub-Admin login: ตรวจว่า PIN เป็น sub-admin หรือ super-admin =====
+    // ใช้ใน input.html เพื่อให้ user "เข้าระบบ admin" แล้วเลือกสถานีอะไรก็ได้
+    if (action === "loginwateradmin")     return respond(checkSubAdminRole("water", String(params.pin||"")), callback);
+    if (action === "loginrainadmin")      return respond(checkSubAdminRole("rain", String(params.pin||"")), callback);
+    if (action === "loginreservoiradmin") return respond(checkSubAdminRole("reservoir", String(params.pin||"")), callback);
     if (action === "adminlogin") {
       const pin = String(params.pin || "").trim();
       if (!verifyAdminPin(pin)) return respond({ ok:false, error:"PIN ผู้ดูแลระบบไม่ถูกต้อง" }, callback);
@@ -132,19 +145,19 @@ function doGet(e) {
       if (action === "stationcontext") {
         const stid = String(params.station_id || "").toUpperCase();
         if (!stid) return respond({ ok:false, error:"ไม่ระบุรหัสสถานี" }, callback);
-        if (!isAdmin && !verifyStationPin(stid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+        if (!isAdmin && !verifyWaterAdminPin(adminpin) && !verifyStationPin(stid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
         return respond({ ok:true, station: getStationContext(stid) }, callback);
       }
       if (action === "amphoecontext") {
         const am = String(params.amphoe || "");
         if (!am) return respond({ ok:false, error:"ไม่ระบุอำเภอ" }, callback);
-        if (!isAdmin && !verifyAmphoePin(am, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+        if (!isAdmin && !verifyRainAdminPin(adminpin) && !verifyAmphoePin(am, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
         return respond({ ok:true, amphoe: getAmphoeContext(am) }, callback);
       }
       if (action === "reservoircontext") {
         const rid = String(params.reservoir_id || "").toUpperCase();
         if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
-        if (!isAdmin && !verifyReservoirPin(rid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
+        if (!isAdmin && !verifyReservoirAdminPin(adminpin) && !verifyReservoirPin(rid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
         return respond({ ok:true, reservoir: getReservoirContext(rid) }, callback);
       }
       if (!isAdmin) return respond({ ok:false, error:"ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
@@ -449,6 +462,59 @@ function verifyAdminPin(pin) {
   const expected = getAdminPin_();
   if (!expected) return false;
   return String(pin || "").trim() === String(expected).trim();
+}
+
+// ===== SUB-ADMIN PINs (กรอกข้ามทุกจุดในประเภทของตน — ไม่ใช่ super admin) =====
+const WATER_ADMIN_PIN_KEY     = "WATER_ADMIN_PIN";     // กรอกระดับน้ำได้ทุกสถานี
+const RAIN_ADMIN_PIN_KEY      = "RAIN_ADMIN_PIN";      // กรอกฝนได้ทุกอำเภอ
+const RESERVOIR_ADMIN_PIN_KEY = "RESERVOIR_ADMIN_PIN"; // กรอกอ่างได้ทุกอ่าง
+
+function verifyWaterAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(WATER_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+function verifyRainAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(RAIN_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+function verifyReservoirAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(RESERVOIR_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+
+/** ตรวจ PIN ทุกระดับสำหรับ savewater (station, water-admin, super-admin) */
+function verifyWaterAccess(stationId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyWaterAdminPin(pin)) return { ok:true, role:"water_admin" };
+  if (verifyStationPin(stationId, pin)) return { ok:true, role:"station" };
+  return { ok:false };
+}
+/** ตรวจ PIN สำหรับ saverain */
+function verifyRainAccess(amphoe, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyRainAdminPin(pin)) return { ok:true, role:"rain_admin" };
+  if (verifyAmphoePin(amphoe, pin)) return { ok:true, role:"amphoe" };
+  return { ok:false };
+}
+/** ตรวจ PIN สำหรับ savereservoir */
+function verifyReservoirAccess(reservoirId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyReservoirAdminPin(pin)) return { ok:true, role:"reservoir_admin" };
+  if (verifyReservoirPin(reservoirId, pin)) return { ok:true, role:"reservoir" };
+  return { ok:false };
+}
+
+/** API: ตรวจ PIN ว่าเป็น sub-admin หรือไม่ — สำหรับ frontend เรียกตอน login */
+function checkSubAdminRole(scope, pin) {
+  // scope: "water" | "rain" | "reservoir"
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin", scope:scope };
+  if (scope === "water" && verifyWaterAdminPin(pin))         return { ok:true, role:"water_admin", scope:"water" };
+  if (scope === "rain"  && verifyRainAdminPin(pin))          return { ok:true, role:"rain_admin",  scope:"rain" };
+  if (scope === "reservoir" && verifyReservoirAdminPin(pin)) return { ok:true, role:"reservoir_admin", scope:"reservoir" };
+  return { ok:false };
 }
 
 function getStationPinRow_(stationId) {

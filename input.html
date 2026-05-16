@@ -288,6 +288,27 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
       <button class="mode-tab" onclick="setMode('reservoir')">🏞️ บันทึกอ่างเก็บน้ำ</button>
     </div>
 
+    <!-- Sub-Admin Quick Access -->
+    <div id="subAdminActive" class="hidden" style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border:1px solid #f59e0b;border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span id="subAdminIco" style="font-size:28px;">🔐</span>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-family:'Kanit',sans-serif;font-weight:700;font-size:15px;color:#92400e;" id="subAdminTitle">Admin Mode</div>
+        <div style="font-size:12.5px;color:#78350f;line-height:1.5;" id="subAdminDesc">เลือกจุดบันทึกใดก็ได้ — ไม่ต้องใส่ PIN ของจุดนั้นอีก</div>
+      </div>
+      <button class="btn-mini" onclick="exitSubAdmin()" style="background:#7c2d12;color:#fff;padding:8px 14px;">ออกจาก Admin</button>
+    </div>
+
+    <div id="subAdminEntry" style="background:linear-gradient(135deg,#fff7ed 0%,#fed7aa 100%);border:1px dashed #fb923c;border-radius:14px;padding:13px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:20px;">🔐</span>
+      <div style="flex:1;min-width:180px;font-size:12.5px;color:#9a3412;line-height:1.5;">
+        <strong style="font-family:'Kanit',sans-serif;color:#7c2d12;">โหมด Admin กรอกข้ามจุด</strong><br>
+        สำหรับเจ้าหน้าที่ที่กรอกข้ามจุดได้ทั้งประเภท
+      </div>
+      <button class="btn-mini gen" onclick="openSubAdminLogin('water')" style="background:#0c4a6e;color:#fff;">💧 Water Admin</button>
+      <button class="btn-mini gen" onclick="openSubAdminLogin('rain')" style="background:#1e40af;color:#fff;">🌧️ Rain Admin</button>
+      <button class="btn-mini gen" onclick="openSubAdminLogin('reservoir')" style="background:#065f46;color:#fff;">🏞️ Reservoir Admin</button>
+    </div>
+
     <div id="water-list">
       <!-- River groups injected here -->
     </div>
@@ -349,7 +370,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
             <h3 id="w-name">—</h3>
             <div class="meta" id="w-meta">—</div>
           </div>
-          <button class="logout" onclick="logout()">ออกระบบ</button>
+          <button class="logout" onclick="logout()" id="logoutBtn1">ออกระบบ</button>
         </div>
         <div class="rec-body">
 
@@ -396,7 +417,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
           </div>
 
           <div class="submit-row">
-            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนจุด</button>
+            <button class="btn btn-sec" onclick="changePoint()">← เปลี่ยนจุด</button>
             <button class="btn btn-pri" id="w-save" onclick="saveWater()">💾 บันทึกข้อมูล</button>
           </div>
           <div class="toast" id="w-toast"></div>
@@ -411,7 +432,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
             <h3 id="r-name">—</h3>
             <div class="sub" id="r-meta">บันทึกปริมาณฝน — รายวัน 7 วัน เดือน</div>
           </div>
-          <button class="logout" onclick="logout()">ออกระบบ</button>
+          <button class="logout" onclick="logout()" id="logoutBtn2">ออกระบบ</button>
         </div>
         <div class="rec-body">
 
@@ -456,7 +477,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
           </div>
 
           <div class="submit-row">
-            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนอำเภอ</button>
+            <button class="btn btn-sec" onclick="changePoint()">← เปลี่ยนอำเภอ</button>
             <button class="btn btn-pri" id="r-save" onclick="saveRain()">💾 บันทึกข้อมูล</button>
           </div>
           <div class="toast" id="r-toast"></div>
@@ -472,7 +493,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
             <h3 id="rs-name">—</h3>
             <div class="sub" id="rs-meta">บันทึกปริมาณน้ำในอ่าง</div>
           </div>
-          <button class="logout" onclick="logout()">ออกระบบ</button>
+          <button class="logout" onclick="logout()" id="logoutBtn3">ออกระบบ</button>
         </div>
         <div class="rec-body">
 
@@ -518,7 +539,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
           </div>
 
           <div class="submit-row">
-            <button class="btn btn-sec" onclick="showScreen('scr-choose');logout()">← เปลี่ยนอ่าง</button>
+            <button class="btn btn-sec" onclick="changePoint()">← เปลี่ยนอ่าง</button>
             <button class="btn btn-pri" id="rs-save" onclick="saveReservoir()" style="background:#059669;">💾 บันทึกข้อมูล</button>
           </div>
           <div class="toast" id="rs-toast"></div>
@@ -587,6 +608,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
         <button class="admin-tab on" onclick="setAdminTab('stations')">💧 PIN รายสถานี (ระดับน้ำ)</button>
         <button class="admin-tab" onclick="setAdminTab('amphoes')">🌧️ PIN รายอำเภอ (ฝน)</button>
         <button class="admin-tab" onclick="setAdminTab('reservoirs')">🏞️ PIN รายอ่าง (อ่างเก็บน้ำ)</button>
+        <button class="admin-tab" onclick="setAdminTab('subadmins')">🔐 Sub-Admin (ข้ามจุด)</button>
       </div>
 
       <div class="admin-body">
@@ -608,6 +630,54 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
             <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
           </div>
         </div>
+        <!-- Sub-Admin PIN tab -->
+        <div id="admin-tab-subadmins" class="hidden">
+          <div id="subadmin-pin-content">
+            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:11px;padding:14px 18px;margin-bottom:18px;font-size:13.5px;line-height:1.65;color:#78350f;">
+              <strong style="font-family:'Kanit',sans-serif;color:#7c2d12;display:block;margin-bottom:4px;">🔐 Sub-Admin คืออะไร?</strong>
+              Sub-Admin คือผู้ดูแล "ระดับกลาง" ที่กรอกข้อมูล <strong>ข้ามทุกจุดในประเภทของตน</strong> แต่ <strong>ไม่สามารถจัดการ PIN</strong> ของเจ้าหน้าที่จุดอื่น<br>
+              ตัวอย่างการใช้งาน: เจ้าหน้าที่ปกครองอำเภอที่ดูแลฝนทุกอำเภอ / เจ้าหน้าที่ลำน้ำที่ดูแลสถานีหลายแห่ง
+            </div>
+            <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;">
+              <div style="font-family:'Kanit',sans-serif;font-size:15px;font-weight:700;color:var(--brand);margin-bottom:14px;">⚙️ การตั้งค่า Sub-Admin PIN</div>
+              <div style="font-size:13px;line-height:1.7;color:var(--ink);">
+                Sub-Admin PIN ตั้งค่าผ่าน <strong>Apps Script → Project Settings → Script Properties</strong> เท่านั้น (เพื่อความปลอดภัย ไม่จัดเก็บใน Sheet) <br>
+                สร้าง 3 keys ตามต้องการ:
+                <div style="margin-top:12px;display:grid;grid-template-columns:1fr;gap:10px;">
+                  <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;">
+                    <div style="font-weight:700;color:#1e40af;font-size:13.5px;">💧 Water Admin</div>
+                    <div style="font-size:11.5px;color:#1e3a8a;margin:4px 0;">กรอกระดับน้ำได้ทุกสถานี (20 สถานี · 4 ลำน้ำ)</div>
+                    <code style="background:#fff;padding:5px 9px;border-radius:6px;font-size:12px;border:1px solid #93c5fd;display:inline-block;">Key: WATER_ADMIN_PIN</code>
+                  </div>
+                  <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;">
+                    <div style="font-weight:700;color:#1e40af;font-size:13.5px;">🌧️ Rain Admin</div>
+                    <div style="font-size:11.5px;color:#1e3a8a;margin:4px 0;">กรอกฝนได้ทุกอำเภอ (6 อำเภอ)</div>
+                    <code style="background:#fff;padding:5px 9px;border-radius:6px;font-size:12px;border:1px solid #93c5fd;display:inline-block;">Key: RAIN_ADMIN_PIN</code>
+                  </div>
+                  <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;">
+                    <div style="font-weight:700;color:#065f46;font-size:13.5px;">🏞️ Reservoir Admin</div>
+                    <div style="font-size:11.5px;color:#064e3b;margin:4px 0;">กรอกอ่างเก็บน้ำได้ทุกอ่าง (14 อ่าง)</div>
+                    <code style="background:#fff;padding:5px 9px;border-radius:6px;font-size:12px;border:1px solid #6ee7b7;display:inline-block;">Key: RESERVOIR_ADMIN_PIN</code>
+                  </div>
+                </div>
+                <div style="margin-top:14px;padding:12px;background:#f1f5f9;border-radius:8px;font-size:12px;line-height:1.7;color:var(--muted);">
+                  <strong style="color:var(--ink);">วิธีตั้งค่า:</strong><br>
+                  1. เปิด <code>script.google.com</code> → โปรเจคของระบบ<br>
+                  2. ⚙️ Project Settings (ฟันเฟือง มุมซ้าย)<br>
+                  3. เลื่อนลง "Script Properties" → กด "Add script property"<br>
+                  4. ใส่ Key ตามด้านบน · Value = PIN ที่ต้องการ (ตัวอักษร/ตัวเลข ≥6 ตัว)<br>
+                  5. กด "Save script properties" — เสร็จแล้วใช้ได้ทันที (ไม่ต้อง redeploy)
+                </div>
+                <div style="margin-top:10px;padding:10px 12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#991b1b;">
+                  ⚠️ <strong>ความปลอดภัย:</strong> Sub-Admin PIN ควรยาว ≥6 ตัวอักษร และไม่ควรง่ายต่อการเดา · ห้ามแชร์กับผู้ที่ไม่ได้รับมอบหมาย
+                </div>
+                <div id="subadmin-status" style="margin-top:14px;">
+                  <div class="loading"><span class="spin"></span>กำลังตรวจสถานะ Sub-Admin PIN ปัจจุบัน...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -624,11 +694,12 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 /* ============================================================
  *  CONFIG & STATE
  * ============================================================ */
-const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
-let MODE = "water";  // water | rain
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
+let MODE = "water";  // water | rain | reservoir
 let SELECTED = null; // {kind:"station",id,name,..} or {kind:"amphoe",name,..}
 let SESSION_PIN = ""; // current session PIN for selected entity
-let ADMIN_PIN = "";   // admin PIN (in admin panel only)
+let ADMIN_PIN = "";   // super admin PIN (in admin panel only)
+let SUB_ADMIN = null; // {scope:"water"|"rain"|"reservoir", pin, role}  // null = ไม่อยู่ใน sub-admin mode
 let historyChart = null;
 
 const STATIONS = [
@@ -782,6 +853,12 @@ function chooseStation(stid) {
   const s = STATIONS.find(x => x.id === stid);
   if (!s) return;
   SELECTED = { kind:"station", ...s };
+  // If in Water Admin mode → bypass per-station PIN
+  if (SUB_ADMIN && SUB_ADMIN.scope === "water") {
+    SESSION_PIN = SUB_ADMIN.pin;
+    enterRecord();
+    return;
+  }
   // Check if PIN was remembered
   const storedPin = localStorage.getItem("wat_pin_" + stid);
   if (storedPin) {
@@ -801,6 +878,11 @@ function chooseStation(stid) {
 
 function chooseAmphoe(am) {
   SELECTED = { kind:"amphoe", name:am };
+  if (SUB_ADMIN && SUB_ADMIN.scope === "rain") {
+    SESSION_PIN = SUB_ADMIN.pin;
+    enterRecord();
+    return;
+  }
   const storedPin = localStorage.getItem("wat_amphoe_pin_" + am);
   if (storedPin) {
     SESSION_PIN = storedPin;
@@ -820,6 +902,11 @@ function chooseReservoir(rid) {
   const r = RESERVOIRS.find(x => x.id === rid);
   if (!r) return;
   SELECTED = { kind:"reservoir", ...r };
+  if (SUB_ADMIN && SUB_ADMIN.scope === "reservoir") {
+    SESSION_PIN = SUB_ADMIN.pin;
+    enterRecord();
+    return;
+  }
   const storedPin = localStorage.getItem("wat_res_pin_" + rid);
   if (storedPin) {
     SESSION_PIN = storedPin;
@@ -833,6 +920,78 @@ function chooseReservoir(rid) {
   document.getElementById("pin-error").classList.remove("on");
   showScreen("scr-pin");
   setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+/* ============================================================
+ *  SUB-ADMIN MODE (Water / Rain / Reservoir Admin)
+ *  เจ้าหน้าที่ที่กรอกข้ามทุกจุดในประเภทของตน
+ * ============================================================ */
+const SUB_ADMIN_LABELS = {
+  water:     { ico:"💧", title:"Water Admin", desc:"กรอกระดับน้ำได้ทุกสถานี (20 สถานี · 4 ลำน้ำ)", color:"#0c4a6e", bg:"#dbeafe" },
+  rain:      { ico:"🌧️", title:"Rain Admin",  desc:"กรอกฝนได้ทุกอำเภอ (6 อำเภอ)",                color:"#1e40af", bg:"#dbeafe" },
+  reservoir: { ico:"🏞️", title:"Reservoir Admin", desc:"กรอกอ่างเก็บน้ำได้ทุกอ่าง (14 อ่าง)",     color:"#065f46", bg:"#d1fae5" },
+};
+
+function openSubAdminLogin(scope) {
+  // ตรวจ stored sub-admin PIN ก่อน
+  const stored = sessionStorage.getItem("wat_subadmin_" + scope);
+  if (stored) {
+    // Verify still valid
+    verifySubAdminPin(scope, stored, true);
+    return;
+  }
+  const meta = SUB_ADMIN_LABELS[scope];
+  document.getElementById("pin-label").textContent = meta.ico + " " + meta.title;
+  document.getElementById("pin-target").textContent = meta.title;
+  document.getElementById("pin-meta").textContent = meta.desc;
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  // Mark pin screen as sub-admin mode
+  SELECTED = { kind:"subadmin", scope:scope };
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+async function verifySubAdminPin(scope, pin, fromCache) {
+  const actionMap = { water:"loginwateradmin", rain:"loginrainadmin", reservoir:"loginreservoiradmin" };
+  const resp = await api({ action:actionMap[scope], pin });
+  if (!resp || !resp.ok) {
+    if (fromCache) sessionStorage.removeItem("wat_subadmin_" + scope);
+    return { ok:false, error:resp&&resp.error };
+  }
+  // OK — set sub-admin mode
+  SUB_ADMIN = { scope:scope, pin:pin, role:resp.role };
+  sessionStorage.setItem("wat_subadmin_" + scope, pin);
+  updateSubAdminBanner();
+  // Set MODE to match scope
+  setMode(scope === "water" ? "water" : scope === "rain" ? "rain" : "reservoir");
+  showScreen("scr-choose");
+  return { ok:true };
+}
+
+function exitSubAdmin() {
+  if (SUB_ADMIN) {
+    sessionStorage.removeItem("wat_subadmin_" + SUB_ADMIN.scope);
+  }
+  SUB_ADMIN = null;
+  SESSION_PIN = "";
+  updateSubAdminBanner();
+}
+
+function updateSubAdminBanner() {
+  const active = document.getElementById("subAdminActive");
+  const entry  = document.getElementById("subAdminEntry");
+  if (SUB_ADMIN) {
+    const meta = SUB_ADMIN_LABELS[SUB_ADMIN.scope];
+    document.getElementById("subAdminIco").textContent = meta.ico;
+    document.getElementById("subAdminTitle").textContent = "🔐 " + meta.title + " Mode " + (SUB_ADMIN.role === "super_admin" ? "(Super Admin)" : "");
+    document.getElementById("subAdminDesc").textContent = meta.desc + " — เลือกจุดบันทึกใดก็ได้ ไม่ต้องใส่ PIN รายจุด";
+    active.classList.remove("hidden");
+    entry.classList.add("hidden");
+  } else {
+    active.classList.add("hidden");
+    entry.classList.remove("hidden");
+  }
 }
 
 /* ============================================================
@@ -850,6 +1009,19 @@ async function submitPin() {
   if (!pin) { errMsg.textContent = "กรุณากรอก PIN"; err.classList.add("on"); return; }
   const btn = document.getElementById("pin-submit");
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ตรวจสอบ...';
+
+  // === Sub-Admin login flow ===
+  if (SELECTED && SELECTED.kind === "subadmin") {
+    const result = await verifySubAdminPin(SELECTED.scope, pin, false);
+    btn.disabled = false; btn.innerHTML = "✓ เข้าระบบ";
+    if (!result.ok) {
+      errMsg.textContent = result.error || "PIN ไม่ถูกต้อง";
+      err.classList.add("on");
+    }
+    return;
+  }
+
+  // === Per-point login (เดิม) ===
   let resp;
   if (SELECTED.kind === "station") {
     resp = await api({ action:"loginstation", station_id:SELECTED.id, pin });
@@ -866,9 +1038,21 @@ async function submitPin() {
   }
   err.classList.remove("on");
   SESSION_PIN = pin;
-  if (SELECTED.kind === "station") localStorage.setItem("wat_pin_" + SELECTED.id, pin);
-  else if (SELECTED.kind === "amphoe") localStorage.setItem("wat_amphoe_pin_" + SELECTED.name, pin);
-  else if (SELECTED.kind === "reservoir") localStorage.setItem("wat_res_pin_" + SELECTED.id, pin);
+  // If logged in with sub-admin PIN, store it as sub-admin too
+  if (resp.role && (resp.role === "water_admin" || resp.role === "rain_admin" || resp.role === "reservoir_admin" || resp.role === "super_admin")) {
+    const scope = resp.role === "water_admin" ? "water" :
+                  resp.role === "rain_admin" ? "rain" :
+                  resp.role === "reservoir_admin" ? "reservoir" :
+                  (SELECTED.kind === "station" ? "water" : SELECTED.kind === "amphoe" ? "rain" : "reservoir");
+    SUB_ADMIN = { scope:scope, pin:pin, role:resp.role };
+    sessionStorage.setItem("wat_subadmin_" + scope, pin);
+    updateSubAdminBanner();
+  } else {
+    // Regular station/amphoe/reservoir PIN
+    if (SELECTED.kind === "station") localStorage.setItem("wat_pin_" + SELECTED.id, pin);
+    else if (SELECTED.kind === "amphoe") localStorage.setItem("wat_amphoe_pin_" + SELECTED.name, pin);
+    else if (SELECTED.kind === "reservoir") localStorage.setItem("wat_res_pin_" + SELECTED.id, pin);
+  }
   if (resp.station)   Object.assign(SELECTED, resp.station);
   if (resp.amphoe)    Object.assign(SELECTED, resp.amphoe);
   if (resp.reservoir) Object.assign(SELECTED, resp.reservoir);
@@ -883,6 +1067,31 @@ function enterRecord() {
   if (SELECTED.kind === "station") enterWaterForm();
   else if (SELECTED.kind === "amphoe") enterRainForm();
   else if (SELECTED.kind === "reservoir") enterReservoirForm();
+  applyAdminBadgeOnForm();
+}
+
+function applyAdminBadgeOnForm() {
+  // Update logout button label depending on whether we're in sub-admin mode
+  const label = SUB_ADMIN ? "← เปลี่ยนจุด" : "ออกระบบ";
+  ["logoutBtn1","logoutBtn2","logoutBtn3"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+  // Show Admin Mode badge inside meta field if applicable
+  if (SUB_ADMIN) {
+    const meta = SUB_ADMIN_LABELS[SUB_ADMIN.scope];
+    const badge = ` <span style="background:rgba(251,191,36,.25);border:1px solid rgba(251,191,36,.5);color:#fde68a;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:700;letter-spacing:.3px;margin-left:6px;">🔐 ${meta.title}</span>`;
+    if (SELECTED.kind === "station") {
+      const m = document.getElementById("w-meta");
+      if (m && !m.innerHTML.includes("🔐")) m.innerHTML += badge;
+    } else if (SELECTED.kind === "amphoe") {
+      const m = document.getElementById("r-meta");
+      if (m && !m.innerHTML.includes("🔐")) m.innerHTML += badge;
+    } else if (SELECTED.kind === "reservoir") {
+      const m = document.getElementById("rs-meta");
+      if (m && !m.innerHTML.includes("🔐")) m.innerHTML += badge;
+    }
+  }
 }
 
 function hideAllForms() {
@@ -1364,11 +1573,27 @@ async function saveReservoir() {
 }
 
 function logout() {
+  // If in sub-admin mode → just go back to choose screen, keep sub-admin session
+  if (SUB_ADMIN) {
+    SELECTED = null;
+    SESSION_PIN = "";
+    showScreen("scr-choose");
+    return;
+  }
+  // Regular logout — clear stored PIN for this entity
   if (SELECTED) {
     if (SELECTED.kind === "station") localStorage.removeItem("wat_pin_" + SELECTED.id);
     else if (SELECTED.kind === "amphoe") localStorage.removeItem("wat_amphoe_pin_" + SELECTED.name);
     else if (SELECTED.kind === "reservoir") localStorage.removeItem("wat_res_pin_" + SELECTED.id);
   }
+  SELECTED = null;
+  SESSION_PIN = "";
+  showScreen("scr-choose");
+}
+
+/** เปลี่ยนจุดบันทึก — เก็บ stored PIN ไว้ ไม่ logout
+ *  (ใช้ในกรณีอยู่ใน sub-admin mode ก็ไม่ออก) */
+function changePoint() {
   SELECTED = null;
   SESSION_PIN = "";
   showScreen("scr-choose");
@@ -1429,14 +1654,31 @@ function adminLogout() {
 
 function setAdminTab(t) {
   document.querySelectorAll(".admin-tab").forEach((b,i) => {
-    b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1) || (t==="reservoirs" && i===2));
+    b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1) || (t==="reservoirs" && i===2) || (t==="subadmins" && i===3));
   });
   document.getElementById("admin-tab-stations").classList.toggle("hidden", t!=="stations");
   document.getElementById("admin-tab-amphoes").classList.toggle("hidden", t!=="amphoes");
   document.getElementById("admin-tab-reservoirs").classList.toggle("hidden", t!=="reservoirs");
+  document.getElementById("admin-tab-subadmins").classList.toggle("hidden", t!=="subadmins");
   if (t === "stations") loadStationPins();
   else if (t === "amphoes") loadAmphoePins();
   else if (t === "reservoirs") loadReservoirPins();
+  else if (t === "subadmins") loadSubAdminStatus();
+}
+
+async function loadSubAdminStatus() {
+  const wrap = document.getElementById("subadmin-status");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังตรวจสถานะ...</div>';
+  // Try testing each sub-admin PIN by sending an obviously-wrong placeholder
+  // We can't read Script Properties from frontend — so just show generic info.
+  // Better: send adminpin and request a meta endpoint. We'll just show config tip.
+  wrap.innerHTML = `<div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;font-size:12.5px;color:var(--muted);line-height:1.7;">
+    <strong style="color:var(--ink);font-family:'Kanit',sans-serif;">📊 สถานะการใช้งาน Sub-Admin</strong><br>
+    ระบบไม่แสดงค่า PIN ปัจจุบันด้วยเหตุผลด้านความปลอดภัย หากต้องการดู/แก้ไข ให้เปิด Script Properties ใน Apps Script Editor<br>
+    <span style="margin-top:8px;display:inline-block;background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:11.5px;">
+      💡 ทดสอบ Sub-Admin PIN: ออกจาก Admin Panel → กดปุ่ม "💧/🌧️/🏞️ Admin" บนหน้า "เลือกจุด" → ใส่ PIN
+    </span>
+  </div>`;
 }
 
 async function loadStationPins() {
@@ -1687,6 +1929,17 @@ async function initReservoirPinsAdmin() {
  *  INIT
  * ============================================================ */
 renderChoose();
+
+// Restore Sub-Admin session if any
+(function restoreSubAdmin(){
+  for (const scope of ["water","rain","reservoir"]) {
+    const pin = sessionStorage.getItem("wat_subadmin_" + scope);
+    if (pin) {
+      verifySubAdminPin(scope, pin, true);
+      break;
+    }
+  }
+})();
 </script>
 </body>
 </html>
