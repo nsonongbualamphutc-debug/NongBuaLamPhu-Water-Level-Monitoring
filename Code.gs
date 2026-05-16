@@ -1085,7 +1085,35 @@ function getHeaders(sheet){
   if(sheet.getLastColumn() < 1 || sheet.getLastRow() < 1) return [];
   return sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
 }
-function sheetToObjects(sheet){if(!sheet)return[];const data=sheet.getDataRange().getValues();if(data.length<2)return[];const headers=data[0];return data.slice(1).map(row=>{const obj={};headers.forEach((h,i)=>{let v=row[i];if(v instanceof Date)v=Utilities.formatDate(v,"Asia/Bangkok","yyyy-MM-dd");obj[h]=v;});return obj;}).filter(o=>Object.values(o).some(v=>v!==""&&v!==null&&v!==undefined));}
+function sheetToObjects(sheet){
+  if(!sheet)return[];
+  const data=sheet.getDataRange().getValues();
+  if(data.length<2)return[];
+  const headers=data[0];
+  // ระบุคอลัมน์ที่เป็น "เวลา" (HH:mm) แยกจาก "วันที่" (yyyy-MM-dd)
+  const TIME_COLS = ["time","start_time","end_time","updated_at","saved_at","created_at"];
+  return data.slice(1).map(row=>{
+    const obj={};
+    headers.forEach((h,i)=>{
+      let v=row[i];
+      if(v instanceof Date){
+        const hLower = String(h||"").toLowerCase();
+        if(hLower === "time" || hLower === "start_time" || hLower === "end_time"){
+          // คอลัมน์ "เวลา" → format เป็น HH:mm
+          v = Utilities.formatDate(v, "Asia/Bangkok", "HH:mm");
+        } else if(hLower.indexOf("_at") !== -1 || hLower === "timestamp" || hLower === "datetime"){
+          // คอลัมน์ timestamp → format เป็น yyyy-MM-dd HH:mm:ss
+          v = Utilities.formatDate(v, "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss");
+        } else {
+          // คอลัมน์ "วันที่" และอื่นๆ → yyyy-MM-dd
+          v = Utilities.formatDate(v, "Asia/Bangkok", "yyyy-MM-dd");
+        }
+      }
+      obj[h]=v;
+    });
+    return obj;
+  }).filter(o=>Object.values(o).some(v=>v!==""&&v!==null&&v!==undefined));
+}
 
 /** สร้าง sheet อัตโนมัติพร้อม header ถ้าไม่มี — เลี่ยง null.getRange() error */
 function ensureSheet_(name, headers) {

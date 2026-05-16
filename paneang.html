@@ -857,7 +857,7 @@ async function loadData(){
       const res = await fetch(API_URL + "?action=paneang");
       const data = await res.json();
       if(data.stations) data.stations.forEach(item => {
-        if(stationData[item.id]) stationData[item.id].current = item.current;
+        if(stationData[item.id] && item.current != null) stationData[item.id].current = item.current;
       });
     }catch(e){console.warn("API unavailable, using demo data");}
   }
