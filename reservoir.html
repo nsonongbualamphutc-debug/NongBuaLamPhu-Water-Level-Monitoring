@@ -281,6 +281,14 @@ footer strong { color: #fff; }
 ::-webkit-scrollbar { width: 8px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f0fdfa; }
 ::-webkit-scrollbar-thumb { background: #67e8f9; border-radius: 4px; }
+
+.water-tooltip{
+  background:rgba(2,132,199,.95)!important;color:#fff!important;border:none!important;
+  font-family:'Sarabun',sans-serif!important;font-weight:600!important;font-size:12px!important;
+  padding:5px 10px!important;border-radius:6px!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.25)!important;
+}
+.water-tooltip::before{border-top-color:rgba(2,132,199,.95)!important;}
 </style>
 </head>
 <body>
@@ -552,8 +560,104 @@ function initMap() {
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
     attribution:"", maxNativeZoom:16, maxZoom:19, opacity:.85
   }).addTo(mapInst);
+  // เสริมแผนที่: ขอบเขตอำเภอ + เส้นน้ำ 4 ลำ
+  enhanceResMap(mapInst);
   renderMapMarkers();
 }
+
+async function enhanceResMap(map) {
+  // === ขอบเขตอำเภอ ===
+  try {
+    const dRes = await fetch("https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/districts.geojson");
+    const dGeo = await dRes.json();
+    const nbpDistricts = {
+      type:"FeatureCollection",
+      features:(dGeo.features||[]).filter(f => String(f.properties?.pro_code) === "39")
+    };
+    L.geoJSON(nbpDistricts, {
+      style: { color:"#475569", weight:1.5, fillColor:"#cbd5e1", fillOpacity:0.04, dashArray:"4,3" },
+      onEachFeature: (f,l) => {
+        l.bindTooltip(`<strong>อ.${f.properties.amp_th}</strong>`,{sticky:true,direction:"top"});
+        l.on("mouseover",e=>e.target.setStyle({fillOpacity:0.15,weight:2,color:"#0c4a6e"}));
+        l.on("mouseout", e=>e.target.setStyle({fillOpacity:0.04,weight:1.5,color:"#475569"}));
+      }
+    }).addTo(map);
+    console.log("[ResMap] โหลดขอบเขตอำเภอ", nbpDistricts.features.length, "อำเภอ");
+  } catch(e) { console.warn("[ResMap] district load fail", e); }
+
+  // === แม่น้ำ/สระ/อ่าง จาก OSM ===
+  loadResOSMWater(map);
+}
+
+async function loadResOSMWater(map) {
+  const bbox = "16.85,101.93,17.62,102.66";
+  const query = `[out:json][timeout:60];(way["waterway"~"^(river|stream|canal|ditch|drain)$"](${bbox});way["natural"="water"](${bbox});relation["natural"="water"](${bbox});way["landuse"="reservoir"](${bbox});relation["landuse"="reservoir"](${bbox});way["landuse"="basin"](${bbox}););out geom;`;
+  const servers = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter"
+  ];
+
+  const loadingBadge = L.control({position:"topleft"});
+  loadingBadge.onAdd = function() {
+    const div = L.DomUtil.create("div","");
+    div.style.cssText = "background:rgba(2,132,199,.95);color:#fff;padding:7px 12px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:11.5px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);";
+    div.innerHTML = "💧 กำลังโหลดเส้นน้ำ OSM...";
+    return div;
+  };
+  loadingBadge.addTo(map);
+
+  let data = null;
+  for (const url of servers) {
+    try {
+      const res = await fetch(url, { method:"POST", body:"data="+encodeURIComponent(query), headers:{"Content-Type":"application/x-www-form-urlencoded"} });
+      if (res.ok) { data = await res.json(); break; }
+    } catch(e) {}
+  }
+  map.removeControl(loadingBadge);
+  if (!data || !data.elements) return;
+
+  let lines = 0, polys = 0;
+  data.elements.forEach(el => {
+    if (!el.geometry || !el.tags) return;
+    const t = el.tags;
+    const coords = el.geometry.map(g => [g.lat, g.lon]);
+    if (t.waterway) {
+      const isMajor = t.waterway === "river" || t.waterway === "canal";
+      let weight = 1.5, color = "#0ea5e9", opacity = 0.85;
+      if (t.waterway === "river")       { weight = 4;   color = "#0284c7"; opacity = 0.95; }
+      else if (t.waterway === "canal")  { weight = 3;   color = "#0891b2"; opacity = 0.90; }
+      else if (t.waterway === "stream") { weight = 2;   color = "#06b6d4"; opacity = 0.85; }
+      else                              { weight = 1.2; color = "#22d3ee"; opacity = 0.75; }
+      if (isMajor) L.polyline(coords,{color:"#fff",weight:weight+3,opacity:0.6,lineJoin:"round",lineCap:"round"}).addTo(map);
+      const line = L.polyline(coords,{color,weight,opacity,lineJoin:"round",lineCap:"round"});
+      const name = t.name || t["name:th"] || t["name:en"] || "";
+      const lbl = ({river:"แม่น้ำ",canal:"คลอง",stream:"ลำห้วย/ลำธาร",ditch:"คูระบายน้ำ",drain:"ทางระบายน้ำ"})[t.waterway] || t.waterway;
+      line.bindTooltip(name ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${lbl}</span>` : lbl, {sticky:true,direction:"top",className:"water-tooltip"});
+      line.addTo(map);
+      lines++;
+    } else if (t.natural === "water" || t.landuse === "reservoir" || t.landuse === "basin") {
+      const poly = L.polygon(coords,{color:"#0284c7",weight:2,opacity:0.9,fillColor:"#38bdf8",fillOpacity:0.55});
+      const name = t.name || t["name:th"] || t["name:en"] || "";
+      const lbl = (t.water==="reservoir"||t.landuse==="reservoir") ? "อ่างเก็บน้ำ" : t.water==="lake"?"ทะเลสาบ":t.water==="pond"?"สระ/บ่อ":t.landuse==="basin"?"แอ่งกักน้ำ":"แหล่งน้ำ";
+      poly.bindTooltip(name ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${lbl}</span>` : lbl, {sticky:true,direction:"top",className:"water-tooltip"});
+      poly.addTo(map);
+      polys++;
+    }
+  });
+  console.log(`[ResMap OSM] วาดเส้นน้ำ ${lines} เส้น · สระ-อ่าง ${polys} แห่ง`);
+
+  const success = L.control({position:"topleft"});
+  success.onAdd = function() {
+    const div = L.DomUtil.create("div","");
+    div.style.cssText = "background:rgba(16,185,129,.95);color:#fff;padding:7px 12px;border-radius:9px;font-family:'Sarabun',sans-serif;font-size:11.5px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);";
+    div.innerHTML = `✅ ${lines} เส้น · ${polys} สระ-อ่าง`;
+    return div;
+  };
+  success.addTo(map);
+  setTimeout(()=>map.removeControl(success),4500);
+}
+
 
 function markerIcon(r) {
   const p = pctOf(r);
