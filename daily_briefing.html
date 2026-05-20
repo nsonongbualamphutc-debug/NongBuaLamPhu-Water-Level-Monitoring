@@ -898,6 +898,8 @@ footer strong{color:var(--ink-2);font-weight:600;}
     <a href="daily_briefing.html" class="active">สภาพอากาศ</a>
     <a href="paneang.html">ลำน้ำพะเนียง</a>
     <a href="mong.html">ลำน้ำโมง</a>
+    <a href="mo.html">ลำน้ำมอ</a>
+    <a href="phuay.html">ลำน้ำพวย</a>
     <a href="rainfall.html">ปริมาณฝน</a>
     <a href="reservoir.html">อ่างเก็บน้ำ</a>
     <a href="input.html">บันทึกข้อมูล</a>
@@ -2585,7 +2587,8 @@ async function loadAll(){
   _lastUpdate = Date.now();
   updateRefreshUI();
   startCountdown(_nextRefreshMs);
-  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini,800);
+  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini, 15000); // รอ 15 วิหลังโหลด
+setInterval(runGemini, 30*60*1000); // ทุก 30 นาที
 }
 
 initMap();
