@@ -31,207 +31,428 @@ const RESERVOIR_HEADERS = [
 
 // ===== ENTRY POINTS =====
 
+/**
+ * ============================================================
+ * Code.gs — PATCH v3.1
+ * เพิ่ม / แก้ไข 3 ส่วน:
+ *   1. CacheService — cache GET read actions 60 วินาที
+ *   2. doPost() — sync PIN logic เหมือน doGet (แยกรายสถานี/อำเภอ)
+ *   3. clearCache() — helper เรียกใน Apps Script Editor เมื่อต้องการ flush
+ *
+ * วิธีใช้:
+ *   - นำส่วน REPLACE ไปแทนที่ฟังก์ชันเดิมใน Code.gs
+ *   - ส่วน "เพิ่มใหม่ท้ายไฟล์" ให้ paste ต่อท้าย Code.gs
+ * ============================================================
+ */
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 1: แทนที่ doGet() ทั้งหมด — เพิ่ม CacheService
+ * ══════════════════════════════════════════════════
+ * READ actions (summary, paneang, mong, mo, phuay, stations,
+ * stationlist, water, rain, reservoir, history, dailyreport)
+ * จะถูก cache ไว้ 60 วินาทีเพื่อลดการอ่าน Sheet ซ้ำๆ
+ */
+
 function doGet(e) {
   const params   = (e && e.parameter) ? e.parameter : {};
-  const action   = (params.action   || "summary").toLowerCase();
+  const action   = (params.action || "summary").toLowerCase();
   const callback = params.callback;
+
   let data;
 
   const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport"];
 
   try {
-    // === WRITE ACTIONS via GET — PIN แยกตามสถานี/อำเภอ ===
+
+    /* ── WRITE via GET ── */
     if (WRITE_ACTIONS.indexOf(action) !== -1) {
       const pin = String(params.pin || "").trim();
-      let pinOk = false;
-      let pinError = "PIN ไม่ถูกต้อง";
+      let pinOk = false, pinError = "PIN ไม่ถูกต้อง";
 
       if (PIN_REQUIRED) {
-        // อนุญาต Admin master PIN override ทุก action
         if (action === "savewater") {
           const stid = String(params.station_id || "").toUpperCase();
-          if (!stid) pinError = "ไม่ระบุรหัสสถานี (station_id)";
+          if (!stid) { pinError = "ไม่ระบุรหัสสถานี (station_id)"; }
           else {
             const acc = verifyWaterAccess(stid, pin);
-            if (acc.ok) { pinOk = true; if(acc.role==="station") touchStationPinLastUsed(stid); }
+            if (acc.ok) { pinOk = true; if (acc.role === "station") touchStationPinLastUsed(stid); }
             else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
           }
         } else if (action === "saverain") {
           const amphoe = String(params.amphoe || "");
-          if (!amphoe) pinError = "ไม่ระบุอำเภอ";
+          if (!amphoe) { pinError = "ไม่ระบุอำเภอ"; }
           else {
             const acc = verifyRainAccess(amphoe, pin);
-            if (acc.ok) { pinOk = true; if(acc.role==="amphoe") touchAmphoePinLastUsed(amphoe); }
+            if (acc.ok) { pinOk = true; if (acc.role === "amphoe") touchAmphoePinLastUsed(amphoe); }
             else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
           }
         } else if (action === "savereservoir") {
           const rid = String(params.reservoir_id || "").toUpperCase();
-          if (!rid) pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ (reservoir_id)";
+          if (!rid) { pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ (reservoir_id)"; }
           else {
             const acc = verifyReservoirAccess(rid, pin);
-            if (acc.ok) { pinOk = true; if(acc.role==="reservoir") touchReservoirPinLastUsed(rid); }
+            if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
             else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
           }
         } else if (verifyAdminPin(pin)) {
-          // savedailyreport — Super admin
-          pinOk = true;
+          pinOk = true; // savedailyreport via admin
         } else {
-          // savedailyreport — fallback legacy APP_PIN
           const expected = getAppPin();
           if (expected && pin === expected) pinOk = true;
-          else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับการบันทึก " + action;
+          else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
         }
       } else {
         pinOk = true;
       }
 
-      if (!pinOk) return respond({ ok:false, error:pinError, code:"INVALID_PIN" }, callback);
+      if (!pinOk) return respond({ ok: false, error: pinError, code: "INVALID_PIN" }, callback);
 
       const payload = {};
-      Object.keys(params).forEach(function(k){
-        if (k === 'callback') return;
-        payload[k] = params[k];
-      });
+      Object.keys(params).forEach(function(k) { if (k !== 'callback') payload[k] = params[k]; });
+
       switch (action) {
-        case "savewater":       data = saveWaterLevel(payload); break;
-        case "saverain":        data = saveRainfall(payload); break;
-        case "savereservoir":   data = saveReservoir(payload); break;
-        case "savedailyreport": data = saveDailyReport(payload); break;
+        case "savewater":      data = saveWaterLevel(payload);  break;
+        case "saverain":       data = saveRainfall(payload);    break;
+        case "savereservoir":  data = saveReservoir(payload);   break;
+        case "savedailyreport":data = saveDailyReport(payload); break;
       }
+
+      /* Flush cache เมื่อมีข้อมูลใหม่ */
+      invalidateSummaryCache_();
       return respond(data, callback);
     }
 
-    // === PUBLIC LOGIN — verify PIN, return entity info if ok ===
+    /* ── LOGIN endpoints ── (ไม่ cache) */
     if (action === "loginstation") {
       const stid = String(params.station_id || "").toUpperCase();
       const pin  = String(params.pin || "").trim();
-      if (!stid) return respond({ ok:false, error:"ไม่ระบุรหัสสถานี" }, callback);
+      if (!stid) return respond({ ok: false, error: "ไม่ระบุรหัสสถานี" }, callback);
       const acc = verifyWaterAccess(stid, pin);
-      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      return respond({ ok:true, role:acc.role, station: getStationContext(stid) }, callback);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, station: getStationContext(stid) }, callback);
     }
     if (action === "loginamphoe") {
       const am  = String(params.amphoe || "");
       const pin = String(params.pin || "").trim();
-      if (!am) return respond({ ok:false, error:"ไม่ระบุอำเภอ" }, callback);
+      if (!am) return respond({ ok: false, error: "ไม่ระบุอำเภอ" }, callback);
       const acc = verifyRainAccess(am, pin);
-      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      return respond({ ok:true, role:acc.role, amphoe: getAmphoeContext(am) }, callback);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, amphoe: getAmphoeContext(am) }, callback);
     }
     if (action === "loginreservoir") {
       const rid = String(params.reservoir_id || "").toUpperCase();
       const pin = String(params.pin || "").trim();
-      if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+      if (!rid) return respond({ ok: false, error: "ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
       const acc = verifyReservoirAccess(rid, pin);
-      if (!acc.ok) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-      return respond({ ok:true, role:acc.role, reservoir: getReservoirContext(rid) }, callback);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, reservoir: getReservoirContext(rid) }, callback);
     }
-
-    // ===== Sub-Admin login: ตรวจว่า PIN เป็น sub-admin หรือ super-admin =====
-    // ใช้ใน input.html เพื่อให้ user "เข้าระบบ admin" แล้วเลือกสถานีอะไรก็ได้
-    if (action === "loginwateradmin")     return respond(checkSubAdminRole("water", String(params.pin||"")), callback);
-    if (action === "loginrainadmin")      return respond(checkSubAdminRole("rain", String(params.pin||"")), callback);
-    if (action === "loginreservoiradmin") return respond(checkSubAdminRole("reservoir", String(params.pin||"")), callback);
+    if (action === "loginwateradmin")   return respond(checkSubAdminRole("water",     String(params.pin||"")), callback);
+    if (action === "loginrainadmin")    return respond(checkSubAdminRole("rain",      String(params.pin||"")), callback);
+    if (action === "loginreservoiradmin") return respond(checkSubAdminRole("reservoir",String(params.pin||"")), callback);
     if (action === "adminlogin") {
       const pin = String(params.pin || "").trim();
-      if (!verifyAdminPin(pin)) return respond({ ok:false, error:"PIN ผู้ดูแลระบบไม่ถูกต้อง" }, callback);
-      return respond({ ok:true, role:"admin" }, callback);
+      if (!verifyAdminPin(pin)) return respond({ ok: false, error: "PIN ผู้ดูแลระบบไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: "admin" }, callback);
     }
 
-    // === ADMIN ACTIONS (need admin pin in `adminpin` param) ===
-    const adminActions = ["liststationpins","setstationpin","initstationpins","listamphoepins","setamphoepin","initamphoepins","listreservoirpins","setreservoirpin","initreservoirpins","stationcontext","amphoecontext","reservoircontext"];
+    /* ── ADMIN actions ── (ไม่ cache) */
+    const adminActions = [
+      "liststationpins","setstationpin","initstationpins",
+      "listamphoepins","setamphoepin","initamphoepins",
+      "listreservoirpins","setreservoirpin","initreservoirpins",
+      "stationcontext","amphoecontext","reservoircontext"
+    ];
     if (adminActions.indexOf(action) !== -1) {
       const adminpin = String(params.adminpin || params.pin || "").trim();
-      const isAdmin = verifyAdminPin(adminpin);
+      const isAdmin  = verifyAdminPin(adminpin);
+
       if (action === "stationcontext") {
         const stid = String(params.station_id || "").toUpperCase();
-        if (!stid) return respond({ ok:false, error:"ไม่ระบุรหัสสถานี" }, callback);
-        if (!isAdmin && !verifyWaterAdminPin(adminpin) && !verifyStationPin(stid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-        return respond({ ok:true, station: getStationContext(stid) }, callback);
+        if (!stid) return respond({ ok: false, error: "ไม่ระบุรหัสสถานี" }, callback);
+        if (!isAdmin && !verifyWaterAdminPin(adminpin) && !verifyStationPin(stid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, station: getStationContext(stid) }, callback);
       }
       if (action === "amphoecontext") {
         const am = String(params.amphoe || "");
-        if (!am) return respond({ ok:false, error:"ไม่ระบุอำเภอ" }, callback);
-        if (!isAdmin && !verifyRainAdminPin(adminpin) && !verifyAmphoePin(am, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-        return respond({ ok:true, amphoe: getAmphoeContext(am) }, callback);
+        if (!am) return respond({ ok: false, error: "ไม่ระบุอำเภอ" }, callback);
+        if (!isAdmin && !verifyRainAdminPin(adminpin) && !verifyAmphoePin(am, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, amphoe: getAmphoeContext(am) }, callback);
       }
       if (action === "reservoircontext") {
         const rid = String(params.reservoir_id || "").toUpperCase();
-        if (!rid) return respond({ ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
-        if (!isAdmin && !verifyReservoirAdminPin(adminpin) && !verifyReservoirPin(rid, adminpin)) return respond({ ok:false, error:"PIN ไม่ถูกต้อง" }, callback);
-        return respond({ ok:true, reservoir: getReservoirContext(rid) }, callback);
+        if (!rid) return respond({ ok: false, error: "ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+        if (!isAdmin && !verifyReservoirAdminPin(adminpin) && !verifyReservoirPin(rid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, reservoir: getReservoirContext(rid) }, callback);
       }
-      if (!isAdmin) return respond({ ok:false, error:"ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
+      if (!isAdmin) return respond({ ok: false, error: "ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
       switch (action) {
-        case "liststationpins":   data = listStationPins();  break;
+        case "liststationpins":   data = listStationPins();                                                break;
         case "setstationpin":     data = setStationPin_(params.station_id, params.new_pin, params.recorder_name); break;
-        case "initstationpins":   data = initStationPins();  break;
-        case "listamphoepins":    data = listAmphoePins();   break;
+        case "initstationpins":   data = initStationPins();                                               break;
+        case "listamphoepins":    data = listAmphoePins();                                                break;
         case "setamphoepin":      data = setAmphoePin_(params.amphoe, params.new_pin, params.recorder_name); break;
-        case "initamphoepins":    data = initAmphoePins();   break;
-        case "listreservoirpins": data = listReservoirPins(); break;
+        case "initamphoepins":    data = initAmphoePins();                                                break;
+        case "listreservoirpins": data = listReservoirPins();                                             break;
         case "setreservoirpin":   data = setReservoirPin_(params.reservoir_id, params.new_pin, params.recorder_name); break;
-        case "initreservoirpins": data = initReservoirPins(); break;
+        case "initreservoirpins": data = initReservoirPins();                                             break;
       }
       return respond(data, callback);
     }
 
-    // === READ ACTIONS (เดิม) ===
-    switch (action) {
-      case "summary":     data = getSummary(); break;
-      case "paneang":     data = getRiverDashboard("paneang"); break;
-      case "mong":        data = getRiverDashboard("mong"); break;
-      case "mo":          data = getRiverDashboard("mo"); break;
-      case "phuay":       data = getRiverDashboard("phuay"); break;
-      case "stations":    data = getStations(params.river); break;
-      case "stationlist": data = getStationListPublic(); break;  // ใช้ใน login screen
-      case "water":       data = getWaterLevels(params.station_id, parseInt(params.days||"7")); break;
-      case "rain":        data = getRainfall(parseInt(params.days||"7")); break;
-      case "reservoir":   data = getReservoirs(); break;
-      case "history":     data = getHistory(parseInt(params.limit||"20")); break;
-      case "dailyreport": data = getDailyReport(params.date); break;
-      case "ping":        data = { ok:true, time:new Date().toISOString() }; break;
-      default:            data = { error:"unknown action: "+action };
-    }
-  } catch(err) { data = { ok:false, error:err.toString() }; }
+    /* ── READ actions (with CacheService) ── */
+    data = getCachedOrFresh_(action, params);
+
+  } catch (err) {
+    data = { ok: false, error: err.toString() };
+  }
+
   return respond(data, callback);
 }
+
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 2: แทนที่ doPost() — sync PIN เหมือน doGet
+ * ══════════════════════════════════════════════════ */
 
 function doPost(e) {
   let payload = {};
   try {
-    if (e && e.postData && e.postData.contents) payload = JSON.parse(e.postData.contents);
-    else if (e && e.parameter) payload = e.parameter;
-  } catch(err) { return respond({ ok:false, error:"Invalid JSON: "+err.toString() }); }
+    if (e && e.postData && e.postData.contents) {
+      payload = JSON.parse(e.postData.contents);
+    } else if (e && e.parameter) {
+      payload = e.parameter;
+    }
+  } catch (err) {
+    return respond({ ok: false, error: "Invalid JSON: " + err.toString() });
+  }
 
-  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport"];
   const action = (payload.action || "").toLowerCase();
+  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport"];
 
-  // PIN CHECK สำหรับ action เขียนข้อมูล
+  /* PIN CHECK — ใช้ logic เดียวกับ doGet (แยกรายสถานี/อำเภอ/อ่าง) */
   if (PIN_REQUIRED && WRITE_ACTIONS.indexOf(action) !== -1) {
-    const expectedPin = getAppPin();
-    if (!expectedPin) {
-      return respond({ ok:false, error:"ยังไม่ได้ตั้งค่า APP_PIN ใน Script Properties", code:"PIN_NOT_CONFIGURED" });
-    }
     const pin = String(payload.pin || "").trim();
-    if (pin !== expectedPin) {
-      return respond({ ok:false, error:"PIN ไม่ถูกต้อง", code:"INVALID_PIN" });
+    let pinOk = false, pinError = "PIN ไม่ถูกต้อง";
+
+    if (action === "savewater") {
+      const stid = String(payload.station_id || "").toUpperCase();
+      if (!stid) { pinError = "ไม่ระบุรหัสสถานี"; }
+      else {
+        const acc = verifyWaterAccess(stid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "station") touchStationPinLastUsed(stid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
+      }
+    } else if (action === "saverain") {
+      const amphoe = String(payload.amphoe || "");
+      if (!amphoe) { pinError = "ไม่ระบุอำเภอ"; }
+      else {
+        const acc = verifyRainAccess(amphoe, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "amphoe") touchAmphoePinLastUsed(amphoe); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+      }
+    } else if (action === "savereservoir") {
+      const rid = String(payload.reservoir_id || "").toUpperCase();
+      if (!rid) { pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ"; }
+      else {
+        const acc = verifyReservoirAccess(rid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
+      }
+    } else if (verifyAdminPin(pin)) {
+      pinOk = true;
+    } else {
+      /* fallback: legacy APP_PIN สำหรับ savedailyreport */
+      const expected = getAppPin();
+      if (expected && pin === expected) pinOk = true;
+      else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
     }
+
+    if (!pinOk) return respond({ ok: false, error: pinError, code: "INVALID_PIN" });
   }
 
   let result;
   try {
     switch (action) {
-      case "savewater":       result = saveWaterLevel(payload); break;
-      case "saverain":        result = saveRainfall(payload); break;
-      case "savereservoir":   result = saveReservoir(payload); break;
-      case "savedailyreport": result = saveDailyReport(payload); break;
-      case "summary":         result = getSummary(); break;
-      case "reservoir":       result = getReservoirs(); break;
-      default:                result = { ok:false, error:"unknown action: "+action };
+      case "savewater":      result = saveWaterLevel(payload);  break;
+      case "saverain":       result = saveRainfall(payload);    break;
+      case "savereservoir":  result = saveReservoir(payload);   break;
+      case "savedailyreport":result = saveDailyReport(payload); break;
+      case "summary":        result = getSummaryWithCache_();   break;
+      case "reservoir":      result = getReservoirs();          break;
+      default:               result = { ok: false, error: "unknown action: " + action };
     }
-  } catch(err) { result = { ok:false, error:err.toString() }; }
+    /* Flush cache เมื่อมีการบันทึกข้อมูล */
+    if (WRITE_ACTIONS.indexOf(action) !== -1 && result && result.ok) {
+      invalidateSummaryCache_();
+    }
+  } catch (err) {
+    result = { ok: false, error: err.toString() };
+  }
+
   return respond(result);
+}
+
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 3: เพิ่มใหม่ท้ายไฟล์ — CacheService helpers
+ * ══════════════════════════════════════════════════ */
+
+/** Cache TTL ในวินาที */
+const CACHE_TTL = {
+  summary:    60,   // 60 วินาที
+  paneang:    60,
+  mong:       60,
+  mo:         60,
+  phuay:      60,
+  stations:   300,  // 5 นาที (ข้อมูลคงที่กว่า)
+  stationlist:300,
+  rain:       120,  // 2 นาที
+  reservoir:  120,
+  history:    60,
+  dailyreport:120,
+};
+
+/** สร้าง cache key จาก action + params ที่เกี่ยวข้อง */
+function cacheKey_(action, params) {
+  params = params || {};
+  switch (action) {
+    case "water":   return "nbp_" + action + "_" + (params.station_id||"all") + "_" + (params.days||7);
+    case "rain":    return "nbp_" + action + "_" + (params.days||7);
+    case "history": return "nbp_" + action + "_" + (params.limit||20);
+    case "dailyreport": return "nbp_dailyreport_" + (params.date || "latest");
+    case "stations":    return "nbp_stations_" + (params.river||"all");
+    default:        return "nbp_" + action;
+  }
+}
+
+/**
+ * ดึงข้อมูลจาก Cache หรือคำนวณใหม่แล้ว cache ไว้
+ */
+function getCachedOrFresh_(action, params) {
+  const cache = CacheService.getScriptCache();
+  const key   = cacheKey_(action, params);
+  const ttl   = CACHE_TTL[action] || 60;
+
+  try {
+    const cached = cache.get(key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      parsed._cached    = true;
+      parsed._cache_key = key;
+      return parsed;
+    }
+  } catch (e) { /* cache miss หรือ parse error — คำนวณใหม่ */ }
+
+  let data;
+  switch (action) {
+    case "summary":     data = getSummary(); break;
+    case "paneang":     data = getRiverDashboard("paneang"); break;
+    case "mong":        data = getRiverDashboard("mong"); break;
+    case "mo":          data = getRiverDashboard("mo"); break;
+    case "phuay":       data = getRiverDashboard("phuay"); break;
+    case "stations":    data = getStations(params.river); break;
+    case "stationlist": data = getStationListPublic(); break;
+    case "water":       data = getWaterLevels(params.station_id, parseInt(params.days||"7")); break;
+    case "rain":        data = getRainfall(parseInt(params.days||"7")); break;
+    case "reservoir":   data = getReservoirs(); break;
+    case "history":     data = getHistory(parseInt(params.limit||"20")); break;
+    case "dailyreport": data = getDailyReport(params.date); break;
+    case "ping":        return { ok: true, time: new Date().toISOString() };
+    default:            return { error: "unknown action: " + action };
+  }
+
+  try {
+    const str = JSON.stringify(data);
+    if (str.length < 100000) { /* CacheService limit ~100 KB */
+      cache.put(key, str, ttl);
+    }
+  } catch (e) { /* ข้ามถ้า JSON ใหญ่เกิน */ }
+
+  return data;
+}
+
+/**
+ * getSummaryWithCache_ — ใช้ใน doPost
+ */
+function getSummaryWithCache_() {
+  return getCachedOrFresh_("summary", {});
+}
+
+/**
+ * invalidateSummaryCache_ — flush cache ทุก key หลังบันทึกข้อมูล
+ */
+function invalidateSummaryCache_() {
+  try {
+    const cache = CacheService.getScriptCache();
+    const keys  = ["nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_history_20"];
+    cache.removeAll(keys);
+  } catch (e) { /* ignore */ }
+}
+
+/**
+ * clearCache — เรียกจาก Apps Script Editor เพื่อ flush ทั้งหมด
+ * (เรียกด้วยมือ: เปิด Editor → Run → clearCache)
+ */
+function clearCache() {
+  try {
+    CacheService.getScriptCache().removeAll([
+      "nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay",
+      "nbp_stations_all","nbp_stationlist","nbp_rain_1","nbp_rain_7",
+      "nbp_reservoir","nbp_history_20","nbp_dailyreport_latest",
+    ]);
+    Logger.log("✅ Cache cleared successfully");
+  } catch (e) {
+    Logger.log("❌ Cache clear error: " + e.toString());
+  }
+}
+
+/**
+ * Line Notify helper — ส่งแจ้งเตือนวิกฤติ
+ * ตั้ง Script Property: LINE_NOTIFY_TOKEN = <token>
+ * สร้าง Time-trigger ทุก 30 นาที เรียก checkAndNotify()
+ */
+function checkAndNotify() {
+  const token = PropertiesService.getScriptProperties().getProperty("LINE_NOTIFY_TOKEN");
+  if (!token) return;
+
+  const summary = getSummary();
+  if (!summary || !summary.stations) return;
+
+  const crit = summary.stations.filter(function(s) { return s.status === "วิกฤติ"; });
+  if (!crit.length) return;
+
+  /* ตรวจว่าแจ้งแล้วหรือยัง (ป้องกันแจ้งซ้ำทุก 30 นาที) */
+  const cache     = CacheService.getScriptCache();
+  const notifyKey = "nbp_last_notify_" + crit.map(function(s){return s.station_id;}).join("_");
+  if (cache.get(notifyKey)) return; /* แจ้งแล้วใน 2 ชม. */
+
+  const lines = crit.map(function(s) {
+    return "🔴 " + s.name + " (อ." + s.amphoe + ") ระดับน้ำ " +
+      (s.current_level || s.current || "?") + " ม. / ตลิ่ง " +
+      (s.bank_level || s.bank || "?") + " ม.";
+  });
+
+  const msg = "\n⚠️ แจ้งเตือนน้ำวิกฤติ\nจ.หนองบัวลำภู " +
+    Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm") + " น.\n\n" +
+    lines.join("\n") +
+    "\n\nกรุณาดูข้อมูลเพิ่มเติม: https://nsonongbualamphutc-debug.github.io/NongBuaLamPhu-Water-Level-Monitoring/";
+
+  try {
+    UrlFetchApp.fetch("https://notify-api.line.me/api/notify", {
+      method: "post",
+      headers: { Authorization: "Bearer " + token },
+      payload: { message: msg },
+      muteHttpExceptions: true,
+    });
+    cache.put(notifyKey, "1", 7200); /* ไม่แจ้งซ้ำ 2 ชม. */
+    Logger.log("✅ Line Notify ส่งแล้ว: " + crit.length + " สถานีวิกฤติ");
+  } catch (err) {
+    Logger.log("❌ Line Notify error: " + err.toString());
+  }
 }
 
 // ===== READ =====
