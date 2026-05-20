@@ -15,6 +15,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="smart_summary.js"></script>
 <script src="config.js"></script>
 <style>
 :root{
@@ -2093,7 +2094,7 @@ function togglePlay(){
 let aiRunning=false;
 async function runGemini(){
   if(aiRunning)return;
-  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "AIzaSyA6OnCaihPZB7HY3NjILliaoKhJ_KBY1Ec" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
+  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
   aiRunning=true;$('aiBtnRun').disabled=true;
   ht('aiTxt','<div class="ai-spin"><span class="spinner"></span> Gemini กำลังวิเคราะห์สถานการณ์...</div>');
   tx('aiKeyNote','Gemini AI · ประมวลผล...');
@@ -2587,8 +2588,8 @@ async function loadAll(){
   _lastUpdate = Date.now();
   updateRefreshUI();
   startCountdown(_nextRefreshMs);
-  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini, 15000); // รอ 15 วิหลังโหลด
-setInterval(runGemini, 30*60*1000); // ทุก 30 นาที
+  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini, 8000); // รอ 15 วิหลังโหลด
+setInterval(runGemini, 15*60*1000); // ทุก 30 นาที
 }
 
 initMap();
