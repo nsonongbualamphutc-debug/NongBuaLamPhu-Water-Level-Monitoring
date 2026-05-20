@@ -19,5 +19,5 @@ window.APP_CONFIG = {
   // รับฟรีที่ https://aistudio.google.com/app/apikey
   // ใช้สำหรับ AI สรุปรายงานน้ำในหน้า daily_briefing.html
   // ⚠️ แทน "YOUR_KEY_HERE" ด้วย key จริง (ขึ้นต้นด้วย "AIza...")
-  GEMINI_API_KEY: "YOUR_KEY_HERE"
+  GEMINI_API_KEY: "AIzaSyCo0qPofC8WVXofBB5vv7xOqP53Vf5rdxU"
 };
