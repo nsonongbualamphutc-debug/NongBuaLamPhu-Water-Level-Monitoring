@@ -1849,7 +1849,7 @@
  *  เปลี่ยน API_URL เป็น Google Apps Script Web App URL ของคุณ
  *  ถ้ายังไม่มีจะใช้ข้อมูลตัวอย่าง (DEMO_DATA)
  * ================================================================= */
-  const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
+  const API_URL = window.APP_CONFIG?.API_URL || ""; // ตั้งค่าใน config.js
 
 /* ====== DEMO DATA (จะถูกใช้เมื่อยังไม่ได้ตั้งค่า API_URL) ====== */
 const DEMO_STATIONS = [
@@ -2646,6 +2646,7 @@ async function enhanceProvincialMap(map) {
 
   // ===== Layer 1: ขอบเขตอำเภอ =====
   const districtLayerGroup = L.layerGroup();
+  let nbpDistrictsGeoJSON = null;  // เก็บไว้สำหรับ filter น้ำ
   try {
     const dRes = await fetch("https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/districts.geojson");
     const dGeo = await dRes.json();
@@ -2653,6 +2654,7 @@ async function enhanceProvincialMap(map) {
       type: "FeatureCollection",
       features: (dGeo.features || []).filter(f => String(f.properties?.pro_code) === NBP_PRO_CODE)
     };
+    nbpDistrictsGeoJSON = nbpDistricts;  // <- เก็บไว้
     const dLayer = L.geoJSON(nbpDistricts, {
       style: { color:"#475569", weight:1.5, fillColor:"#cbd5e1", fillOpacity:0.04, dashArray:"4,3" },
       onEachFeature: (f,l) => {
@@ -2667,11 +2669,17 @@ async function enhanceProvincialMap(map) {
   districtLayerGroup.addTo(map);
   layers["📍 ขอบเขตอำเภอ"] = districtLayerGroup;
 
-  // ===== Layer 2: น้ำจาก OpenStreetMap (Overpass) — เน้นสีน้ำเงินสด =====
+  // ===== Layer 2: น้ำจาก DWR (กรมทรัพยากรน้ำ) — ข้อมูลทางการ ละเอียดสูง =====
   const waterLayerGroup = L.layerGroup();
   waterLayerGroup.addTo(map);
-  layers["💧 แม่น้ำ-สระ-อ่าง (OSM)"] = waterLayerGroup;
-  loadOSMWaterFeatures(waterLayerGroup, map);
+  layers["💧 แม่น้ำ-คลอง-ลำห้วย (DWR)"] = waterLayerGroup;
+  const waterbodyLayerGroup = L.layerGroup();
+  waterbodyLayerGroup.addTo(map);
+  layers["🌀 แหล่งน้ำ-สระ-บึง (DWR)"] = waterbodyLayerGroup;
+  const damLayerGroup = L.layerGroup();
+  damLayerGroup.addTo(map);
+  layers["⚙️ เขื่อน-ฝาย (DWR)"] = damLayerGroup;
+  loadDWRWaterFeatures(waterLayerGroup, waterbodyLayerGroup, damLayerGroup, map);
 
   // ===== Layer 3: อ่างเก็บน้ำ 14 แห่งที่ระบบติดตาม =====
   const RESERVOIRS_MAP = [
@@ -2736,111 +2744,150 @@ async function enhanceProvincialMap(map) {
  *  via Overpass API — เน้นสีน้ำเงินสดทับสีเทาของ tile
  *  ครอบคลุม: river/stream/canal/ditch/drain + สระน้ำ/อ่าง/บึง ทุกขนาด
  * =================================================================== */
-async function loadOSMWaterFeatures(layerGroup, map) {
-  // Bounding box ของจังหวัดหนองบัวลำภู (south,west,north,east)
-  const bbox = "16.85,101.93,17.62,102.66";
-  const query = `[out:json][timeout:60];(way["waterway"~"^(river|stream|canal|ditch|drain)$"](${bbox});way["natural"="water"](${bbox});relation["natural"="water"](${bbox});way["landuse"="reservoir"](${bbox});relation["landuse"="reservoir"](${bbox});way["landuse"="basin"](${bbox}););out geom;`;
-  const servers = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.openstreetmap.ru/api/interpreter"
-  ];
-
+async function loadDWRWaterFeatures(lineLayer, polyLayer, damLayer, map) {
   // Loading badge
   const loadingBadge = L.control({ position:"topleft" });
   loadingBadge.onAdd = function() {
     const div = L.DomUtil.create("div","");
+    div.id = "dwr-loading";
     div.style.cssText = "background:rgba(2,132,199,.95);color:#fff;padding:8px 14px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);";
-    div.innerHTML = "💧 กำลังโหลดเส้นน้ำจาก OpenStreetMap...";
+    div.innerHTML = "💧 กำลังโหลดข้อมูลน้ำจาก DWR (กรมทรัพยากรน้ำ)...";
     return div;
   };
   loadingBadge.addTo(map);
 
-  let data = null;
-  for (const url of servers) {
-    try {
-      const res = await fetch(url, {
-        method:"POST",
-        body:"data=" + encodeURIComponent(query),
-        headers:{"Content-Type":"application/x-www-form-urlencoded"}
-      });
-      if (res.ok) { data = await res.json(); break; }
-    } catch(e) { console.warn("[OSM] server fail:", url, e.message); }
-  }
+  // โหลด 2 ไฟล์ขนาน — points (เล็ก, สำคัญ) โหลดก่อน lines (ใหญ่)
+  let pointsData = null, linesData = null;
+  try {
+    const [pRes, lRes] = await Promise.all([
+      fetch("nbp_water_points.geojson").then(r => r.ok ? r.json() : null),
+      fetch("nbp_water_lines.geojson").then(r => r.ok ? r.json() : null)
+    ]);
+    pointsData = pRes; linesData = lRes;
+  } catch(e) { console.warn("[DWR] fetch fail", e); }
+
   map.removeControl(loadingBadge);
 
-  if (!data || !data.elements) {
+  if (!pointsData && !linesData) {
     const errBadge = L.control({ position:"topleft" });
     errBadge.onAdd = function() {
       const div = L.DomUtil.create("div","");
       div.style.cssText = "background:rgba(220,38,38,.95);color:#fff;padding:8px 14px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;";
-      div.innerHTML = "⚠️ โหลดเส้นน้ำจาก OSM ไม่ได้ (ลองรีเฟรชใหม่)";
+      div.innerHTML = "⚠️ โหลดข้อมูล DWR ไม่ได้ — ตรวจสอบไฟล์ nbp_water_*.geojson";
       return div;
     };
     errBadge.addTo(map);
-    setTimeout(() => map.removeControl(errBadge), 5000);
+    setTimeout(() => map.removeControl(errBadge), 6000);
     return;
   }
 
-  let lineCount = 0, polyCount = 0;
-  data.elements.forEach(el => {
-    if (!el.geometry || !el.tags) return;
-    const t = el.tags;
-    const coords = el.geometry.map(g => [g.lat, g.lon]);
+  let lineCount = 0, polyCount = 0, damCount = 0;
 
-    // ===== เส้นน้ำ (waterway = line) =====
-    if (t.waterway) {
-      const isMajor = t.waterway === "river" || t.waterway === "canal";
-      let weight = 1.5, color = "#0ea5e9", opacity = 0.85;
-      if (t.waterway === "river")       { weight = 4;   color = "#0284c7"; opacity = 0.95; }
-      else if (t.waterway === "canal")  { weight = 3;   color = "#0891b2"; opacity = 0.90; }
-      else if (t.waterway === "stream") { weight = 2;   color = "#06b6d4"; opacity = 0.85; }
-      else                              { weight = 1.2; color = "#22d3ee"; opacity = 0.75; }
-
-      // White halo สำหรับเส้นใหญ่ ให้ทับ tile สีเทาได้ชัด
-      if (isMajor) {
-        L.polyline(coords, { color:"#fff", weight: weight + 3, opacity:0.6, lineJoin:"round", lineCap:"round" }).addTo(layerGroup);
+  // ===== เส้นน้ำ + แหล่งน้ำ (lines + waterbody polygons) =====
+  if (linesData && linesData.features) {
+    linesData.features.forEach(f => {
+      const p = f.properties || {};
+      const cat = p.water_category || "";
+      const name = p.name || "";
+      if (f.geometry.type === "LineString") {
+        // เส้นน้ำ — ลำธาร / คลอง
+        let weight, color, opacity, haloWeight;
+        const lenKm = parseFloat(p.length_km) || 0;
+        // สีและขนาดตามประเภท + ความยาว (เส้นยาว = สำคัญ = หนา)
+        if (cat === "manmade_canal") {
+          weight = lenKm > 5 ? 3.5 : 2.5; color = "#0891b2"; opacity = 0.92; haloWeight = weight + 3;
+        } else {
+          // natural_stream
+          if (lenKm > 10)      { weight = 4;   color = "#0284c7"; opacity = 0.95; haloWeight = 8; }
+          else if (lenKm > 3)  { weight = 2.5; color = "#0ea5e9"; opacity = 0.92; haloWeight = 5; }
+          else if (lenKm > 1)  { weight = 1.8; color = "#22d3ee"; opacity = 0.88; haloWeight = 3.5; }
+          else                 { weight = 1.2; color = "#67e8f9"; opacity = 0.85; haloWeight = 2.5; }
+        }
+        const coords = f.geometry.coordinates.map(c => [c[1], c[0]]); // GeoJSON [lon,lat] → Leaflet [lat,lon]
+        // halo
+        L.polyline(coords, { color:"#fff", weight:haloWeight, opacity:0.6, lineJoin:"round", lineCap:"round" }).addTo(lineLayer);
+        // main
+        const line = L.polyline(coords, { color, weight, opacity, lineJoin:"round", lineCap:"round" });
+        const catLbl = cat === "manmade_canal" ? "คลอง (มนุษย์สร้าง)" : "ลำน้ำธรรมชาติ";
+        const tip = name
+          ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${catLbl} · ${lenKm} กม.</span>`
+          : `${catLbl} · ${lenKm} กม.`;
+        line.bindTooltip(tip, { sticky:true, direction:"top", className:"water-tooltip" });
+        line.addTo(lineLayer);
+        lineCount++;
+      } else if (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") {
+        // แหล่งน้ำ — สระ บึง อ่าง
+        const isManmade = cat === "manmade_waterbody";
+        const layer = L.geoJSON(f, {
+          style: {
+            color: isManmade ? "#0284c7" : "#0369a1",
+            weight: 1.5,
+            fillColor: isManmade ? "#38bdf8" : "#0ea5e9",
+            fillOpacity: 0.6
+          }
+        });
+        const catLbl = isManmade ? "แหล่งน้ำมนุษย์สร้าง (สระ/อ่าง)" : "แหล่งน้ำธรรมชาติ (บึง/หนอง)";
+        const tip = name
+          ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${catLbl}</span>`
+          : catLbl;
+        layer.bindTooltip(tip, { sticky:true, direction:"top", className:"water-tooltip" });
+        layer.addTo(polyLayer);
+        polyCount++;
       }
-      const line = L.polyline(coords, { color, weight, opacity, lineJoin:"round", lineCap:"round" });
-      const name = t.name || t["name:th"] || t["name:en"] || "";
-      const typeLabel = ({river:"แม่น้ำ", canal:"คลอง", stream:"ลำห้วย/ลำธาร", ditch:"คูระบายน้ำ", drain:"ทางระบายน้ำ"})[t.waterway] || t.waterway;
-      line.bindTooltip(name ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${typeLabel}</span>` : typeLabel,
-                       { sticky:true, direction:"top", className:"water-tooltip" });
-      line.addTo(layerGroup);
-      lineCount++;
-    }
-    // ===== สระน้ำ/อ่าง (polygon) =====
-    else if (t.natural === "water" || t.landuse === "reservoir" || t.landuse === "basin") {
-      const poly = L.polygon(coords, {
-        color:"#0284c7", weight:2, opacity:0.9,
-        fillColor:"#38bdf8", fillOpacity:0.55
-      });
-      const name = t.name || t["name:th"] || t["name:en"] || "";
-      const typeLabel = (t.water === "reservoir" || t.landuse === "reservoir") ? "อ่างเก็บน้ำ" :
-                       t.water === "lake" ? "ทะเลสาบ" :
-                       t.water === "pond" ? "สระ/บ่อ" :
-                       t.water === "river" ? "แม่น้ำ" :
-                       t.landuse === "basin" ? "แอ่งกักน้ำ" : "แหล่งน้ำ";
-      poly.bindTooltip(name ? `<strong>${name}</strong><br><span style="font-size:11px;opacity:.85;">${typeLabel}</span>` : typeLabel,
-                       { sticky:true, direction:"top", className:"water-tooltip" });
-      poly.addTo(layerGroup);
-      polyCount++;
-    }
-  });
+    });
+  }
 
-  console.log(`[OSM] วาดเส้นน้ำ ${lineCount} เส้น · สระ-อ่าง ${polyCount} แห่ง`);
+  // ===== Points: เขื่อน-ฝาย + อ่างเก็บน้ำ polygon highlights =====
+  // (สถานีและอ่างเก็บน้ำ 14 แห่ง จะ render โดย Layer 3 และ Layer สถานี — ข้ามตรงนี้)
+  if (pointsData && pointsData.features) {
+    pointsData.features.forEach(f => {
+      const p = f.properties || {};
+      const grp = p.feature_group || "";
+
+      if (grp === "dam") {
+        // ⚙️ เขื่อน/ฝาย — point marker
+        if (f.geometry.type === "Point") {
+          const [lon, lat] = f.geometry.coordinates;
+          const m = L.marker([lat, lon], {
+            icon: L.divIcon({
+              className: "", iconSize: [22, 22], iconAnchor: [11, 11],
+              html: `<div style="width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">⚙</div>`
+            })
+          });
+          const name = p.name || "เขื่อน/ฝาย";
+          const type = p.DAM_Type || "";
+          m.bindTooltip(`<strong>${name}</strong>${type?'<br><span style="font-size:11px;opacity:.85;">'+type+'</span>':''}`, { sticky:true, direction:"top" });
+          m.addTo(damLayer);
+          damCount++;
+        }
+      } else if (grp === "reservoir_polygon_highlight") {
+        // 🟧 อ่างเก็บน้ำ — polygon highlight (สีส้มอ่อน) ไปอยู่บน polyLayer
+        const layer = L.geoJSON(f, {
+          style: { color:"#ea580c", weight:2, fillColor:"#fb923c", fillOpacity:0.45, dashArray:"4,3" }
+        });
+        const name = p.project_name || "อ่างเก็บน้ำ";
+        layer.bindTooltip(`<strong>🏞️ ${name}</strong>`, { sticky:true, direction:"top", className:"water-tooltip" });
+        layer.addTo(polyLayer);
+        polyCount++;
+      }
+      // อ่างเก็บน้ำ 14 จุด + สถานี 20 จุด — render ในเลเยอร์อื่นแทน (เพราะใช้ data จาก backend ด้วย)
+    });
+  }
+
+  console.log(`[DWR] วาดเส้นน้ำ ${lineCount} เส้น · แหล่งน้ำ-อ่าง ${polyCount} แห่ง · เขื่อน-ฝาย ${damCount} จุด`);
 
   // Success badge
   const successBadge = L.control({ position:"topleft" });
   successBadge.onAdd = function() {
     const div = L.DomUtil.create("div","");
     div.style.cssText = "background:rgba(16,185,129,.95);color:#fff;padding:8px 14px;border-radius:10px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);";
-    div.innerHTML = `✅ โหลดแหล่งน้ำสำเร็จ: ${lineCount} เส้น · ${polyCount} สระ-อ่าง`;
+    div.innerHTML = `✅ DWR: ${lineCount} เส้นน้ำ · ${polyCount} แหล่งน้ำ · ${damCount} เขื่อน-ฝาย`;
     return div;
   };
   successBadge.addTo(map);
-  setTimeout(() => map.removeControl(successBadge), 5000);
+  setTimeout(() => map.removeControl(successBadge), 5500);
 }
+
 
 
 /* ===================================================================
