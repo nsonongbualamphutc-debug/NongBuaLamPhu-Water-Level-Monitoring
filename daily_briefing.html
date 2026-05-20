@@ -15,7 +15,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="smart_summary.js"></script>
 <script src="config.js"></script>
 <style>
 :root{
@@ -899,8 +898,6 @@ footer strong{color:var(--ink-2);font-weight:600;}
     <a href="daily_briefing.html" class="active">สภาพอากาศ</a>
     <a href="paneang.html">ลำน้ำพะเนียง</a>
     <a href="mong.html">ลำน้ำโมง</a>
-    <a href="mo.html">ลำน้ำมอ</a>
-    <a href="phuay.html">ลำน้ำพวย</a>
     <a href="rainfall.html">ปริมาณฝน</a>
     <a href="reservoir.html">อ่างเก็บน้ำ</a>
     <a href="input.html">บันทึกข้อมูล</a>
@@ -1163,7 +1160,7 @@ footer strong{color:var(--ink-2);font-weight:600;}
 //  CONFIG — ใส่ใน config.js
 //  window.APP_CONFIG = { API_URL:'...', GEMINI_API_KEY:'...' };
 // ═══════════════════════════════════════════════════════════
-const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || 'AIzaSyDhAR7Uo3pBM7rPWnJiq11IN8nzwJIhYEE';
+const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || '';
 const DEFAULT = { lat:17.2189, lon:102.4215, name:'หนองบัวลำภู' };
 let CUR = { ...DEFAULT };
 
@@ -2088,7 +2085,59 @@ function togglePlay(){
     playTimer=setInterval(()=>{i=(i+1)%radarFrames.length;showRFrame(i);},600);}
 }
 
+// ═══════════════════════════════════════════════════════════
+//  GEMINI AI
+// ═══════════════════════════════════════════════════════════
 let aiRunning=false;
+async function runGemini(){
+  if(aiRunning)return;
+  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "your-key" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
+  aiRunning=true;$('aiBtnRun').disabled=true;
+  ht('aiTxt','<div class="ai-spin"><span class="spinner"></span> Gemini กำลังวิเคราะห์สถานการณ์...</div>');
+  tx('aiKeyNote','Gemini AI · ประมวลผล...');
+  const wx=_wx,rain=_rainAm,aqi=_aqi;
+  if(!wx){ht('aiTxt','<span style="color:#c4b5fd;">รอข้อมูลอากาศโหลดเสร็จก่อน</span>');aiRunning=false;$('aiBtnRun').disabled=false;return;}
+  const d=wx.daily,c=wx.current;
+  const today=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const r3=d.precipitation_sum.slice(0,3).map((v,i)=>`วัน${i+1}: ${(v||0).toFixed(1)} มม.`).join(', ');
+  const top=rain?[...rain].sort((a,b)=>b.rain-a.rain)[0]:null;
+
+  // NEW: ดึงสรุปน้ำในแม่น้ำจาก backend
+  let waterCtx = "";
+  if(_provincial && _provincial.stations){
+    const sts = _provincial.stations;
+    const crit = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level);return !isNaN(l)&&!isNaN(b)&&l>=b;});
+    const warn = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level),w=parseFloat(s.warn_level);return !isNaN(l)&&!isNaN(b)&&!isNaN(w)&&l>=w&&l<b;});
+    waterCtx = `\n\nสถานการณ์น้ำในแม่น้ำจังหวัด (จาก ${sts.length} สถานี):\n- สถานีปกติ ${sts.length-crit.length-warn.length} แห่ง · เฝ้าระวัง ${warn.length} แห่ง · วิกฤติ ${crit.length} แห่ง`;
+    if(crit.length) waterCtx += `\n- สถานีวิกฤติ: ${crit.slice(0,3).map(s=>s.station_id+" "+s.name+" "+parseFloat(s.current_level).toFixed(2)+"ม.").join(", ")}${crit.length>3?" และอีก "+(crit.length-3)+" สถานี":""}`;
+    if(warn.length) waterCtx += `\n- สถานีเฝ้าระวัง: ${warn.slice(0,3).map(s=>s.station_id+" "+s.name).join(", ")}${warn.length>3?" และอีก "+(warn.length-3)+" สถานี":""}`;
+  }
+
+  // NEW: ดึงสรุปอ่างเก็บน้ำ
+  let resCtx = "";
+  if(_reservoirs && Array.isArray(_reservoirs) && _reservoirs.length){
+    const RES_CAP = {R01:0.400,R02:0.750,R03:2.469,R04:20.800,R05:0.330,R06:2.122,R07:0.842,R08:1.430,R09:0.200,R10:0.695,R11:0.450,R12:0.300,R13:0.623,R14:0.085};
+    const latest = {};
+    _reservoirs.forEach(r => {
+      const id = String(r.reservoir_id||"").toUpperCase();
+      if(!id) return;
+      if(!latest[id] || String(r.date||"") > String(latest[id].date||"")) latest[id] = r;
+    });
+    const pcts = Object.keys(latest).map(id => {
+      const cap = RES_CAP[id]; if(!cap) return null;
+      const v = parseFloat(latest[id].current_volume);
+      if(isNaN(v)) return null;
+      return {id, name:latest[id].reservoir_name, pct:v/cap*100};
+    }).filter(x=>x);
+    if(pcts.length){
+      const high = pcts.filter(r=>r.pct>=80);
+      const low = pcts.filter(r=>r.pct<30);
+      const avg = pcts.reduce((a,b)=>a+b.pct,0)/pcts.length;
+      resCtx = `\n\nสถานการณ์อ่างเก็บน้ำ (จาก ${pcts.length}/14 อ่าง):\n- เฉลี่ย ${avg.toFixed(0)}% ของความจุ`;
+      if(high.length) resCtx += `\n- อ่างน้ำมากเฝ้าระวัง (≥80%): ${high.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
+      if(low.length) resCtx += `\n- อ่างน้ำน้อย (<30%): ${low.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
+    }
+  }
 
   const prompt=`คุณเป็นผู้เชี่ยวชาญด้านอุตุนิยมวิทยาและการจัดการภัยพิบัติ จังหวัดหนองบัวลำภู
 วันที่: ${today}
@@ -2536,8 +2585,7 @@ async function loadAll(){
   _lastUpdate = Date.now();
   updateRefreshUI();
   startCountdown(_nextRefreshMs);
-  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini, 8000); // รอ 15 วิหลังโหลด
-setInterval(runGemini, 15*60*1000); // ทุก 30 นาที
+  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini,800);
 }
 
 initMap();
