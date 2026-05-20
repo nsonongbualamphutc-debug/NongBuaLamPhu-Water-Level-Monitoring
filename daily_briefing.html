@@ -443,39 +443,233 @@ main{max-width:1500px;margin:0 auto;padding:18px 24px 60px;}
 .r-playbtn.on{background:linear-gradient(135deg,#0891b2,#3b82f6);color:#fff;border-color:transparent;}
 
 /* ════════════════════════════════════════════════════════
-   WATER PREDICTION CARDS — wave animation
+   WATER PREDICTION — grouped by river, redesigned cards
    ═══════════════════════════════════════════════════════ */
-.wlp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+#wlpGrid{display:flex;flex-direction:column;gap:18px;}
+
+/* River section container */
+.river-section{
+  background:linear-gradient(180deg,rgba(15,23,42,.5),rgba(15,23,42,.2));
+  border:1px solid var(--border);
+  border-radius:18px;
+  overflow:hidden;
+  backdrop-filter:blur(8px);
+}
+
+/* Header per river */
+.river-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px;
+  position:relative;
+  overflow:hidden;
+}
+.river-header::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,transparent 70%,rgba(255,255,255,.08));
+  pointer-events:none;
+}
+.rh-left{display:flex;align-items:center;gap:12px;color:#fff;z-index:1;}
+.rh-emoji{font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.rh-name{font-size:16px;font-weight:800;letter-spacing:.2px;line-height:1.2;}
+.rh-desc{font-size:11px;opacity:.85;font-weight:500;margin-top:1px;}
+.rh-right{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;z-index:1;}
+.rg-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.2px;
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  backdrop-filter:blur(4px);
+}
+.rg-pill.high{background:rgba(220,38,38,.45);}
+.rg-pill.med {background:rgba(217,119,6,.45);}
+.rg-pill.low {background:rgba(22,163,74,.4);}
+
+/* Grid of cards per river */
+.river-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:11px;
+  padding:14px;
+}
+
+/* ───── Individual prediction card ───── */
 .wlp{
   position:relative;
-  background:var(--bg-card);
+  background:linear-gradient(135deg,var(--bg-soft),var(--bg-soft-2));
   border:1px solid var(--border);
-  border-radius:14px;padding:14px 14px 10px;
+  border-radius:14px;
+  padding:13px;
+  transition:transform .25s cubic-bezier(.5,0,.2,1),border-color .25s,box-shadow .25s;
   overflow:hidden;
-  transition:.25s;
 }
-.wlp:hover{border-color:var(--border-h);transform:translateY(-2px);}
-.wlp.low {border-top:2px solid var(--green);}
-.wlp.med {border-top:2px solid var(--amber);}
-.wlp.high{border-top:2px solid var(--red);box-shadow:0 0 24px rgba(248,113,113,.18);animation:wlpAlert 2.5s ease-in-out infinite;}
-@keyframes wlpAlert{50%{box-shadow:0 0 36px rgba(248,113,113,.3);}}
-.wlp-id{font-size:9.5px;font-family:'Inter',monospace;color:var(--ink-4);letter-spacing:.5px;font-weight:600;}
-.wlp-name{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px;line-height:1.2;}
-.wlp-cur{font-size:10.5px;color:var(--ink-3);margin-top:9px;font-family:'Inter',sans-serif;}
-.wlp-pred{display:flex;align-items:baseline;gap:5px;margin-top:3px;}
-.wlp-pv{font-size:24px;font-weight:800;line-height:1;font-family:'Inter',sans-serif;letter-spacing:-1px;}
-.wlp-pu{font-size:10px;color:var(--ink-3);}
-.wlp-d{font-size:11px;font-weight:700;margin-top:4px;font-family:'Inter',sans-serif;}
-.wlp-d.up{color:var(--red);}
-.wlp-d.down{color:var(--green);}
-.wlp-bar{position:relative;height:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:9px;}
-.wlp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--bg-from),var(--bg-to));transition:width 1.2s cubic-bezier(.5,0,.2,1);position:relative;}
-.wlp-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:wlpShine 2s ease-in-out infinite;}
+.wlp::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-dark));
+  border-radius:14px 14px 0 0;
+}
+.wlp:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.25);}
+.wlp.high{animation:wlpAlert 2.5s ease-in-out infinite;}
+@keyframes wlpAlert{
+  0%,100%{box-shadow:0 0 0 rgba(248,113,113,0);}
+  50%    {box-shadow:0 0 18px rgba(248,113,113,.4);}
+}
+
+/* Top row: ID + name + status badge */
+.wlp-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+}
+.wlp-id-name{flex:1;min-width:0;}
+.wlp-id{
+  display:inline-block;
+  font-size:10px;
+  font-family:'Inter',monospace;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:.6px;
+  padding:1.5px 6px;
+  background:rgba(255,255,255,.06);
+  border-radius:4px;
+}
+.wlp-live, .wlp-demo {
+  display:inline-block;
+  font-size:8.5px;
+  font-weight:700;
+  letter-spacing:.4px;
+  padding:1.5px 5px;
+  border-radius:4px;
+  margin-left:4px;
+  vertical-align:middle;
+}
+.wlp-live { background:rgba(16,185,129,.18); color:#34d399; }
+.wlp-demo { background:rgba(251,191,36,.15); color:#fbbf24; }
+.wlp-name{
+  display:block;
+  font-size:13.5px;
+  font-weight:700;
+  color:var(--ink);
+  margin-top:5px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.wlp-badge{
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:9.5px;
+  font-weight:700;
+  letter-spacing:.2px;
+  white-space:nowrap;
+}
+.wlp-badge.low {background:rgba(74,222,128,.15);color:#4ade80;}
+.wlp-badge.med {background:rgba(251,191,36,.18);color:#fbbf24;}
+.wlp-badge.high{background:rgba(248,113,113,.2);color:#f87171;}
+
+/* Prediction block (main figure) */
+.wlp-pred-block{margin:8px 0 10px;}
+.wlp-pred-lbl{
+  font-size:9.5px;
+  color:var(--ink-4);
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  font-weight:600;
+  margin-bottom:2px;
+}
+.wlp-pred-row{display:flex;align-items:baseline;gap:5px;}
+.wlp-pv{
+  font-size:28px;
+  font-weight:800;
+  line-height:1;
+  font-family:'Inter',sans-serif;
+  letter-spacing:-1.2px;
+  color:var(--accent);
+  text-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.wlp-pu{font-size:11px;color:var(--ink-3);font-weight:500;}
+.wlp-delta{
+  font-size:11px;
+  font-weight:600;
+  margin-top:3px;
+  font-family:'Inter',sans-serif;
+}
+.wlp-delta.up   {color:#f87171;}
+.wlp-delta.down {color:#4ade80;}
+.wlp-delta.flat {color:var(--ink-3);}
+.wlp-rain{color:var(--ink-3);font-weight:500;}
+
+/* Progress bar */
+.wlp-progress{margin-top:10px;}
+.wlp-progress-track{
+  position:relative;
+  height:8px;
+  background:rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:6px;
+  overflow:hidden;
+}
+.wlp-progress-fill{
+  height:100%;
+  border-radius:6px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-dark));
+  transition:width 1.2s cubic-bezier(.5,0,.2,1);
+  position:relative;
+  box-shadow:0 0 8px var(--accent);
+}
+.wlp-progress-fill::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  animation:wlpShine 2s ease-in-out infinite;
+}
 @keyframes wlpShine{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
-.wlp-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;margin-top:8px;letter-spacing:.3px;}
-.wlp-badge.low {background:rgba(74,222,128,.15);color:var(--green);}
-.wlp-badge.med {background:rgba(251,191,36,.15);color:var(--amber);}
-.wlp-badge.high{background:rgba(248,113,113,.18);color:var(--red);}
+
+/* Marker for warn level */
+.wlp-progress-mark{
+  position:absolute;
+  top:-2px;bottom:-2px;
+  width:2px;
+  background:#fbbf24;
+  box-shadow:0 0 4px rgba(251,191,36,.6);
+  z-index:2;
+}
+.wlp-progress-meta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:5px;
+  font-size:10px;
+  color:var(--ink-4);
+}
+.wlp-progress-meta b{color:var(--ink-2);font-weight:700;font-family:'Inter',sans-serif;}
+
+/* Foot — distance from bank */
+.wlp-foot{
+  font-size:10.5px;
+  color:var(--ink-3);
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px dashed rgba(255,255,255,.08);
+  text-align:center;
+}
 
 /* ════════════════════════════════════════════════════════
    AQI — animated ring
@@ -521,12 +715,16 @@ footer strong{color:var(--ink-2);font-weight:600;}
 @media(max-width:1100px){
   .hero-content{grid-template-columns:1fr;}
   .fc-grid{grid-template-columns:repeat(4,1fr);}
-  .wlp-grid{grid-template-columns:repeat(2,1fr);}
+  .river-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
 }
 @media(max-width:780px){
   .grid-2{grid-template-columns:1fr;}
   .fc-grid{grid-template-columns:repeat(3,1fr);}
-  .wlp-grid{grid-template-columns:1fr 1fr;}
+  .river-grid{grid-template-columns:repeat(2,1fr);gap:9px;padding:11px;}
+  .river-header{padding:11px 14px;}
+  .rh-emoji{font-size:24px;}
+  .rh-name{font-size:14px;}
+  .rh-desc{font-size:10.5px;}
   .hero-temp{font-size:96px;}
   .hero-icon-wrap{width:90px;height:90px;}
   .hero-icon-wrap svg{width:90px;height:90px;}
@@ -537,7 +735,9 @@ footer strong{color:var(--ink-2);font-weight:600;}
   .hero-temp{font-size:80px;letter-spacing:-4px;}
   .hero-stats{grid-template-columns:1fr 1fr;}
   .fc-grid{grid-template-columns:repeat(2,1fr);}
-  .wlp-grid{grid-template-columns:1fr;}
+  .river-grid{grid-template-columns:1fr;}
+  .river-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .rh-right{justify-content:flex-start;}
   .hdr-clock,.hdr-status{display:none;}
 }
 @media print{
@@ -922,7 +1122,7 @@ footer strong{color:var(--ink-2);font-weight:600;}
     <div class="ph"><h2>คาดการณ์ระดับน้ำหลังฝนตก (+12 ชม.)<span class="src">คำนวณจากพยากรณ์ฝน</span></h2><span class="ph-meta" id="wlpUpd">—</span></div>
     <div class="pb">
       <div style="font-size:11px;color:var(--ink-3);margin-bottom:12px;line-height:1.5;">อ้างอิงจากปริมาณฝนคาดการณ์ × สัมประสิทธิ์น้ำท่า (Runoff Coefficient) ของแต่ละลุ่มน้ำย่อย</div>
-      <div class="wlp-grid" id="wlpGrid"><div class="sk" style="height:120px;grid-column:1/-1;"></div></div>
+      <div id="wlpGrid"><div class="sk" style="height:160px;"></div></div>
     </div>
   </div>
 
@@ -960,7 +1160,7 @@ footer strong{color:var(--ink-2);font-weight:600;}
 //  CONFIG — ใส่ใน config.js
 //  window.APP_CONFIG = { API_URL:'...', GEMINI_API_KEY:'...' };
 // ═══════════════════════════════════════════════════════════
-const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || 'AIzaSyCo0qPofC8WVXofBB5vv7xOqP53Vf5rdxU';
+const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || '';
 const DEFAULT = { lat:17.2189, lon:102.4215, name:'หนองบัวลำภู' };
 let CUR = { ...DEFAULT };
 
@@ -1240,7 +1440,25 @@ const fetchStRain=()=>safe(async()=>{
   const lats=STATIONS.map(s=>s.lat).join(','),lons=STATIONS.map(s=>s.lon).join(',');
   const d=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&daily=precipitation_sum&timezone=Asia%2FBangkok&forecast_days=1`).then(r=>r.json());
   const arr=Array.isArray(d)?d:[d];
-  return STATIONS.map((s,i)=>({...s,forecast_rain:arr[i]?.daily?.precipitation_sum?.[0]??0}));
+
+  // ดึงข้อมูลระดับน้ำจริงจาก backend (provincial summary)
+  // แล้ว merge เข้ากับ STATIONS เพื่อให้ predictLevel ใช้ค่าจริงแทน demo
+  const prov = await fetchProvincial();
+  const liveMap = {};  // {station_id: current_level}
+  if (prov && Array.isArray(prov.stations)) {
+    prov.stations.forEach(st => {
+      const id = String(st.id || st.station_id || "").toUpperCase();
+      const lv = parseFloat(st.current ?? st.current_level);
+      if (id && !isNaN(lv)) liveMap[id] = lv;
+    });
+  }
+
+  return STATIONS.map((s,i) => ({
+    ...s,
+    forecast_rain: arr[i]?.daily?.precipitation_sum?.[0] ?? 0,
+    _liveLevel: liveMap[s.id] ?? null,  // ค่าระดับน้ำจริงจาก backend (null = ไม่มี → fallback demo)
+    _isLive: liveMap[s.id] != null
+  }));
 });
 
 const fetchAQI=()=>safe(async()=>{
@@ -1432,42 +1650,134 @@ function renderRainChart(data){
 }
 
 function predictLevel(s,rainMm){
-  const delta=rainMm*s.rc*0.008;
-  const baseDemo=s.bank-(1.0+(s.area-90)/1000);
-  const pred=baseDemo+delta;
-  const risk=pred>=s.bank?'high':pred>=s.warn?'med':'low';
-  return{cur:baseDemo,pred,delta,risk};
+  // delta จากฝน × runoff coefficient
+  const delta = rainMm * s.rc * 0.008;
+  // ใช้ค่าจริงจาก backend ถ้ามี (จาก getSummary) — ถ้าไม่มี fallback เป็น demo
+  // s._liveLevel จะถูก set โดย fetchStRain หลัง merge กับ backend data
+  const cur = (s._liveLevel != null && !isNaN(s._liveLevel))
+    ? parseFloat(s._liveLevel)
+    : s.bank - (1.0 + (s.area-90)/1000);  // demo fallback (เก่า)
+  const pred = cur + delta;
+  const risk = pred >= s.bank ? 'high' : pred >= s.warn ? 'med' : 'low';
+  return { cur, pred, delta, risk };
 }
 
 function renderWLP(stRain){
   tx('wlpUpd',t12());
-  if(!stRain){ht('wlpGrid','<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12px;grid-column:1/-1;">กำลังคำนวณ...</div>');return;}
-  ht('wlpGrid',stRain.map(s=>{
-    const r=predictLevel(s,s.forecast_rain||0);
-    const pct=Math.min(Math.round((r.pred/s.bank)*100),100);
-    const colors={low:['#4ade80','#16a34a'],med:['#fbbf24','#d97706'],high:['#f87171','#dc2626']}[r.risk];
-    const lbl={low:'✓ ปกติ',med:'⚠ เฝ้าระวัง',high:'⚠ เสี่ยงสูง'}[r.risk];
-    return `<div class="wlp ${r.risk}" style="--bg-from:${colors[0]};--bg-to:${colors[1]};">
-      <div class="wlp-id">${s.id}</div>
-      <div class="wlp-name">${s.name}</div>
-      <div class="wlp-cur">ปัจจุบัน <b style="color:var(--ink-2);">${r.cur.toFixed(2)}</b> ม.รทก.</div>
-      <div class="wlp-pred"><span class="wlp-pv" style="color:${colors[0]};">${r.pred.toFixed(2)}</span><span class="wlp-pu">ม.รทก.</span></div>
-      <div class="wlp-d ${r.delta>0?'up':'down'}">${r.delta>.005?'▲':'▼'} ${Math.abs(r.delta).toFixed(2)} ม. · ฝน ${(s.forecast_rain||0).toFixed(1)} มม.</div>
-      <div class="wlp-bar"><div class="wlp-fill" style="width:0%"></div></div>
-      <div class="wlp-badge ${r.risk}">${lbl}</div>
-    </div>`;
-  }).join(''));
-  // animate bars
-  setTimeout(()=>{
-    document.querySelectorAll('.wlp').forEach((el,i)=>{
-      const fill=el.querySelector('.wlp-fill');
-      if(fill){
-        const s=stRain[i],r=predictLevel(s,s.forecast_rain||0);
-        const pct=Math.min(Math.round((r.pred/s.bank)*100),100);
-        fill.style.width=pct+'%';
-      }
+  if(!stRain){ht('wlpGrid','<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12px;">กำลังคำนวณ...</div>');return;}
+
+  // จัดกลุ่มสถานีตามลำน้ำ (อ้างอิงจาก ID prefix)
+  const RIVER_INFO = {
+    PN: { name:'ลำน้ำพะเนียง', emoji:'🌊', accent:'#0ea5e9', gradient:'linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%)', desc:'นาวัง · นากลาง · เมือง' },
+    MG: { name:'ลำน้ำโมง',     emoji:'💧', accent:'#06b6d4', gradient:'linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)', desc:'สุวรรณคูหา' },
+    MO: { name:'ลำน้ำมอ',      emoji:'🏞️', accent:'#10b981', gradient:'linear-gradient(135deg,#10b981 0%,#059669 100%)', desc:'ศรีบุญเรือง' },
+    PY: { name:'ลำน้ำพวย',     emoji:'🪷', accent:'#8b5cf6', gradient:'linear-gradient(135deg,#a78bfa 0%,#7c3aed 100%)', desc:'ศรีบุญเรือง' }
+  };
+  const groups = { PN:[], MG:[], MO:[], PY:[] };
+  stRain.forEach(s => {
+    const p = (s.id||'').slice(0,2).toUpperCase();
+    if (groups[p]) groups[p].push(s);
+  });
+
+  // สร้าง HTML แยก section ต่อกลุ่ม
+  const html = Object.keys(groups).map(prefix => {
+    const stations = groups[prefix];
+    if (!stations.length) return '';
+    const info = RIVER_INFO[prefix];
+    // นับสถานะแต่ละระดับ
+    let nLow=0, nMed=0, nHigh=0;
+    stations.forEach(s => {
+      const r = predictLevel(s, s.forecast_rain||0);
+      if (r.risk==='high') nHigh++; else if (r.risk==='med') nMed++; else nLow++;
     });
-  },150);
+    const statusBadges = `
+      ${nHigh ? `<span class="rg-pill high">🚨 เสี่ยงสูง ${nHigh}</span>` : ''}
+      ${nMed  ? `<span class="rg-pill med">⚠ เฝ้าระวัง ${nMed}</span>`  : ''}
+      ${nLow  ? `<span class="rg-pill low">✓ ปกติ ${nLow}</span>`        : ''}
+    `;
+
+    const cardsHTML = stations.map(s => {
+      const r = predictLevel(s, s.forecast_rain||0);
+      const pct = Math.min(Math.round((r.pred/s.bank)*100), 100);
+      const colors = {
+        low:  ['#4ade80','#16a34a','rgba(74,222,128,.12)','rgba(22,163,74,.05)'],
+        med:  ['#fbbf24','#d97706','rgba(251,191,36,.12)','rgba(217,119,6,.05)'],
+        high: ['#f87171','#dc2626','rgba(248,113,113,.15)','rgba(220,38,38,.06)']
+      }[r.risk];
+      const lbl = {low:'✓ ปกติ', med:'⚠ เฝ้าระวัง', high:'🚨 เสี่ยงสูง'}[r.risk];
+      const deltaArrow = r.delta>.005 ? '▲' : r.delta<-.005 ? '▼' : '–';
+      const deltaCls   = r.delta>.005 ? 'up' : r.delta<-.005 ? 'down' : 'flat';
+      const rainMm     = (s.forecast_rain||0).toFixed(1);
+      // คำนวณ "ระยะห่างจากตลิ่ง" (เลขลบ = ใต้ตลิ่ง, บวก = ล้น)
+      const distBank = (r.pred - s.bank);
+      const distLbl  = distBank >= 0
+        ? `<span style="color:${colors[0]};font-weight:700;">+${distBank.toFixed(2)} ม.</span> เหนือตลิ่ง`
+        : `<span style="color:var(--ink-2);font-weight:700;">${Math.abs(distBank).toFixed(2)} ม.</span> ใต้ตลิ่ง`;
+
+      return `<div class="wlp ${r.risk}"
+                   style="--accent:${colors[0]};--accent-dark:${colors[1]};--bg-soft:${colors[2]};--bg-soft-2:${colors[3]};"
+                   data-pct="${pct}">
+        <div class="wlp-top">
+          <div class="wlp-id-name">
+            <span class="wlp-id">${s.id}</span>
+            ${s._isLive
+              ? '<span class="wlp-live">🟢 LIVE</span>'
+              : '<span class="wlp-demo">🟡 DEMO</span>'}
+            <span class="wlp-name">${s.name}</span>
+          </div>
+          <div class="wlp-badge ${r.risk}">${lbl}</div>
+        </div>
+        <div class="wlp-pred-block">
+          <div class="wlp-pred-lbl">คาดการณ์ +12 ชม.</div>
+          <div class="wlp-pred-row">
+            <span class="wlp-pv">${r.pred.toFixed(2)}</span>
+            <span class="wlp-pu">ม.รทก.</span>
+          </div>
+          <div class="wlp-delta ${deltaCls}">
+            ${deltaArrow} ${Math.abs(r.delta).toFixed(2)} ม. <span class="wlp-rain">· ฝน ${rainMm} มม.</span>
+          </div>
+        </div>
+        <div class="wlp-progress">
+          <div class="wlp-progress-track">
+            <div class="wlp-progress-fill" style="width:0%"></div>
+            <div class="wlp-progress-mark warn" style="left:${Math.min((s.warn/s.bank)*100,100).toFixed(1)}%"></div>
+          </div>
+          <div class="wlp-progress-meta">
+            <span>ปัจจุบัน <b>${r.cur.toFixed(2)}</b></span>
+            <span>ตลิ่ง <b>${s.bank.toFixed(1)}</b></span>
+          </div>
+        </div>
+        <div class="wlp-foot">${distLbl}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <section class="river-section">
+        <div class="river-header" style="background:${info.gradient};">
+          <div class="rh-left">
+            <span class="rh-emoji">${info.emoji}</span>
+            <div>
+              <div class="rh-name">${info.name}</div>
+              <div class="rh-desc">${info.desc} · ${stations.length} สถานี</div>
+            </div>
+          </div>
+          <div class="rh-right">${statusBadges}</div>
+        </div>
+        <div class="river-grid">${cardsHTML}</div>
+      </section>
+    `;
+  }).join('');
+
+  ht('wlpGrid', html);
+
+  // animate progress bars
+  setTimeout(()=>{
+    document.querySelectorAll('.wlp').forEach(el => {
+      const pct = +el.dataset.pct;
+      const fill = el.querySelector('.wlp-progress-fill');
+      if (fill) fill.style.width = pct + '%';
+    });
+  }, 100);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1577,13 +1887,141 @@ function initMap(){
   }).addTo(MAP);
   // เพิ่ม overlay จังหวัด + แม่น้ำ
   loadOverlay();
-  // Station markers
+  // Station markers — อัปเดตสีตามสถานะ + popup รายละเอียด
   STATIONS.forEach(s=>{
-    const m=L.circleMarker([s.lat,s.lon],{radius:7,fillColor:'#16a34a',color:'#fff',weight:2,fillOpacity:.95,zIndexOffset:300})
+    const m=L.circleMarker([s.lat,s.lon],{radius:7,fillColor:'#94a3b8',color:'#fff',weight:2,fillOpacity:.95,zIndexOffset:300})
       .bindTooltip(s.name,{direction:'top',className:'station-tooltip'}).addTo(MAP);
+    m._station = s;  // เก็บ reference ไว้สำหรับ refresh สีตาม backend data
     stMarkers.push(m);
   });
+  // Reservoir markers (จะวาดตอน backend ตอบกลับ)
+  initReservoirMarkers();
   initRV();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAP: Update station marker colors based on backend data
+//  + Reservoir markers
+// ═══════════════════════════════════════════════════════════
+let resMarkers = [];
+function initReservoirMarkers(){
+  const RES_META = [
+    {id:"R01",name:"ห้วยยางเงาะ",      amphoe:"เมือง",        lat:17.190,lon:102.395,cap:0.400},
+    {id:"R02",name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",  lat:17.005,lon:102.295,cap:0.750},
+    {id:"R03",name:"ห้วยเหล่ายาง",      amphoe:"เมือง",        lat:17.165,lon:102.380,cap:2.469},
+    {id:"R04",name:"อ่างน้ำบอง",        amphoe:"โนนสัง",       lat:16.928,lon:102.628,cap:20.800},
+    {id:"R05",name:"ห้วยสนามชัย",       amphoe:"นากลาง",       lat:17.265,lon:102.220,cap:0.330},
+    {id:"R06",name:"ผาวัง",             amphoe:"นาวัง",        lat:17.385,lon:102.018,cap:2.122},
+    {id:"R07",name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",        lat:17.355,lon:102.050,cap:0.842},
+    {id:"R08",name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",   lat:17.530,lon:102.195,cap:1.430},
+    {id:"R09",name:"ห้วยไร่ 1",         amphoe:"นากลาง",       lat:17.280,lon:102.180,cap:0.200},
+    {id:"R10",name:"ห้วยไร่ 2",         amphoe:"นากลาง",       lat:17.290,lon:102.195,cap:0.695},
+    {id:"R11",name:"ห้วยลำใย",          amphoe:"นากลาง",       lat:17.255,lon:102.205,cap:0.450},
+    {id:"R12",name:"ห้วยโป่งซาง",       amphoe:"นากลาง",       lat:17.270,lon:102.245,cap:0.300},
+    {id:"R13",name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",   lat:17.515,lon:102.245,cap:0.623},
+    {id:"R14",name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",        lat:17.310,lon:102.030,cap:0.085}
+  ];
+  RES_META.forEach(r => {
+    const size = r.cap >= 5 ? 18 : r.cap >= 1 ? 14 : 11;
+    const m = L.marker([r.lat, r.lon], {
+      icon: L.divIcon({
+        className: "", iconSize: [size, size], iconAnchor: [size/2, size/2],
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#06b6d4,#0c4a6e);border:2px solid white;box-shadow:0 2px 8px rgba(12,74,110,.5);display:flex;align-items:center;justify-content:center;font-size:${size>=15?11:9}px;">💧</div>`
+      }),
+      zIndexOffset: 250
+    }).bindTooltip(`<strong>${r.id} ${r.name}</strong><br>อ.${r.amphoe} · ${r.cap.toFixed(3)} ล้าน ลบ.ม.`, { sticky:true, direction:"top" });
+    m._reservoir = r;
+    m.addTo(MAP);
+    resMarkers.push(m);
+  });
+}
+
+function updateStationMarkers(provData) {
+  if (!provData || !provData.stations) return;
+  const liveMap = {};
+  provData.stations.forEach(st => {
+    const id = String(st.id || st.station_id || "").toUpperCase();
+    if (id) liveMap[id] = st;
+  });
+  stMarkers.forEach(m => {
+    const s = m._station;
+    if (!s) return;
+    const live = liveMap[s.id];
+    if (!live) {
+      m.setStyle({ fillColor:'#94a3b8', radius:6 });
+      m.bindPopup(`<div style="font-family:'Sarabun',sans-serif;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;color:#0c4a6e;">${s.id} ${s.name}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px;">🟡 ไม่มีข้อมูล (DEMO)</div>
+        <div style="font-size:11px;margin-top:6px;">ตลิ่ง <b>${s.bank.toFixed(1)}</b> · เฝ้าระวัง <b>${s.warn.toFixed(1)}</b> ม.รทก.</div>
+      </div>`);
+      return;
+    }
+    const cur = parseFloat(live.current ?? live.current_level);
+    const bank = parseFloat(live.bank ?? live.bank_level ?? s.bank);
+    const warn = parseFloat(live.warn ?? live.warn_level ?? s.warn);
+    let color = '#10b981';  // เขียว - ปกติ
+    let status = '✓ ปกติ';
+    if (!isNaN(cur) && !isNaN(bank)) {
+      if (cur >= bank) { color = '#dc2626'; status = '🚨 วิกฤติ — เกินตลิ่ง'; }
+      else if (!isNaN(warn) && cur >= warn) { color = '#f59e0b'; status = '⚠ เฝ้าระวัง'; }
+    }
+    m.setStyle({ fillColor: color, radius: 9 });
+    m.bindPopup(`<div style="font-family:'Sarabun',sans-serif;min-width:200px;">
+      <div style="font-weight:700;font-size:13px;color:#0c4a6e;">${s.id} ${s.name}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px;">${s.river || ''} · อ.${s.amphoe || ''}</div>
+      <div style="margin-top:8px;padding:6px 8px;background:${color}1f;border-radius:6px;font-weight:700;color:${color};font-size:12px;">${status}</div>
+      <div style="font-size:11px;margin-top:6px;line-height:1.7;">
+        ระดับน้ำปัจจุบัน: <b style="color:${color};font-size:14px;">${!isNaN(cur)?cur.toFixed(2):'—'}</b> ม.รทก.<br>
+        ตลิ่ง: <b>${bank.toFixed(1)}</b> · เฝ้าระวัง: <b>${warn.toFixed(1)}</b><br>
+        ${live.last_update?'อัปเดต: '+String(live.last_update).slice(0,16):''}
+      </div>
+    </div>`);
+  });
+}
+
+function updateReservoirMarkers(resData) {
+  if (!Array.isArray(resData)) return;
+  // ดึงข้อมูลล่าสุดต่อ reservoir_id
+  const latest = {};
+  resData.forEach(r => {
+    const id = String(r.reservoir_id || "").toUpperCase();
+    if (!id) return;
+    const d = String(r.date || "");
+    if (!latest[id] || d > String(latest[id].date || "")) latest[id] = r;
+  });
+  resMarkers.forEach(m => {
+    const r = m._reservoir;
+    if (!r) return;
+    const live = latest[r.id];
+    if (!live) {
+      m.bindPopup(`<div style="font-family:'Sarabun',sans-serif;min-width:200px;">
+        <div style="font-weight:700;font-size:13px;color:#0c4a6e;">${r.id} ${r.name}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px;">อ.${r.amphoe} · ความจุ ${r.cap.toFixed(3)} ล้าน ลบ.ม.</div>
+        <div style="margin-top:8px;padding:6px 8px;background:#94a3b81f;border-radius:6px;font-weight:700;color:#64748b;font-size:12px;">🟡 ไม่มีข้อมูล</div>
+      </div>`);
+      return;
+    }
+    const vol = parseFloat(live.current_volume);
+    const pct = (!isNaN(vol) && r.cap > 0) ? (vol / r.cap) * 100 : null;
+    let color = '#10b981', status = '✓ ปกติ';
+    if (pct !== null) {
+      if (pct >= 95)      { color = '#3b82f6'; status = '💧 น้ำเต็ม'; }
+      else if (pct >= 80) { color = '#10b981'; status = '✓ ปกติ'; }
+      else if (pct >= 40) { color = '#10b981'; status = '✓ ปกติ'; }
+      else if (pct >= 20) { color = '#f59e0b'; status = '⚠ น้ำน้อย'; }
+      else                { color = '#dc2626'; status = '🚨 วิกฤติ — แห้ง'; }
+    }
+    m.bindPopup(`<div style="font-family:'Sarabun',sans-serif;min-width:220px;">
+      <div style="font-weight:700;font-size:13px;color:#0c4a6e;">${r.id} ${r.name}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px;">อ.${r.amphoe} · ความจุ ${r.cap.toFixed(3)} ล้าน ลบ.ม.</div>
+      <div style="margin-top:8px;padding:6px 8px;background:${color}1f;border-radius:6px;font-weight:700;color:${color};font-size:12px;">${status}</div>
+      <div style="font-size:11px;margin-top:6px;line-height:1.7;">
+        ปริมาณน้ำ: <b style="color:${color};font-size:14px;">${!isNaN(vol)?vol.toFixed(3):'—'}</b> ล้าน ลบ.ม.<br>
+        ${pct!==null?'<b style="color:'+color+';font-size:13px;">'+pct.toFixed(1)+'%</b> ของความจุ':''}<br>
+        ${live.date?'อัปเดต: '+String(live.date).slice(0,10):''}
+      </div>
+    </div>`);
+  });
 }
 
 function toggleRivers(){
@@ -1746,7 +2184,9 @@ function typeWriter(text,speed=14){
 // ═══════════════════════════════════════════════════════════
 //  NEW: BACKEND DATA — น้ำในแม่น้ำ + อ่างเก็บน้ำ
 // ═══════════════════════════════════════════════════════════
-const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "";
+// ใช้ APP_CONFIG.API_URL ถ้ามี (จาก config.js) — ถ้าไม่มี ใช้ URL backend default
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) ||
+                "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
 let _provincial = null;
 let _reservoirs = null;
 
@@ -2135,12 +2575,10 @@ async function loadAll(){
   renderAlert(wx,rAm);renderAQI(aq);renderRainChart(rAm);renderWLP(stR2);
   renderProvincialWater(pw);
   renderReservoirs(res);
+  // อัปเดตสีและ popup ของ marker บนแผนที่ตามข้อมูล backend จริง
+  updateStationMarkers(pw);
+  updateReservoirMarkers(res);
   if(heat&&showHeat)updateHeatmap(heat);
-  if(stR2)stR2.forEach((s,i)=>{
-    const r=predictLevel(s,s.forecast_rain||0);
-    const c=r.risk==='high'?'#f87171':r.risk==='med'?'#fbbf24':'#4ade80';
-    if(stMarkers[i])stMarkers[i].setStyle({fillColor:c});
-  });
   // Notifications + ribbon
   checkAndNotify();
   // Refresh meta
