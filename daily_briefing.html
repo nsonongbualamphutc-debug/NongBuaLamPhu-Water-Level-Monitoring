@@ -1442,7 +1442,7 @@ function predictLevel(s,rainMm){
 function renderWLP(stRain){
   tx('wlpUpd',t12());
   if(!stRain){ht('wlpGrid','<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12px;grid-column:1/-1;">กำลังคำนวณ...</div>');return;}
-  ht('wlpGrid',stRain.slice(0,12).map(s=>{
+  ht('wlpGrid',stRain.map(s=>{
     const r=predictLevel(s,s.forecast_rain||0);
     const pct=Math.min(Math.round((r.pred/s.bank)*100),100);
     const colors={low:['#4ade80','#16a34a'],med:['#fbbf24','#d97706'],high:['#f87171','#dc2626']}[r.risk];
