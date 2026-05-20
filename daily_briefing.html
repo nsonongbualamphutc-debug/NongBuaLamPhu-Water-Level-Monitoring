@@ -1162,7 +1162,7 @@ footer strong{color:var(--ink-2);font-weight:600;}
 //  CONFIG — ใส่ใน config.js
 //  window.APP_CONFIG = { API_URL:'...', GEMINI_API_KEY:'...' };
 // ═══════════════════════════════════════════════════════════
-const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || 'AIzaSyCo0qPofC8WVXofBB5vv7xOqP53Vf5rdxU';
+const GEMINI_KEY = window.APP_CONFIG?.GEMINI_API_KEY || 'AIzaSyA6OnCaihPZB7HY3NjILliaoKhJ_KBY1Ec';
 const DEFAULT = { lat:17.2189, lon:102.4215, name:'หนองบัวลำภู' };
 let CUR = { ...DEFAULT };
 
@@ -2093,7 +2093,7 @@ function togglePlay(){
 let aiRunning=false;
 async function runGemini(){
   if(aiRunning)return;
-  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "your-key" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
+  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "AIzaSyA6OnCaihPZB7HY3NjILliaoKhJ_KBY1Ec" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
   aiRunning=true;$('aiBtnRun').disabled=true;
   ht('aiTxt','<div class="ai-spin"><span class="spinner"></span> Gemini กำลังวิเคราะห์สถานการณ์...</div>');
   tx('aiKeyNote','Gemini AI · ประมวลผล...');
