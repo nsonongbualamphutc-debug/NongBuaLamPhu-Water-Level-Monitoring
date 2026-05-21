@@ -15,9 +15,12 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="config.js"></script>
+<script src="date-range-picker.js"></script> 
 <script src="waterways-loader.js"></script>
 <script src="map-layers.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="map-layers.js"></script>
+<script src="skeleton.js"></script>
 <style>
   :root{
     --bg: #f4f7fb;
@@ -2359,7 +2362,15 @@ function updateSituation(stations, rain){
 }
 
 /* ====== FETCH DATA ====== */
-async function loadData(){
+async function loadData() {
+  Skeleton.show();          // ← เพิ่ม
+  try {
+    // ... โค้ดเดิม ...
+  } catch(e) {
+    console.error(e);
+  } finally {
+    Skeleton.hide();        // ← เพิ่ม
+  }
   let stations = DEMO_STATIONS, rain = DEMO_RAIN;
   if(API_URL){
     try{
@@ -3885,5 +3896,13 @@ setInterval(loadData, 5*60*1000);
 // อัปเดตพยากรณ์ทุก 30 นาที
 setInterval(loadForecast, 30*60*1000);
 </script>
+  <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log('[SW] registered'))
+    .catch(e => console.warn('[SW] error:', e));
+}
+</script>
 </body>
+  
 </html>
