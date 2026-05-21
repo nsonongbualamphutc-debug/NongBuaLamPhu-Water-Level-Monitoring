@@ -853,22 +853,19 @@ function renderCharts(){
 }
 
 /* MAIN */
-async function loadData(){
-  DateRangePicker.init({
-  container:   '.panel, #chartSection, main',
-  defaultDays: 7,
-  onChange: async function({ from, to }) {
-    await loadData(from, to);
-  }
-});
-  if(API_URL){
-    try{
-      const res = await fetch(API_URL + "?action=paneang");
+async function loadData(from, to) {
+  if (API_URL) {
+    try {
+      let url = API_URL + "?action=paneang";
+      if (from) url += "&from=" + from;
+      if (to)   url += "&to="   + to;
+ 
+      const res  = await fetch(url);
       const data = await res.json();
-      if(data.stations) data.stations.forEach(item => {
-        if(stationData[item.id]){
-          // ใช้ค่าจริงจาก backend ถ้ามี; ถ้า null คงค่า demo เดิมไว้ (ไม่ทับ)
-          if(item.current != null) {
+ 
+      if (data.stations) data.stations.forEach(item => {
+        if (stationData[item.id]) {
+          if (item.current != null) {
             stationData[item.id].current = parseFloat(item.current);
             stationData[item.id]._isLive = true;
           } else {
@@ -876,7 +873,7 @@ async function loadData(){
           }
         }
       });
-    }catch(e){console.warn("API unavailable, using demo data");}
+    } catch(e) { console.warn("API unavailable, using demo data"); }
   }
   renderSummary();
   renderGauges();
@@ -884,10 +881,17 @@ async function loadData(){
   renderTable();
   renderCharts();
 }
-
+ 
 initDemo();
 loadData();
-setInterval(loadData, 5*60*1000);
-</script>
-</body>
-</html>
+setInterval(loadData, 5 * 60 * 1000);
+ 
+/* DateRangePicker — init ครั้งเดียว ข้างนอก loadData */
+DateRangePicker.init({
+  container:   'main',
+  defaultDays: 7,
+  autoLoad:    false,
+  onChange: function({ from, to }) {
+    return loadData(from, to);
+  }
+});
