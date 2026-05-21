@@ -873,19 +873,17 @@ function renderCharts() {
   });
 }
 
-/* MAIN LOAD */
-async function loadData() {
-  DateRangePicker.init({
-  container:   '.panel, #chartSection, main',
-  defaultDays: 7,
-  onChange: async function({ from, to }) {
-    await loadData(from, to);
-  }
-});
+/* MAIN */
+async function loadData(from, to) {
   if (API_URL) {
     try {
-      const res  = await fetch(API_URL + "?action=mong");
+      let url = API_URL + "?action=mong";
+      if (from) url += "&from=" + from;
+      if (to)   url += "&to="   + to;
+ 
+      const res  = await fetch(url);
       const data = await res.json();
+ 
       if (data.stations) data.stations.forEach(item => {
         if (stationData[item.id]) {
           if (item.current != null) {
@@ -896,7 +894,7 @@ async function loadData() {
           }
         }
       });
-    } catch (e) { console.warn("API unavailable, using demo data"); }
+    } catch(e) { console.warn("API unavailable, using demo data"); }
   }
   renderSummary();
   renderGauges();
@@ -904,10 +902,20 @@ async function loadData() {
   renderTable();
   renderCharts();
 }
-
+ 
 initDemo();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
+ 
+/* DateRangePicker — init ครั้งเดียว ข้างนอก loadData */
+DateRangePicker.init({
+  container:   'main',
+  defaultDays: 7,
+  autoLoad:    false,
+  onChange: function({ from, to }) {
+    return loadData(from, to);
+  }
+});
 </script>
 </body>
 </html>
