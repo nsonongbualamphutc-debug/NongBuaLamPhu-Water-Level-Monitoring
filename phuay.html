@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
+<script src="date-range-picker.js"></script>
 <style>
 :root {
   --bg: #f0faf4;
@@ -873,6 +874,13 @@ function renderCharts() {
 
 /* MAIN LOAD */
 async function loadData() {
+DateRangePicker.init({
+  container:   '.panel, #chartSection, main',
+  defaultDays: 7,
+  onChange: async function({ from, to }) {
+    await loadData(from, to);
+  }
+});  
   if (API_URL) {
     try {
       const res  = await fetch(API_URL + "?action=phuay");
