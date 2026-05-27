@@ -489,7 +489,7 @@ footer strong{color:#fff}
       </div>
       <div>
         <div class="hdr-title">อ่างเก็บน้ำ จ.หนองบัวลำภู</div>
-        <div class="hdr-sub">โครงการชลประทานหนองบัวลำภู · 14 อ่างเก็บน้ำ · รวมความจุ 31.50 ล้าน ลบ.ม.</div>
+        <div class="hdr-sub">โครงการชลประทานหนองบัวลำภู · 15 อ่างเก็บน้ำ · รวมความจุ 31.56 ล้าน ลบ.ม.</div>
       </div>
     </div>
     <div class="hdr-right">
@@ -519,8 +519,8 @@ footer strong{color:#fff}
 <main>
   <!-- Summary -->
   <div class="summary-row" id="summaryRow">
-    <div class="sc info"><div class="sc-label">อ่างเก็บน้ำทั้งหมด</div><div class="sc-value">14</div><div class="sc-sub">โครงการชลประทานหนองบัวลำภู</div></div>
-    <div class="sc info"><div class="sc-label">ความจุรวม</div><div class="sc-value">31.50</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
+    <div class="sc info"><div class="sc-label">อ่างเก็บน้ำทั้งหมด</div><div class="sc-value">15</div><div class="sc-sub">โครงการชลประทานหนองบัวลำภู</div></div>
+    <div class="sc info"><div class="sc-label">ความจุรวม</div><div class="sc-value">31.56</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
     <div class="sc normal"><div class="sc-label">ปริมาณน้ำรวม</div><div class="sc-value" id="scVolume">—</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
     <div class="sc full"><div class="sc-label">% เก็บกักเฉลี่ย</div><div class="sc-value" id="scAvgPct">—</div><div class="sc-sub">% ของความจุ</div></div>
     <div class="sc warn"><div class="sc-label">อ่างน้ำน้อย (&lt;30%)</div><div class="sc-value" id="scLow">—</div><div class="sc-sub">แห่ง</div></div>
@@ -531,7 +531,7 @@ footer strong{color:#fff}
   <div class="grid-main">
     <div class="panel">
       <div class="panel-head">
-        <h2>แผนที่อ่างเก็บน้ำ 14 แห่ง</h2>
+        <h2>แผนที่อ่างเก็บน้ำ 15 แห่ง</h2>
         <div style="display:flex;align-items:center;gap:8px">
           <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
             <input type="checkbox" id="chkChoro" style="accent-color:#0891b2"> แรเงาอำเภอ
@@ -618,7 +618,7 @@ footer strong{color:#fff}
     <div class="panel">
       <div class="panel-head">
         <h2>รายการอ่างเก็บน้ำ</h2>
-        <span style="font-size:12px;color:var(--muted)" id="listInfo">14 แห่ง</span>
+        <span style="font-size:12px;color:var(--muted)" id="listInfo">15 แห่ง</span>
       </div>
       <div class="res-list" id="resList"></div>
     </div>
@@ -689,17 +689,18 @@ footer strong{color:#fff}
   <!-- Table -->
   <div class="table-panel">
     <div class="tp-head">
-      <h3>ตารางข้อมูลอ่างเก็บน้ำทั้งหมด 14 แห่ง</h3>
+      <h3>ตารางข้อมูลอ่างเก็บน้ำทั้งหมด 15 แห่ง</h3>
       <span id="tableTime">—</span>
     </div>
     <div style="overflow-x:auto">
       <table>
         <thead>
           <tr>
-            <th>#</th><th>ชื่ออ่าง</th><th>ที่ตั้ง</th><th>ประเภท</th>
+            <th>#</th><th>ชื่อโครงการ</th><th>ที่ตั้ง</th><th>ประเภท</th>
             <th style="text-align:right">ความจุ (ล้าน ลบ.ม.)</th>
             <th style="text-align:right">ปริมาณน้ำปัจจุบัน</th>
             <th>% เก็บกัก</th>
+            <th style="text-align:right">พื้นที่ได้ประโยชน์ (ไร่)</th>
             <th style="text-align:right">สร้างเสร็จ</th>
             <th>สถานะ</th>
           </tr>
@@ -723,26 +724,30 @@ footer strong{color:#fff}
 const API_URL = window.APP_CONFIG?.API_URL ||
   "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
 
-const MAX_CAPACITY = 20.800; // อ่างน้ำบอง — ใหญ่สุด
+const MAX_CAPACITY = 20.800; // อ่างเก็บน้ำห้วยน้ำบอง — ใหญ่สุด 20.8 ล้าน ลบ.ม.
 
 /* ═══════════════════════════════════════════
  *  RESERVOIR DATA
  * ═══════════════════════════════════════════ */
+/* ข้อมูลอ้างอิง: โครงการชลประทานหนองบัวลำภู สำนักงานชลประทานที่ 5 (พ.ค. 2569)
+   - name      = ชื่อโครงการเต็ม
+   - benefit   = พื้นที่รับประโยชน์ (ไร่), irrig = พื้นที่ชลประทาน (ไร่)  */
 const RESERVOIRS = [
-  {id:"R01",no:1, name:"ห้วยยางเงาะ",     village:"ถ้ำกลองเพล",    tambon:"โนนทัน",       amphoe:"เมืองหนองบัวลำภู",lat:17.22588,lon:102.51815,type:"เล็ก พระราชดำริ",   capacity:0.400,year:2525},
-  {id:"R02",no:2, name:"ห้วยซับม่วง",     village:"หนองกุงแก้ว",   tambon:"หนองกุงแก้ว",  amphoe:"ศรีบุญเรือง",     lat:17.14711,lon:102.09072,type:"เล็ก เงินกู้KEW",   capacity:0.750,year:2532},
-  {id:"R03",no:3, name:"ห้วยเหล่ายาง",    village:"ภูพานทอง",      tambon:"หนองบัว",       amphoe:"เมืองหนองบัวลำภู",lat:17.23760,lon:102.46250,type:"กลาง พระราชดำริ",   capacity:2.469,year:2534},
-  {id:"R04",no:4, name:"อ่างน้ำบอง",      village:"ตาดไฮ",         tambon:"โคกม่วง",       amphoe:"โนนสัง",           lat:16.90712,lon:102.41704,type:"กลาง พระราชดำริ",   capacity:20.800,year:2560},
-  {id:"R05",no:5, name:"ห้วยสนามชัย",     village:"สนามชัย",       tambon:"กุดแห่",        amphoe:"นากลาง",           lat:17.43410,lon:102.13761,type:"เล็ก พระราชดำริ",   capacity:0.330,year:2527},
-  {id:"R06",no:6, name:"ผาวัง",           village:"โคกนาเหล่า",    tambon:"นาเหล่า",       amphoe:"นาวัง",            lat:17.30870,lon:102.04330,type:"เล็ก เงินกู้KEW",   capacity:2.122,year:2531},
-  {id:"R07",no:7, name:"ห้วยลาดกั่ว",     village:"นาแก",          tambon:"นาแก",          amphoe:"นาวัง",            lat:17.40610,lon:102.07699,type:"เล็ก เงินกู้KEW",   capacity:0.842,year:2531},
-  {id:"R08",no:8, name:"ห้วยโซ่",         village:"โคกนกพัฒนา",    tambon:"บุญทัน",        amphoe:"สุวรรณคูหา",       lat:17.60320,lon:102.11548,type:"เล็ก พระราชดำริ",   capacity:1.430,year:2534},
-  {id:"R09",no:9, name:"ห้วยไร่ 1",       village:"โนนธาตุพัฒนา",  tambon:"ดงสวรรค์",      amphoe:"นากลาง",           lat:17.48270,lon:102.17845,type:"โครงการ คจก.",      capacity:0.200,year:2535},
-  {id:"R10",no:10,name:"ห้วยไร่ 2",       village:"สระแก้ว",       tambon:"ดงสวรรค์",      amphoe:"นากลาง",           lat:17.46310,lon:102.21227,type:"โครงการ คจก.",      capacity:0.695,year:2535},
-  {id:"R11",no:11,name:"ห้วยลำใย",        village:"เกษมมณี",       tambon:"ดงสวรรค์",      amphoe:"นากลาง",           lat:17.44550,lon:102.22660,type:"โครงการ คจก.",      capacity:0.450,year:2535},
-  {id:"R12",no:12,name:"ห้วยโป่งซาง",     village:"ป่าแดงงาม",     tambon:"กุดแห่",        amphoe:"นากลาง",           lat:17.39440,lon:102.17153,type:"เล็ก พระราชดำริ",   capacity:0.300,year:2536},
-  {id:"R13",no:13,name:"ห้วยบ้านคลองเจริญ",village:"คลองเจริญ",   tambon:"บุญทัน",        amphoe:"สุวรรณคูหา",       lat:17.59880,lon:102.14758,type:"เล็ก พระราชดำริ",   capacity:0.623,year:2536},
-  {id:"R14",no:14,name:"ผาจ้ำน้ำ",        village:"ภูเขาวง",       tambon:"เทพคีรี",       amphoe:"นาวัง",            lat:17.26380,lon:102.11873,type:"เล็ก พระราชดำริ",   capacity:0.085,year:2555},
+  {id:"R01",no:1, name:"อ่างเก็บน้ำห้วยยางเงาะ",        village:"ถ้ำกลองเพล",   tambon:"โนนทัน",       amphoe:"เมืองหนองบัวลำภู",lat:17.22588,  lon:102.518152,type:"เล็ก พระราชดำริ",capacity:0.4000,benefit:700,  irrig:0,   year:2525},
+  {id:"R02",no:2, name:"อ่างเก็บน้ำห้วยซับม่วง",        village:"หนองกุงแก้ว",  tambon:"หนองกุงแก้ว",  amphoe:"ศรีบุญเรือง",     lat:17.14711,  lon:102.090722,type:"เล็ก เงินกู้ KEW",capacity:0.7500,benefit:0,    irrig:1056,year:2532},
+  {id:"R03",no:3, name:"อ่างเก็บน้ำห้วยเหล่ายาง",       village:"ภูพานทอง",     tambon:"หนองบัว",      amphoe:"เมืองหนองบัวลำภู",lat:17.23760,  lon:102.462500,type:"กลาง พระราชดำริ",capacity:2.4690,benefit:2000, irrig:0,   year:2534},
+  {id:"R04",no:4, name:"อ่างเก็บน้ำห้วยน้ำบอง",         village:"ตาดไฮ",        tambon:"โคกม่วง",      amphoe:"โนนสัง",          lat:16.907122, lon:102.417037,type:"กลาง พระราชดำริ",capacity:20.8000,benefit:15949,irrig:0,   year:2560},
+  {id:"R05",no:5, name:"อ่างเก็บน้ำบ้านสนามชัย",        village:"สนามชัย",      tambon:"กุดแห่",       amphoe:"นากลาง",          lat:17.43410,  lon:102.137610,type:"เล็ก พระราชดำริ",capacity:0.3300,benefit:1000, irrig:0,   year:2527},
+  {id:"R06",no:6, name:"อ่างเก็บน้ำห้วยผาวัง",          village:"โคกนาเหล่า",   tambon:"นาเหล่า",      amphoe:"นาวัง",           lat:17.30870,  lon:102.043300,type:"เล็ก เงินกู้ KEW",capacity:2.1220,benefit:0,    irrig:2350,year:2531},
+  {id:"R07",no:7, name:"อ่างเก็บน้ำห้วยลาดกั่ว",        village:"นาแก",         tambon:"นาแก",         amphoe:"นาวัง",           lat:17.40610,  lon:102.076990,type:"เล็ก เงินกู้ KEW",capacity:0.8420,benefit:0,    irrig:1050,year:2531},
+  {id:"R08",no:8, name:"อ่างเก็บน้ำห้วยโซ่",            village:"โคกนกพัฒนา",   tambon:"บุญทัน",       amphoe:"สุวรรณคูหา",      lat:17.60320,  lon:102.115480,type:"เล็ก พระราชดำริ",capacity:1.4300,benefit:800,  irrig:700, year:2534},
+  {id:"R09",no:9, name:"อ่างเก็บน้ำห้วยไร่ 1",          village:"โนนธาตุพัฒนา", tambon:"ดงสวรรค์",     amphoe:"นากลาง",          lat:17.48270,  lon:102.178450,type:"โครงการ คจก.",  capacity:0.2000,benefit:0,    irrig:400, year:2535},
+  {id:"R10",no:10,name:"อ่างเก็บน้ำห้วยไร่ 2",          village:"สระแก้ว",      tambon:"ดงสวรรค์",     amphoe:"นากลาง",          lat:17.46310,  lon:102.212270,type:"โครงการ คจก.",  capacity:0.6950,benefit:0,    irrig:700, year:2535},
+  {id:"R11",no:11,name:"อ่างเก็บน้ำห้วยลำไย",           village:"เกษมมณี",      tambon:"ดงสวรรค์",     amphoe:"นากลาง",          lat:17.44550,  lon:102.226600,type:"โครงการ คจก.",  capacity:0.4500,benefit:0,    irrig:500, year:2535},
+  {id:"R12",no:12,name:"อ่างเก็บน้ำห้วยโป่งซาง",        village:"ป่าแดงงาม",    tambon:"กุดแห่",       amphoe:"นากลาง",          lat:17.39440,  lon:102.171530,type:"เล็ก พระราชดำริ",capacity:0.3000,benefit:200,  irrig:0,   year:2536},
+  {id:"R13",no:13,name:"อ่างเก็บน้ำบ้านคลองเจริญ",      village:"คลองเจริญ",    tambon:"บุญทัน",       amphoe:"สุวรรณคูหา",      lat:17.59880,  lon:102.147580,type:"เล็ก พระราชดำริ",capacity:0.6230,benefit:0,    irrig:700, year:2536},
+  {id:"R14",no:14,name:"อ่างเก็บน้ำผาจ้ำน้ำ",           village:"ภูเขาวง",      tambon:"เทพคีรี",      amphoe:"นาวัง",           lat:17.26380,  lon:102.118730,type:"เล็ก พระราชดำริ",capacity:0.0850,benefit:0,    irrig:400, year:2555},
+  {id:"R15",no:15,name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", village:"ห้วยเดื่อ",    tambon:"โนนทัน",       amphoe:"เมืองหนองบัวลำภู",lat:17.2314734,lon:102.514000,type:"เล็ก",          capacity:0.0684,benefit:180,  irrig:0,   year:2567},
 ];
 
 const TOTAL_CAPACITY = RESERVOIRS.reduce((a,r) => a + r.capacity, 0);
@@ -751,7 +756,7 @@ let _activeFilter = 'all';
 
 /* ─── demo data ─── */
 function initDemoData() {
-  const demos = [0.72,0.60,0.55,0.48,0.68,0.82,0.73,0.65,0.50,0.70,0.55,0.62,0.78,0.44];
+  const demos = [0.72,0.60,0.55,0.48,0.68,0.82,0.73,0.65,0.50,0.70,0.55,0.62,0.78,0.44,0.58];
   RESERVOIRS.forEach((r,i) => {
     resData[r.id] = { current: +(r.capacity * demos[i]).toFixed(3) };
   });
@@ -1250,13 +1255,19 @@ function openDetail(id) {
     }
   });
 
+  const areaTxt = r.benefit > 0
+    ? `${r.benefit.toLocaleString()} ไร่ (พื้นที่รับประโยชน์)`
+    : r.irrig > 0
+      ? `${r.irrig.toLocaleString()} ไร่ (พื้นที่ชลประทาน)`
+      : '—';
   document.getElementById('dpInfoList').innerHTML = [
-    ['ที่ตั้ง',       `${r.village} ต.${r.tambon} อ.${r.amphoe}`],
-    ['ประเภทโครงการ', r.type],
-    ['ปีก่อสร้างเสร็จ',`พ.ศ. ${r.year}`],
-    ['พิกัด',        `${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}`],
-    ['รหัส',         `R${String(r.no).padStart(2,'0')}`],
-    ['ความจุ',       `${r.capacity.toFixed(3)} ล้าน ลบ.ม.`],
+    ['ที่ตั้ง',         `บ้าน${r.village} ต.${r.tambon} อ.${r.amphoe}`],
+    ['ประเภทโครงการ',   r.type],
+    ['ความจุเก็บกัก',   `${r.capacity.toFixed(4)} ล้าน ลบ.ม.`],
+    ['พื้นที่ได้ประโยชน์', areaTxt],
+    ['ปีก่อสร้างเสร็จ',  `พ.ศ. ${r.year}`],
+    ['พิกัด',          `${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}`],
+    ['รหัส',           `R${String(r.no).padStart(2,'0')}`],
   ].map(([l,v]) => `
     <div class="dp-info-row"><span class="dr-label">${l}</span><span class="dr-val">${v}</span></div>`
   ).join('');
@@ -1284,12 +1295,17 @@ function renderTable() {
     const p   = pctOf(r);
     const st  = statusOf(r);
     const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(3);
+    const area = r.benefit > 0
+      ? r.benefit.toLocaleString() + ' <small style="color:var(--muted)">รับประโยชน์</small>'
+      : r.irrig > 0
+        ? r.irrig.toLocaleString() + ' <small style="color:var(--muted)">ชลประทาน</small>'
+        : '<span style="color:var(--muted)">—</span>';
     return `<tr onclick="openDetail('${r.id}')">
       <td><strong style="color:var(--muted)">R${String(r.no).padStart(2,'0')}</strong></td>
       <td><strong>${r.name}</strong></td>
-      <td>${r.village}<br><small style="color:var(--muted)">ต.${r.tambon} · อ.${r.amphoe}</small></td>
+      <td>บ้าน${r.village}<br><small style="color:var(--muted)">ต.${r.tambon} · อ.${r.amphoe}</small></td>
       <td><span style="font-size:11px;background:#f0fdfa;padding:2px 7px;border-radius:5px">${r.type}</span></td>
-      <td style="text-align:right;font-weight:700;font-family:monospace">${r.capacity.toFixed(3)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace">${r.capacity.toFixed(4)}</td>
       <td style="text-align:right;font-weight:800;font-family:monospace;color:${p<30?'#dc2626':p<40?'#f59e0b':'#0d9488'}">${cur}</td>
       <td>
         <div style="display:flex;align-items:center;gap:5px">
@@ -1297,6 +1313,7 @@ function renderTable() {
           <span style="font-size:11px;font-weight:700">${p}%</span>
         </div>
       </td>
+      <td style="text-align:right;font-size:12px">${area}</td>
       <td style="text-align:right;color:var(--muted)">พ.ศ. ${r.year}</td>
       <td><span class="pill ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span></td>
     </tr>`;

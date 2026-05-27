@@ -656,7 +656,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
                   </div>
                   <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;">
                     <div style="font-weight:700;color:#065f46;font-size:13.5px;">🏞️ Reservoir Admin</div>
-                    <div style="font-size:11.5px;color:#064e3b;margin:4px 0;">กรอกอ่างเก็บน้ำได้ทุกอ่าง (14 อ่าง)</div>
+                    <div style="font-size:11.5px;color:#064e3b;margin:4px 0;">กรอกอ่างเก็บน้ำได้ทุกอ่าง (15 อ่าง)</div>
                     <code style="background:#fff;padding:5px 9px;border-radius:6px;font-size:12px;border:1px solid #6ee7b7;display:inline-block;">Key: RESERVOIR_ADMIN_PIN</code>
                   </div>
                 </div>
@@ -727,20 +727,21 @@ const STATIONS = [
 const AMPHOES = ["เมืองหนองบัวลำภู","นากลาง","นาวัง","ศรีบุญเรือง","สุวรรณคูหา","โนนสัง"];
 
 const RESERVOIRS = [
-  {id:"R01", name:"ห้วยยางเงาะ",      amphoe:"เมืองหนองบัวลำภู", capacity:0.400,  type:"เล็ก พระราชดำริ"},
-  {id:"R02", name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",       capacity:0.750,  type:"เล็ก เงินกู้KEW"},
-  {id:"R03", name:"ห้วยเหล่ายาง",      amphoe:"เมืองหนองบัวลำภู", capacity:2.469,  type:"กลาง พระราชดำริ"},
-  {id:"R04", name:"อ่างน้ำบอง",        amphoe:"โนนสัง",            capacity:20.800, type:"กลาง พระราชดำริ"},
-  {id:"R05", name:"ห้วยสนามชัย",       amphoe:"นากลาง",            capacity:0.330,  type:"เล็ก พระราชดำริ"},
-  {id:"R06", name:"ผาวัง",             amphoe:"นาวัง",             capacity:2.122,  type:"เล็ก เงินกู้KEW"},
-  {id:"R07", name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",             capacity:0.842,  type:"เล็ก เงินกู้KEW"},
-  {id:"R08", name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",        capacity:1.430,  type:"เล็ก พระราชดำริ"},
-  {id:"R09", name:"ห้วยไร่ 1",         amphoe:"นากลาง",            capacity:0.200,  type:"โครงการ คจก."},
-  {id:"R10", name:"ห้วยไร่ 2",         amphoe:"นากลาง",            capacity:0.695,  type:"โครงการ คจก."},
-  {id:"R11", name:"ห้วยลำใย",          amphoe:"นากลาง",            capacity:0.450,  type:"โครงการ คจก."},
-  {id:"R12", name:"ห้วยโป่งซาง",       amphoe:"นากลาง",            capacity:0.300,  type:"เล็ก พระราชดำริ"},
-  {id:"R13", name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",        capacity:0.623,  type:"เล็ก พระราชดำริ"},
-  {id:"R14", name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",             capacity:0.085,  type:"เล็ก พระราชดำริ"}
+  {id:"R01", name:"อ่างเก็บน้ำห้วยยางเงาะ",        amphoe:"เมืองหนองบัวลำภู", capacity:0.4000,  type:"เล็ก พระราชดำริ"},
+  {id:"R02", name:"อ่างเก็บน้ำห้วยซับม่วง",        amphoe:"ศรีบุญเรือง",       capacity:0.7500,  type:"เล็ก เงินกู้ KEW"},
+  {id:"R03", name:"อ่างเก็บน้ำห้วยเหล่ายาง",       amphoe:"เมืองหนองบัวลำภู", capacity:2.4690,  type:"กลาง พระราชดำริ"},
+  {id:"R04", name:"อ่างเก็บน้ำห้วยน้ำบอง",         amphoe:"โนนสัง",            capacity:20.8000, type:"กลาง พระราชดำริ"},
+  {id:"R05", name:"อ่างเก็บน้ำบ้านสนามชัย",        amphoe:"นากลาง",            capacity:0.3300,  type:"เล็ก พระราชดำริ"},
+  {id:"R06", name:"อ่างเก็บน้ำห้วยผาวัง",          amphoe:"นาวัง",             capacity:2.1220,  type:"เล็ก เงินกู้ KEW"},
+  {id:"R07", name:"อ่างเก็บน้ำห้วยลาดกั่ว",        amphoe:"นาวัง",             capacity:0.8420,  type:"เล็ก เงินกู้ KEW"},
+  {id:"R08", name:"อ่างเก็บน้ำห้วยโซ่",            amphoe:"สุวรรณคูหา",        capacity:1.4300,  type:"เล็ก พระราชดำริ"},
+  {id:"R09", name:"อ่างเก็บน้ำห้วยไร่ 1",          amphoe:"นากลาง",            capacity:0.2000,  type:"โครงการ คจก."},
+  {id:"R10", name:"อ่างเก็บน้ำห้วยไร่ 2",          amphoe:"นากลาง",            capacity:0.6950,  type:"โครงการ คจก."},
+  {id:"R11", name:"อ่างเก็บน้ำห้วยลำไย",           amphoe:"นากลาง",            capacity:0.4500,  type:"โครงการ คจก."},
+  {id:"R12", name:"อ่างเก็บน้ำห้วยโป่งซาง",        amphoe:"นากลาง",            capacity:0.3000,  type:"เล็ก พระราชดำริ"},
+  {id:"R13", name:"อ่างเก็บน้ำบ้านคลองเจริญ",      amphoe:"สุวรรณคูหา",        capacity:0.6230,  type:"เล็ก พระราชดำริ"},
+  {id:"R14", name:"อ่างเก็บน้ำผาจ้ำน้ำ",           amphoe:"นาวัง",             capacity:0.0850,  type:"เล็ก พระราชดำริ"},
+  {id:"R15", name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", amphoe:"เมืองหนองบัวลำภู", capacity:0.0684,  type:"เล็ก"}
 ];
 
 /* ============================================================
@@ -839,7 +840,7 @@ function renderChoose() {
             <button class="station-btn" onclick="chooseReservoir('${r.id}')">
               <span class="code" style="color:#059669;">${r.id}</span>
               <span class="name">${r.name}</span>
-              <span class="meta">💧 ความจุ ${r.capacity.toFixed(3)} ล้าน ลบ.ม.</span>
+              <span class="meta">💧 ความจุ ${r.capacity.toFixed(4)} ล้าน ลบ.ม.</span>
             </button>
           `).join("")}
         </div>
@@ -915,7 +916,7 @@ function chooseReservoir(rid) {
   }
   document.getElementById("pin-label").textContent = "PIN สำหรับอ่างเก็บน้ำ";
   document.getElementById("pin-target").textContent = "🏞️ " + r.id + " · " + r.name;
-  document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
   document.getElementById("pin-input").value = "";
   document.getElementById("pin-error").classList.remove("on");
   showScreen("scr-pin");
@@ -929,7 +930,7 @@ function chooseReservoir(rid) {
 const SUB_ADMIN_LABELS = {
   water:     { ico:"💧", title:"Water Admin", desc:"กรอกระดับน้ำได้ทุกสถานี (20 สถานี · 4 ลำน้ำ)", color:"#0c4a6e", bg:"#dbeafe" },
   rain:      { ico:"🌧️", title:"Rain Admin",  desc:"กรอกฝนได้ทุกอำเภอ (6 อำเภอ)",                color:"#1e40af", bg:"#dbeafe" },
-  reservoir: { ico:"🏞️", title:"Reservoir Admin", desc:"กรอกอ่างเก็บน้ำได้ทุกอ่าง (14 อ่าง)",     color:"#065f46", bg:"#d1fae5" },
+  reservoir: { ico:"🏞️", title:"Reservoir Admin", desc:"กรอกอ่างเก็บน้ำได้ทุกอ่าง (15 อ่าง)",     color:"#065f46", bg:"#d1fae5" },
 };
 
 function openSubAdminLogin(scope) {
@@ -1149,8 +1150,8 @@ function enterReservoirForm() {
   const r = SELECTED;
   document.getElementById("rs-code").textContent = r.id;
   document.getElementById("rs-name").textContent = r.name;
-  document.getElementById("rs-meta").textContent = "📍 อ." + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
-  document.getElementById("rs-cap-hint").textContent = "ความจุอ่าง: " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("rs-meta").textContent = "📍 อ." + r.amphoe + " · ความจุ " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
+  document.getElementById("rs-cap-hint").textContent = "ความจุอ่าง: " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
   document.getElementById("side-title").textContent = "📊 ประวัติ " + r.id;
   const now = new Date();
   document.getElementById("rs-date").value = now.toISOString().slice(0,10);
@@ -1450,7 +1451,23 @@ async function saveWater() {
   const recorder = document.getElementById("w-recorder").value.trim();
   const remark = document.getElementById("w-remark").value.trim();
   if (!date || !time) return showToast("w-toast", "กรุณากรอกวันที่และเวลา", false);
-  if (!level || isNaN(parseFloat(level))) return showToast("w-toast", "กรุณากรอกระดับน้ำเป็นตัวเลข", false);
+
+  // วันที่ห้ามเป็นอนาคต
+  const wToday = new Date(); wToday.setHours(23,59,59,999);
+  if (new Date(date) > wToday)
+    return showToast("w-toast", "วันที่ต้องไม่เกินวันนี้", false);
+
+  if (!level || isNaN(parseFloat(level)))
+    return showToast("w-toast", "กรุณากรอกระดับน้ำเป็นตัวเลข", false);
+
+  // ระดับน้ำต้องอยู่ในช่วงที่สมเหตุสมผล (0–500 ม.รทก.)
+  const lvNum = parseFloat(level);
+  if (lvNum < 0 || lvNum > 500)
+    return showToast("w-toast", "ระดับน้ำต้องอยู่ระหว่าง 0–500 ม.รทก.", false);
+
+  // อัตราการไหล ถ้ากรอกต้องไม่ติดลบ
+  if (flow !== "" && (isNaN(parseFloat(flow)) || parseFloat(flow) < 0))
+    return showToast("w-toast", "อัตราการไหลต้องเป็นตัวเลขและไม่ติดลบ", false);
 
   const btn = document.getElementById("w-save");
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
@@ -1494,7 +1511,25 @@ async function saveRain() {
   const recorder = document.getElementById("r-recorder").value.trim();
   const remark = document.getElementById("r-remark").value.trim();
   if (!date) return showToast("r-toast", "กรุณากรอกวันที่", false);
-  if (!r24 || isNaN(parseFloat(r24))) return showToast("r-toast", "กรุณากรอกฝน 24 ชม.", false);
+
+  // วันที่ห้ามเป็นอนาคต
+  const rToday = new Date(); rToday.setHours(23,59,59,999);
+  if (new Date(date) > rToday)
+    return showToast("r-toast", "วันที่ต้องไม่เกินวันนี้", false);
+
+  if (!r24 || isNaN(parseFloat(r24)))
+    return showToast("r-toast", "กรุณากรอกฝน 24 ชม. เป็นตัวเลข", false);
+
+  // ปริมาณฝน — ไม่ติดลบ และไม่เกิน 600 มม./วัน (สถิติฝนสูงสุดไทย ~500+ มม.)
+  for (const [val,label,max] of [[r24,"ฝน 24 ชม.",600],[r7,"ฝน 7 วัน",2000],[rmo,"ฝนสะสมเดือน",4000]]) {
+    if (val !== "" && val != null) {
+      const n = parseFloat(val);
+      if (isNaN(n) || n < 0)
+        return showToast("r-toast", label + " ต้องเป็นตัวเลขและไม่ติดลบ", false);
+      if (n > max)
+        return showToast("r-toast", label + " สูงผิดปกติ (เกิน " + max + " มม.)", false);
+    }
+  }
 
   const btn = document.getElementById("r-save");
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
@@ -1535,8 +1570,34 @@ async function saveReservoir() {
   const inflow = document.getElementById("rs-inflow").value.trim();
   const outflow = document.getElementById("rs-outflow").value.trim();
   const recorder = document.getElementById("rs-recorder").value.trim();
+
+  // ── ตรวจสอบข้อมูล ──
   if (!date) return showToast("rs-toast", "กรุณากรอกวันที่", false);
-  if (!volume || isNaN(parseFloat(volume))) return showToast("rs-toast", "กรุณากรอกปริมาณน้ำ (ล้าน ลบ.ม.)", false);
+
+  // วันที่ห้ามเป็นอนาคต
+  const today = new Date(); today.setHours(23,59,59,999);
+  if (new Date(date) > today)
+    return showToast("rs-toast", "วันที่ต้องไม่เกินวันนี้", false);
+
+  // ปริมาณน้ำ — ต้องเป็นตัวเลข ไม่ติดลบ
+  if (!volume || isNaN(parseFloat(volume)))
+    return showToast("rs-toast", "กรุณากรอกปริมาณน้ำเป็นตัวเลข (ล้าน ลบ.ม.)", false);
+  const volNum = parseFloat(volume);
+  if (volNum < 0)
+    return showToast("rs-toast", "ปริมาณน้ำต้องไม่เป็นค่าติดลบ", false);
+
+  // ปริมาณน้ำต้องไม่เกินความจุมากผิดปกติ (เตือนถ้าเกิน 120%)
+  if (r.capacity && volNum > r.capacity * 1.2) {
+    if (!confirm("⚠️ ปริมาณน้ำ " + volNum.toFixed(4) + " ล้าน ลบ.ม. " +
+        "เกินความจุอ่าง (" + r.capacity.toFixed(4) + ") มากผิดปกติ\n\n" +
+        "ยืนยันบันทึกหรือไม่?")) return;
+  }
+
+  // ค่าอื่นๆ — ถ้ากรอกต้องเป็นตัวเลขและไม่ติดลบ
+  for (const [val,label] of [[level,"ระดับน้ำ"],[inflow,"น้ำไหลเข้า"],[outflow,"น้ำระบายออก"]]) {
+    if (val !== "" && (isNaN(parseFloat(val)) || parseFloat(val) < 0))
+      return showToast("rs-toast", label + " ต้องเป็นตัวเลขและไม่ติดลบ", false);
+  }
 
   const btn = document.getElementById("rs-save");
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
@@ -1544,7 +1605,7 @@ async function saveReservoir() {
   const resp = await api({
     action:"savereservoir", pin:SESSION_PIN,
     reservoir_id: r.id, reservoir_name: r.name, amphoe: r.amphoe,
-    date, current_volume: parseFloat(volume),
+    date, current_volume: volNum,
     capacity: r.capacity,
     level: level ? parseFloat(level) : "",
     inflow: inflow ? parseFloat(inflow) : "",
@@ -1858,7 +1919,7 @@ async function loadReservoirPins() {
   }
   const rows = Array.isArray(resp) ? resp : [];
   if (!rows.length) {
-    wrap.innerHTML = `<div class="admin-empty">ยังไม่มี PIN รายอ่าง — กดสร้างค่าเริ่มต้นเพื่อสร้าง PIN ให้ทั้ง 14 อ่าง<br><button class="btn btn-pri" onclick="initReservoirPinsAdmin()" style="background:#059669;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกอ่าง</button></div>`;
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มี PIN รายอ่าง — กดสร้างค่าเริ่มต้นเพื่อสร้าง PIN ให้ทั้ง 15 อ่าง<br><button class="btn btn-pri" onclick="initReservoirPinsAdmin()" style="background:#059669;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกอ่าง</button></div>`;
     return;
   }
   const hasNone = rows.some(r => !r.has_pin);
