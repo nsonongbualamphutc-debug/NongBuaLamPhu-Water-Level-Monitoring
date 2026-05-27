@@ -595,7 +595,22 @@ function getRainfall(days) {
 function getReservoirs() {
   const sheet=getOrCreateReservoirSheet(), rows=sheetToObjects(sheet), latest={};
   rows.forEach(r=>{const id=r.reservoir_id;if(!id)return;const d=parseDate(r.date);if(!latest[id]||parseDate(latest[id].date)<d)latest[id]=r;});
-  return Object.values(latest);
+  // merge กับ master list — คืนครบทุกอ่าง แม้อ่างที่ยังไม่มีข้อมูลใน Sheet
+  return RESERVOIR_LIST.map(function(meta){
+    const rec = latest[meta.id];
+    if (rec) {
+      // เติม name/capacity จาก master ถ้า Sheet ไม่มี
+      if (!rec.reservoir_name) rec.reservoir_name = meta.name;
+      if (rec.capacity == null || rec.capacity === "") rec.capacity = meta.capacity;
+      if (!rec.amphoe) rec.amphoe = meta.amphoe;
+      return rec;
+    }
+    // ยังไม่มีข้อมูล — คืน record ว่างพร้อม metadata
+    return {
+      reservoir_id: meta.id, reservoir_name: meta.name, amphoe: meta.amphoe,
+      capacity: meta.capacity, current_volume: "", date: "", _no_data: true
+    };
+  });
 }
 
 function getHistory(limit) {
@@ -982,20 +997,21 @@ function initAmphoePins() {
 // ===== RESERVOIR PIN MANAGEMENT =====
 /** รายการอ่างเก็บน้ำในจังหวัด (master list) — sync กับ reservoir.html */
 const RESERVOIR_LIST = [
-  { id:"R01", name:"ห้วยยางเงาะ",      amphoe:"เมืองหนองบัวลำภู", capacity:0.400 },
-  { id:"R02", name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",       capacity:0.750 },
-  { id:"R03", name:"ห้วยเหล่ายาง",      amphoe:"เมืองหนองบัวลำภู", capacity:2.469 },
-  { id:"R04", name:"อ่างน้ำบอง",        amphoe:"โนนสัง",            capacity:20.800 },
-  { id:"R05", name:"ห้วยสนามชัย",       amphoe:"นากลาง",            capacity:0.330 },
-  { id:"R06", name:"ผาวัง",             amphoe:"นาวัง",             capacity:2.122 },
-  { id:"R07", name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",             capacity:0.842 },
-  { id:"R08", name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",        capacity:1.430 },
-  { id:"R09", name:"ห้วยไร่ 1",         amphoe:"นากลาง",            capacity:0.200 },
-  { id:"R10", name:"ห้วยไร่ 2",         amphoe:"นากลาง",            capacity:0.695 },
-  { id:"R11", name:"ห้วยลำใย",          amphoe:"นากลาง",            capacity:0.450 },
-  { id:"R12", name:"ห้วยโป่งซาง",       amphoe:"นากลาง",            capacity:0.300 },
-  { id:"R13", name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",        capacity:0.623 },
-  { id:"R14", name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",             capacity:0.085 }
+  { id:"R01", name:"อ่างเก็บน้ำห้วยยางเงาะ",        amphoe:"เมืองหนองบัวลำภู", capacity:0.4000 },
+  { id:"R02", name:"อ่างเก็บน้ำห้วยซับม่วง",        amphoe:"ศรีบุญเรือง",       capacity:0.7500 },
+  { id:"R03", name:"อ่างเก็บน้ำห้วยเหล่ายาง",       amphoe:"เมืองหนองบัวลำภู", capacity:2.4690 },
+  { id:"R04", name:"อ่างเก็บน้ำห้วยน้ำบอง",         amphoe:"โนนสัง",            capacity:20.8000 },
+  { id:"R05", name:"อ่างเก็บน้ำบ้านสนามชัย",        amphoe:"นากลาง",            capacity:0.3300 },
+  { id:"R06", name:"อ่างเก็บน้ำห้วยผาวัง",          amphoe:"นาวัง",             capacity:2.1220 },
+  { id:"R07", name:"อ่างเก็บน้ำห้วยลาดกั่ว",        amphoe:"นาวัง",             capacity:0.8420 },
+  { id:"R08", name:"อ่างเก็บน้ำห้วยโซ่",            amphoe:"สุวรรณคูหา",        capacity:1.4300 },
+  { id:"R09", name:"อ่างเก็บน้ำห้วยไร่ 1",          amphoe:"นากลาง",            capacity:0.2000 },
+  { id:"R10", name:"อ่างเก็บน้ำห้วยไร่ 2",          amphoe:"นากลาง",            capacity:0.6950 },
+  { id:"R11", name:"อ่างเก็บน้ำห้วยลำไย",           amphoe:"นากลาง",            capacity:0.4500 },
+  { id:"R12", name:"อ่างเก็บน้ำห้วยโป่งซาง",        amphoe:"นากลาง",            capacity:0.3000 },
+  { id:"R13", name:"อ่างเก็บน้ำบ้านคลองเจริญ",      amphoe:"สุวรรณคูหา",        capacity:0.6230 },
+  { id:"R14", name:"อ่างเก็บน้ำผาจ้ำน้ำ",           amphoe:"นาวัง",             capacity:0.0850 },
+  { id:"R15", name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", amphoe:"เมืองหนองบัวลำภู", capacity:0.0684 }
 ];
 
 function ensureReservoirPinsSheet_() {
