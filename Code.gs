@@ -1368,3 +1368,176 @@ function installDefaultPinForSetup(){PropertiesService.getScriptProperties().set
 function testPin(){Logger.log(getAppPin()?"✅ ตั้งค่า APP_PIN แล้ว":"❌ ยังไม่ได้ตั้งค่า APP_PIN");}
 function testGetSummary(){Logger.log(JSON.stringify(getSummary(),null,2));}
 function testGetReservoirs(){Logger.log(JSON.stringify(getReservoirs(),null,2));}
+/**
+ * ============================================================
+ * Code.gs — เพิ่ม Gemini AI Proxy
+ * ============================================================
+ * วิธีใช้:
+ *   1. เปิด Apps Script Editor → Script Properties
+ *   2. เพิ่ม Key: GEMINI_API_KEY  Value: <your-gemini-key>
+ *      (รับ key ฟรีที่ https://aistudio.google.com/app/apikey)
+ *   3. Paste ฟังก์ชันด้านล่างต่อท้าย Code.gs
+ *   4. ใน doGet() เพิ่ม case "gemini" ตามที่ระบุ
+ * ============================================================
+ */
+
+/* ── ขั้นที่ 1: เพิ่มใน doGet() ในส่วน READ actions ──
+   วางก่อนบรรทัด  case "summary": data = getSummary(); break;
+
+    case "gemini": data = geminiProxy_(params.prompt||"", params.context||""); break;
+
+   ─────────────────────────────────────────────────── */
+
+
+/* ════════════════════════════════════════════════════
+ *  GEMINI PROXY — เพิ่มต่อท้าย Code.gs ทั้งหมด
+ * ════════════════════════════════════════════════════ */
+
+/**
+ * geminiProxy_(prompt, context)
+ * ─ อ่าน API key จาก Script Properties (ปลอดภัย)
+ * ─ Rate limit 1 ครั้ง / 25 นาที ต่อ session
+ * ─ Cache ผลไว้เพื่อประหยัด quota
+ */
+function geminiProxy_(prompt, context) {
+
+  // ── 1. ตรวจ API key ──
+  const key = PropertiesService.getScriptProperties()
+                               .getProperty("AIzaSyA6OnCaihPZB7HY3NjILliaoKhJ_KBY1Ec");
+  if (!key) {
+    return {
+      ok: false,
+      error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Script Properties",
+      hint: "เปิด Apps Script Editor → Project Settings → Script Properties → เพิ่ม GEMINI_API_KEY"
+    };
+  }
+
+  // ── 2. ตรวจ prompt ──
+  if (!prompt || String(prompt).trim().length < 20) {
+    return { ok: false, error: "prompt สั้นเกินไป — ต้องมีข้อมูลสภาพอากาศก่อน" };
+  }
+
+  // ── 3. Rate limit (CacheService) ──
+  const cache       = CacheService.getScriptCache();
+  const RATE_KEY    = "nbp_gemini_rate";
+  const RESULT_KEY  = "nbp_gemini_last";
+  const RATE_TTL    = 25 * 60;   // 25 นาที (วินาที)
+
+  if (cache.get(RATE_KEY)) {
+    // ยังอยู่ใน window → คืน cached result ถ้ามี
+    const cached = cache.get(RESULT_KEY);
+    if (cached) {
+      try {
+        const obj = JSON.parse(cached);
+        obj._cached = true;
+        return obj;
+      } catch(e) {}
+    }
+    return {
+      ok: false,
+      error: "Rate limit: กรุณารอให้ครบ 25 นาทีก่อนวิเคราะห์ใหม่",
+      _rate_limited: true
+    };
+  }
+
+  // ── 4. สร้าง system prompt ──
+  const systemPrompt =
+    "คุณเป็นผู้เชี่ยวชาญสภาพอากาศและสถานการณ์น้ำ จ.หนองบัวลำภู ประเทศไทย " +
+    "วิเคราะห์ข้อมูลที่ได้รับและสรุปสถานการณ์เป็นภาษาไทย " +
+    "ตอบกระชับ 3–5 ประโยค มุ่งเน้นผลกระทบต่อประชาชน " +
+    "ถ้ามีความเสี่ยงน้ำท่วมหรือภัยแล้ง ให้ระบุชัดเจน " +
+    "ห้ามใช้ markdown หรือ bullet ในการตอบ";
+
+  const fullPrompt = systemPrompt + "\n\n" + String(prompt).trim() +
+    (context ? "\n\nข้อมูลเพิ่มเติม: " + String(context).slice(0, 500) : "");
+
+  // ── 5. เรียก Gemini API ──
+  const MODEL = "gemini-1.5-flash-latest";
+  const url   = "https://generativelanguage.googleapis.com/v1beta/models/" +
+                MODEL + ":generateContent?key=" + key;
+
+  const payload = {
+    contents: [{
+      parts: [{ text: fullPrompt }]
+    }],
+    generationConfig: {
+      temperature:     0.45,
+      maxOutputTokens: 512,
+      topP:            0.90,
+    },
+    safetySettings: [
+      { category:"HARM_CATEGORY_HARASSMENT",        threshold:"BLOCK_NONE" },
+      { category:"HARM_CATEGORY_HATE_SPEECH",       threshold:"BLOCK_NONE" },
+      { category:"HARM_CATEGORY_DANGEROUS_CONTENT", threshold:"BLOCK_NONE" },
+    ]
+  };
+
+  let result;
+  try {
+    const res  = UrlFetchApp.fetch(url, {
+      method:            "post",
+      contentType:       "application/json",
+      payload:           JSON.stringify(payload),
+      muteHttpExceptions: true,
+    });
+
+    const code = res.getResponseCode();
+    const body = JSON.parse(res.getContentText());
+
+    if (code !== 200) {
+      return {
+        ok:    false,
+        error: "Gemini API error " + code + ": " +
+               (body.error && body.error.message || JSON.stringify(body))
+      };
+    }
+
+    const text = (body.candidates &&
+                  body.candidates[0] &&
+                  body.candidates[0].content &&
+                  body.candidates[0].content.parts &&
+                  body.candidates[0].content.parts[0] &&
+                  body.candidates[0].content.parts[0].text) || "";
+
+    if (!text) {
+      return { ok: false, error: "Gemini ไม่ได้ส่งข้อความกลับมา — อาจถูก safety filter" };
+    }
+
+    result = {
+      ok:        true,
+      text:      text.trim(),
+      model:     MODEL,
+      generated: new Date().toISOString(),
+      _cached:   false,
+    };
+
+  } catch (err) {
+    return { ok: false, error: "UrlFetch error: " + err.toString() };
+  }
+
+  // ── 6. cache ผลและตั้ง rate limit ──
+  try {
+    const resultStr = JSON.stringify(result);
+    if (resultStr.length < 100000) {
+      cache.put(RESULT_KEY, resultStr, RATE_TTL + 300);
+      cache.put(RATE_KEY,   "1",       RATE_TTL);
+    }
+  } catch(e) { /* ถ้า JSON ใหญ่เกิน ข้ามได้ */ }
+
+  Logger.log("[Gemini Proxy] สำเร็จ: " + result.text.slice(0, 80) + "…");
+  return result;
+}
+
+/**
+ * testGeminiProxy — เรียกจาก Apps Script Editor เพื่อทดสอบ
+ * Run → testGeminiProxy
+ */
+function testGeminiProxy() {
+  const fakePrompt =
+    "อุณหภูมิ 32°C ความชื้น 85% ฝน 48 มม. ใน 24 ชม. " +
+    "สถานี PN06 ระดับน้ำ 215.8 ม. (ตลิ่ง 216.0) สถานะ: เฝ้าระวัง " +
+    "อ่างเก็บน้ำเฉลี่ย 72% จากทั้งหมด 14 แห่ง";
+
+  const res = geminiProxy_(fakePrompt, "");
+  Logger.log(JSON.stringify(res, null, 2));
+}
