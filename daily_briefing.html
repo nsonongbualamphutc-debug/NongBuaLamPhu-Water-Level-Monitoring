@@ -16,7 +16,6 @@
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
-<script src="smart_summary.js"></script>  
 <style>
 :root{
   --bg-deep:#05070f;
@@ -819,25 +818,245 @@ footer strong{color:var(--ink-2);font-weight:600;}
 .river-row .pct{flex:0 0 50px;text-align:right;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;}
 @media(max-width:560px){.river-row{flex-wrap:wrap;}.river-row .bar-wrap{flex:1 1 100%;}.river-row .pct{flex:0;}}
 
-/* ============ NEW: RESERVOIRS MICRO-GRID ============ */
-.res-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
-.res-mini{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden;}
-.res-mini::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#10b981;}
-.res-mini.warn::before{background:#fbbf24;}
-.res-mini.crit::before{background:#ef4444;}
-.res-mini.low::before{background:#0ea5e9;}
-.res-mini .code{font-family:'Inter',sans-serif;font-weight:700;font-size:11px;color:var(--ink-3);letter-spacing:.5px;}
-.res-mini .nm{font-size:12px;font-weight:600;margin:2px 0 4px;line-height:1.3;color:var(--ink);}
-.res-mini .pct{font-family:'Inter',sans-serif;font-size:18px;font-weight:800;}
-.res-mini .vol{font-size:10px;color:var(--ink-3);margin-top:1px;}
-.res-mini.ok .pct{color:#4ade80;}
-.res-mini.warn .pct{color:#fbbf24;}
-.res-mini.crit .pct{color:#f87171;}
-.res-mini.low .pct{color:#60a5fa;}
-.res-mini.empty .pct{color:var(--ink-4);}
+/* ============ RESERVOIRS MICRO-GRID (v2 — สวยขึ้น) ============ */
+.res-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px;}
+.res-mini{
+  background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  border:1px solid var(--border);border-radius:16px;padding:14px;
+  position:relative;overflow:hidden;cursor:default;
+  transition:transform .2s cubic-bezier(.34,1.26,.64,1),border-color .2s,box-shadow .2s;
+}
+.res-mini:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.2);
+  box-shadow:0 12px 28px rgba(0,0,0,.35);}
+/* แถบเรืองแสงด้านบน */
+.res-mini::after{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;
+  border-radius:0 0 3px 3px;opacity:.9;}
+.res-mini.ok::after{background:linear-gradient(90deg,transparent,#10b981,transparent);}
+.res-mini.warn::after{background:linear-gradient(90deg,transparent,#f59e0b,transparent);}
+.res-mini.crit::after{background:linear-gradient(90deg,transparent,#ef4444,transparent);}
+.res-mini.low::after{background:linear-gradient(90deg,transparent,#0ea5e9,transparent);}
+.res-mini.empty::after{background:linear-gradient(90deg,transparent,#475569,transparent);}
+/* การ์ดวิกฤติ — เรืองแสงแดงเด้ง */
+.res-mini.crit{border-color:rgba(239,68,68,.4);animation:resCritPulse 2.4s ease-in-out infinite;}
+@keyframes resCritPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
+  50%{box-shadow:0 0 22px 2px rgba(239,68,68,.28);}
+}
+/* top row: ring + code/badge */
+.rm-top{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.rm-ring{position:relative;width:46px;height:46px;flex-shrink:0;}
+.rm-ring svg{width:46px;height:46px;display:block;}
+.rm-ring svg circle:last-child{transition:stroke-dasharray 1s cubic-bezier(.34,1.2,.64,1);}
+.rm-ring-txt{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Inter',sans-serif;font-weight:800;font-size:14px;
+}
+.rm-ring-txt span{font-size:8px;font-weight:700;margin-left:1px;opacity:.7;}
+.rm-info{flex:1;min-width:0;}
+.rm-code{font-family:'Inter',sans-serif;font-weight:700;font-size:11px;
+  color:var(--ink-3);letter-spacing:1px;margin-bottom:4px;}
+.rm-badge{display:inline-block;font-size:9.5px;font-weight:700;
+  padding:2px 8px;border-radius:20px;white-space:nowrap;}
+/* name + volume */
+.rm-name{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.35;
+  margin-bottom:5px;min-height:34px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.rm-vol{font-family:'Inter',sans-serif;font-size:12px;font-weight:800;color:var(--ink-2);}
+.rm-vol span{font-family:'Sarabun',sans-serif;font-size:9.5px;font-weight:400;color:var(--ink-4);}
+
+@media(max-width:600px){
+  .res-mini-grid{grid-template-columns:repeat(2,1fr);gap:9px;}
+  .res-mini{padding:12px;border-radius:14px;}
+  .rm-ring,.rm-ring svg{width:42px;height:42px;}
+}
+
+/* ============ RAINFALL FORECAST (รายอ่าง) ============ */
+.rfc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.rfc-card{
+  background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid var(--border);border-radius:14px;padding:12px 13px;
+  position:relative;overflow:hidden;transition:transform .2s,border-color .2s;
+}
+.rfc-card:hover{transform:translateY(-3px);border-color:rgba(56,189,248,.3);}
+.rfc-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;}
+.rfc-card.dry::after{background:linear-gradient(90deg,transparent,#475569,transparent);}
+.rfc-card.light::after{background:linear-gradient(90deg,transparent,#38bdf8,transparent);}
+.rfc-card.mod::after{background:linear-gradient(90deg,transparent,#0ea5e9,transparent);}
+.rfc-card.heavy::after{background:linear-gradient(90deg,transparent,#f59e0b,transparent);}
+.rfc-card.vheavy::after{background:linear-gradient(90deg,transparent,#ef4444,transparent);}
+.rfc-card.vheavy{border-color:rgba(239,68,68,.35);}
+.rfc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.rfc-code{font-family:'Inter',sans-serif;font-weight:700;font-size:10.5px;color:var(--ink-3);letter-spacing:.8px;}
+.rfc-icon{font-size:18px;}
+.rfc-name{font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.3;
+  margin-bottom:8px;min-height:30px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.rfc-val{font-family:'Inter',sans-serif;font-weight:800;font-size:21px;line-height:1;}
+.rfc-card.dry .rfc-val{color:#94a3b8;}
+.rfc-card.light .rfc-val{color:#7dd3fc;}
+.rfc-card.mod .rfc-val{color:#38bdf8;}
+.rfc-card.heavy .rfc-val{color:#fbbf24;}
+.rfc-card.vheavy .rfc-val{color:#f87171;}
+.rfc-val span{font-size:10px;font-weight:600;color:var(--ink-4);font-family:'Sarabun',sans-serif;}
+.rfc-meta{display:flex;align-items:center;justify-content:space-between;
+  margin-top:6px;font-size:10px;color:var(--ink-3);}
+.rfc-prob{display:flex;align-items:center;gap:3px;}
+.rfc-lvl{font-weight:700;}
+.rfc-card.dry .rfc-lvl{color:#94a3b8;}
+.rfc-card.light .rfc-lvl{color:#7dd3fc;}
+.rfc-card.mod .rfc-lvl{color:#38bdf8;}
+.rfc-card.heavy .rfc-lvl{color:#fbbf24;}
+.rfc-card.vheavy .rfc-lvl{color:#f87171;}
+@media(max-width:600px){
+  .rfc-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+}
 
 /* ============ NEW: REFRESH STATUS BAR ============ */
 .refresh-bar{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--ink-3);padding:8px 4px;margin-bottom:12px;flex-wrap:wrap;}
+
+/* ════════ ★ HERO AI SUMMARY ════════ */
+.ai-hero{
+  position:relative;
+  background:linear-gradient(135deg,#0c1838 0%,#0c2f5e 45%,#103a6b 75%,#0a4060 100%);
+  border:1px solid rgba(56,189,248,.25);
+  border-radius:22px;padding:24px 26px;margin-bottom:18px;
+  overflow:hidden;
+  box-shadow:0 14px 48px rgba(8,24,56,.5),inset 0 1px 0 rgba(255,255,255,.06);
+}
+/* เส้นเรืองแสงด้านบน */
+.ai-hero::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(56,189,248,.9),rgba(168,85,247,.7),transparent);
+  animation:aiHeroLine 4s ease-in-out infinite;
+}
+@keyframes aiHeroLine{0%,100%{opacity:.5}50%{opacity:1}}
+/* แสงเรืองมุม */
+.ai-hero-glow{
+  position:absolute;top:-90px;right:-70px;width:340px;height:340px;
+  background:radial-gradient(circle,rgba(56,189,248,.22) 0%,transparent 65%);
+  pointer-events:none;animation:aiHeroFloat 9s ease-in-out infinite;
+}
+@keyframes aiHeroFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,25px)}}
+
+/* head */
+.ai-hero-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;flex-wrap:wrap;margin-bottom:18px;position:relative;z-index:2;
+}
+.ai-hero-badge{display:flex;align-items:center;gap:13px;}
+.ai-hero-spark{
+  width:46px;height:46px;border-radius:13px;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(56,189,248,.35),rgba(168,85,247,.3));
+  border:1px solid rgba(125,211,252,.45);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 0 24px rgba(56,189,248,.45);
+  animation:aiSparkGlow 3s ease-in-out infinite;
+}
+@keyframes aiSparkGlow{
+  0%,100%{box-shadow:0 0 24px rgba(56,189,248,.45);transform:scale(1)}
+  50%{box-shadow:0 0 36px rgba(56,189,248,.7);transform:scale(1.05)}
+}
+.ai-hero-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.ai-hero-sub{font-size:11.5px;color:#7dd3fc;opacity:.8;margin-top:2px;}
+.ai-hero-actions{display:flex;align-items:center;gap:10px;}
+.ai-hero-time{font-size:11px;color:#7dd3fc;opacity:.75;white-space:nowrap;}
+.ai-hero-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(125,211,252,.35);
+  color:#e0f2fe;padding:8px 15px;border-radius:11px;cursor:pointer;
+  font-family:'Sarabun',sans-serif;font-size:12.5px;font-weight:700;
+  transition:all .18s;
+}
+.ai-hero-btn:hover{background:rgba(56,189,248,.25);transform:translateY(-2px);
+  box-shadow:0 6px 18px rgba(56,189,248,.3);}
+.ai-hero-btn:disabled{opacity:.5;cursor:default;transform:none;}
+.ai-hero-btn-ico{display:inline-block;transition:transform .5s;}
+.ai-hero-btn:hover .ai-hero-btn-ico{transform:rotate(180deg);}
+
+/* headline เด่น */
+.ai-hero-headline{
+  display:flex;align-items:center;gap:14px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:15px;padding:15px 18px;margin-bottom:16px;
+  position:relative;z-index:2;
+}
+.ai-hero-headline.crit{
+  background:linear-gradient(135deg,rgba(239,68,68,.2),rgba(239,68,68,.06));
+  border-color:rgba(248,113,113,.45);
+}
+.ai-hero-headline.warn{
+  background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(245,158,11,.05));
+  border-color:rgba(251,191,36,.4);
+}
+.ai-hero-headline.ok{
+  background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(16,185,129,.04));
+  border-color:rgba(74,222,128,.35);
+}
+.ai-hl-icon{font-size:32px;flex-shrink:0;line-height:1;}
+.ai-hl-text{
+  font-size:15px;font-weight:700;color:#f0f9ff;line-height:1.55;
+  font-family:'Sarabun',sans-serif;
+}
+.ai-hl-text b{color:#fde68a;}
+.ai-hero-headline.crit .ai-hl-text b{color:#fecaca;}
+
+/* การ์ดสรุปหมวด */
+.ai-hero-cards{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:12px;position:relative;z-index:2;
+}
+.ai-sum-card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:14px 15px;
+  display:flex;gap:11px;align-items:flex-start;
+  transition:transform .2s,border-color .2s,background .2s;
+  animation:aiCardIn .5s ease-out backwards;
+}
+.ai-sum-card:hover{transform:translateY(-3px);background:rgba(255,255,255,.08);
+  border-color:rgba(125,211,252,.3);}
+.ai-sum-card:nth-child(1){animation-delay:.05s}
+.ai-sum-card:nth-child(2){animation-delay:.12s}
+.ai-sum-card:nth-child(3){animation-delay:.19s}
+.ai-sum-card:nth-child(4){animation-delay:.26s}
+.ai-sum-card:nth-child(5){animation-delay:.33s}
+@keyframes aiCardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.ai-sum-ico{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:19px;
+}
+.ai-sum-card.c-weather .ai-sum-ico{background:rgba(56,189,248,.18);}
+.ai-sum-card.c-rain    .ai-sum-ico{background:rgba(14,165,233,.18);}
+.ai-sum-card.c-air     .ai-sum-ico{background:rgba(168,85,247,.18);}
+.ai-sum-card.c-river   .ai-sum-ico{background:rgba(34,211,238,.18);}
+.ai-sum-card.c-res     .ai-sum-ico{background:rgba(16,185,129,.18);}
+.ai-sum-card.c-advice  .ai-sum-ico{background:rgba(251,191,36,.18);}
+/* การ์ดที่มีสถานะอันตราย */
+.ai-sum-card.danger{border-color:rgba(248,113,113,.4);
+  background:linear-gradient(135deg,rgba(239,68,68,.13),rgba(255,255,255,.03));}
+.ai-sum-card.alert{border-color:rgba(251,191,36,.35);
+  background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(255,255,255,.03));}
+.ai-sum-body{flex:1;min-width:0;}
+.ai-sum-label{font-size:10.5px;font-weight:700;color:#7dd3fc;
+  letter-spacing:.5px;margin-bottom:3px;text-transform:uppercase;}
+.ai-sum-card.danger .ai-sum-label{color:#fca5a5;}
+.ai-sum-card.alert .ai-sum-label{color:#fcd34d;}
+.ai-sum-text{font-size:12.5px;color:#e0f2fe;line-height:1.55;
+  font-family:'Sarabun',sans-serif;}
+.ai-sum-text b{color:#fde68a;font-weight:700;}
+.ai-sum-card.danger .ai-sum-text b{color:#fecaca;}
+
+@media(max-width:600px){
+  .ai-hero{padding:18px 16px;border-radius:18px;}
+  .ai-hero-title{font-size:16px;}
+  .ai-hero-head{margin-bottom:14px;}
+  .ai-hl-text{font-size:13.5px;}
+  .ai-hl-icon{font-size:26px;}
+  .ai-hero-cards{grid-template-columns:1fr;}
+  .ai-hero-time{display:none;}
+}
+
+
 .refresh-bar .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulseGreen 2s infinite;flex-shrink:0;}
 @keyframes pulseGreen{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,.6);}50%{opacity:.7;box-shadow:0 0 0 6px rgba(74,222,128,0);}}
 .refresh-bar .next{margin-left:auto;}
@@ -899,8 +1118,6 @@ footer strong{color:var(--ink-2);font-weight:600;}
     <a href="daily_briefing.html" class="active">สภาพอากาศ</a>
     <a href="paneang.html">ลำน้ำพะเนียง</a>
     <a href="mong.html">ลำน้ำโมง</a>
-    <a href="mo.html">ลำน้ำมอ</a>
-    <a href="phuay.html">ลำน้ำพวย</a>
     <a href="rainfall.html">ปริมาณฝน</a>
     <a href="reservoir.html">อ่างเก็บน้ำ</a>
     <a href="input.html">บันทึกข้อมูล</a>
@@ -908,6 +1125,39 @@ footer strong{color:var(--ink-2);font-weight:600;}
 </nav>
 
 <main>
+
+  <!-- ★ HERO AI SUMMARY — ไฮไลท์บนสุด -->
+  <div class="ai-hero" id="aiHero">
+    <div class="ai-hero-glow"></div>
+    <div class="ai-hero-head">
+      <div class="ai-hero-badge">
+        <span class="ai-hero-spark">✨</span>
+        <div>
+          <div class="ai-hero-title">AI สรุปสถานการณ์</div>
+          <div class="ai-hero-sub">วิเคราะห์อัตโนมัติแบบ Realtime · จ.หนองบัวลำภู</div>
+        </div>
+      </div>
+      <div class="ai-hero-actions">
+        <span class="ai-hero-time" id="aiKeyNote">กำลังวิเคราะห์...</span>
+        <button class="ai-hero-btn" id="aiBtnRun" onclick="runGemini()">
+          <span class="ai-hero-btn-ico">🔄</span> วิเคราะห์ใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- headline เด่นๆ -->
+    <div class="ai-hero-headline" id="aiHeadline">
+      <div class="ai-hl-icon" id="aiHlIcon">📊</div>
+      <div class="ai-hl-text" id="aiHlText">กำลังประมวลผลสถานการณ์...</div>
+    </div>
+
+    <!-- การ์ดสรุปแต่ละหมวด -->
+    <div class="ai-hero-cards" id="aiHeroCards">
+      <div class="ai-spin" style="grid-column:1/-1;padding:20px;">
+        <span class="spinner"></span> กำลังวิเคราะห์ข้อมูล...
+      </div>
+    </div>
+  </div>
 
   <!-- LIVE STATUS BAR -->
   <div class="refresh-bar">
@@ -1003,8 +1253,6 @@ footer strong{color:var(--ink-2);font-weight:600;}
     <div class="ph">
       <h2>สถานการณ์น้ำในจังหวัด<span class="src gov" id="pwsSrc">Backend Live</span></h2>
       <span class="ph-meta" id="pwsUpd">—</span>
-      <a href="mong.html">ลำน้ำโมง</a>
-      <a href="rainfall.html">ปริมาณฝน</a>
     </div>
     <div class="pb">
       <div class="pws-grid">
@@ -1057,25 +1305,23 @@ footer strong{color:var(--ink-2);font-weight:600;}
           <div class="lbl">อ่างน้ำน้อย (≤30%)</div>
         </div>
       </div>
-      <div class="res-mini-grid" id="resMiniGrid"><!-- 14 อ่าง --></div>
+      <div class="res-mini-grid" id="resMiniGrid"><!-- 15 อ่าง --></div>
     </div>
   </div>
 
-  <!-- AI -->
-  <div class="ai">
-    <div class="ai-top">
-      <div class="ai-icon">✨</div>
-      <div class="ai-h-info">
-        <div class="ai-h-t">Gemini AI · วิเคราะห์สถานการณ์อากาศ</div>
-        <div class="ai-h-s">วิเคราะห์จากข้อมูล Open-Meteo + AQI · อัปเดตทุก 30 นาที</div>
+  <!-- NEW: คาดการณ์ฝนรายอ่างเก็บน้ำ -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="ph">
+      <h2>คาดการณ์ปริมาณฝนรายอ่างเก็บน้ำ<span class="src">Open-Meteo</span></h2>
+      <span class="ph-meta" id="rfcUpd">—</span>
+    </div>
+    <div class="pb">
+      <div style="font-size:11.5px;color:var(--ink-3);margin-bottom:12px;line-height:1.6;">
+        พยากรณ์ฝนตามพิกัดที่ตั้งของแต่ละอ่าง · ช่วยประเมินน้ำไหลเข้าอ่างล่วงหน้า
       </div>
-    </div>
-    <div class="ai-body">
-      <div class="ai-txt" id="aiTxt"><div class="ai-spin"><span class="spinner"></span> รอข้อมูลพยากรณ์อากาศโหลดเสร็จก่อน...</div></div>
-    </div>
-    <div class="ai-foot">
-      <span class="ai-key-warn" id="aiKeyNote">⚙️ ตั้งค่า GEMINI_API_KEY ใน config.js เพื่อเปิดใช้งาน</span>
-      <button class="ai-btn" id="aiBtnRun" onclick="runGemini()">🔄 วิเคราะห์ใหม่</button>
+      <div class="rfc-grid" id="rfcGrid">
+        <div class="ai-spin" style="grid-column:1/-1;"><span class="spinner"></span> กำลังดึงพยากรณ์ฝน 15 อ่าง...</div>
+      </div>
     </div>
   </div>
 
@@ -1147,7 +1393,7 @@ footer strong{color:var(--ink-2);font-weight:600;}
 
 <footer>
   <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong> · Weather Intelligence Dashboard
-  <div class="src-note">Open-Meteo · air4thai.pcd.go.th · RainViewer · Google Gemini AI</div>
+  <div class="src-note">Open-Meteo · air4thai.pcd.go.th · RainViewer</div>
 </footer>
 
 <!-- SVG sprite for AQI gradient -->
@@ -1911,20 +2157,21 @@ function initMap(){
 let resMarkers = [];
 function initReservoirMarkers(){
   const RES_META = [
-    {id:"R01",name:"ห้วยยางเงาะ",      amphoe:"เมือง",        lat:17.190,lon:102.395,cap:0.400},
-    {id:"R02",name:"ห้วยซับม่วง",       amphoe:"ศรีบุญเรือง",  lat:17.005,lon:102.295,cap:0.750},
-    {id:"R03",name:"ห้วยเหล่ายาง",      amphoe:"เมือง",        lat:17.165,lon:102.380,cap:2.469},
-    {id:"R04",name:"อ่างน้ำบอง",        amphoe:"โนนสัง",       lat:16.928,lon:102.628,cap:20.800},
-    {id:"R05",name:"ห้วยสนามชัย",       amphoe:"นากลาง",       lat:17.265,lon:102.220,cap:0.330},
-    {id:"R06",name:"ผาวัง",             amphoe:"นาวัง",        lat:17.385,lon:102.018,cap:2.122},
-    {id:"R07",name:"ห้วยลาดกั่ว",       amphoe:"นาวัง",        lat:17.355,lon:102.050,cap:0.842},
-    {id:"R08",name:"ห้วยโซ่",           amphoe:"สุวรรณคูหา",   lat:17.530,lon:102.195,cap:1.430},
-    {id:"R09",name:"ห้วยไร่ 1",         amphoe:"นากลาง",       lat:17.280,lon:102.180,cap:0.200},
-    {id:"R10",name:"ห้วยไร่ 2",         amphoe:"นากลาง",       lat:17.290,lon:102.195,cap:0.695},
-    {id:"R11",name:"ห้วยลำใย",          amphoe:"นากลาง",       lat:17.255,lon:102.205,cap:0.450},
-    {id:"R12",name:"ห้วยโป่งซาง",       amphoe:"นากลาง",       lat:17.270,lon:102.245,cap:0.300},
-    {id:"R13",name:"ห้วยบ้านคลองเจริญ", amphoe:"สุวรรณคูหา",   lat:17.515,lon:102.245,cap:0.623},
-    {id:"R14",name:"ผาจ้ำน้ำ",          amphoe:"นาวัง",        lat:17.310,lon:102.030,cap:0.085}
+    {id:"R01",name:"อ่างเก็บน้ำห้วยยางเงาะ",        amphoe:"เมืองหนองบัวลำภู",lat:17.22588,  lon:102.518152,cap:0.4000},
+    {id:"R02",name:"อ่างเก็บน้ำห้วยซับม่วง",        amphoe:"ศรีบุญเรือง",      lat:17.14711,  lon:102.090722,cap:0.7500},
+    {id:"R03",name:"อ่างเก็บน้ำห้วยเหล่ายาง",       amphoe:"เมืองหนองบัวลำภู",lat:17.23760,  lon:102.462500,cap:2.4690},
+    {id:"R04",name:"อ่างเก็บน้ำห้วยน้ำบอง",         amphoe:"โนนสัง",           lat:16.907122, lon:102.417037,cap:20.8000},
+    {id:"R05",name:"อ่างเก็บน้ำบ้านสนามชัย",        amphoe:"นากลาง",           lat:17.43410,  lon:102.137610,cap:0.3300},
+    {id:"R06",name:"อ่างเก็บน้ำห้วยผาวัง",          amphoe:"นาวัง",            lat:17.30870,  lon:102.043300,cap:2.1220},
+    {id:"R07",name:"อ่างเก็บน้ำห้วยลาดกั่ว",        amphoe:"นาวัง",            lat:17.40610,  lon:102.076990,cap:0.8420},
+    {id:"R08",name:"อ่างเก็บน้ำห้วยโซ่",            amphoe:"สุวรรณคูหา",       lat:17.60320,  lon:102.115480,cap:1.4300},
+    {id:"R09",name:"อ่างเก็บน้ำห้วยไร่ 1",          amphoe:"นากลาง",           lat:17.48270,  lon:102.178450,cap:0.2000},
+    {id:"R10",name:"อ่างเก็บน้ำห้วยไร่ 2",          amphoe:"นากลาง",           lat:17.46310,  lon:102.212270,cap:0.6950},
+    {id:"R11",name:"อ่างเก็บน้ำห้วยลำไย",           amphoe:"นากลาง",           lat:17.44550,  lon:102.226600,cap:0.4500},
+    {id:"R12",name:"อ่างเก็บน้ำห้วยโป่งซาง",        amphoe:"นากลาง",           lat:17.39440,  lon:102.171530,cap:0.3000},
+    {id:"R13",name:"อ่างเก็บน้ำบ้านคลองเจริญ",      amphoe:"สุวรรณคูหา",       lat:17.59880,  lon:102.147580,cap:0.6230},
+    {id:"R14",name:"อ่างเก็บน้ำผาจ้ำน้ำ",           amphoe:"นาวัง",            lat:17.26380,  lon:102.118730,cap:0.0850},
+    {id:"R15",name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", amphoe:"เมืองหนองบัวลำภู",lat:17.2314734,lon:102.514000,cap:0.0684}
   ];
   RES_META.forEach(r => {
     const size = r.cap >= 5 ? 18 : r.cap >= 1 ? 14 : 11;
@@ -2091,84 +2338,186 @@ function togglePlay(){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  GEMINI AI
+//  AI สรุปสถานการณ์ (Rule-based — ไม่ต้องใช้ API key)
 // ═══════════════════════════════════════════════════════════
 let aiRunning=false;
 async function runGemini(){
   if(aiRunning)return;
-  if(!GEMINI_KEY){ht('aiTxt','<span style="color:var(--amber);">⚙️ กรุณาตั้งค่า GEMINI_API_KEY ใน config.js ก่อน<br><span style="font-size:11px;opacity:.75;">window.APP_CONFIG = { GEMINI_API_KEY: "your-key" }</span><br><span style="font-size:11px;opacity:.6;">รับ key ฟรีที่ aistudio.google.com/app/apikey</span></span>');return;}
-  aiRunning=true;$('aiBtnRun').disabled=true;
-  ht('aiTxt','<div class="ai-spin"><span class="spinner"></span> Gemini กำลังวิเคราะห์สถานการณ์...</div>');
-  tx('aiKeyNote','Gemini AI · ประมวลผล...');
-  const wx=_wx,rain=_rainAm,aqi=_aqi;
-  if(!wx){ht('aiTxt','<span style="color:#c4b5fd;">รอข้อมูลอากาศโหลดเสร็จก่อน</span>');aiRunning=false;$('aiBtnRun').disabled=false;return;}
-  const d=wx.daily,c=wx.current;
-  const today=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const r3=d.precipitation_sum.slice(0,3).map((v,i)=>`วัน${i+1}: ${(v||0).toFixed(1)} มม.`).join(', ');
-  const top=rain?[...rain].sort((a,b)=>b.rain-a.rain)[0]:null;
+  aiRunning=true;
+  const btn=$('aiBtnRun'); if(btn)btn.disabled=true;
+  tx('aiKeyNote','กำลังวิเคราะห์...');
 
-  // NEW: ดึงสรุปน้ำในแม่น้ำจาก backend
-  let waterCtx = "";
-  if(_provincial && _provincial.stations){
-    const sts = _provincial.stations;
-    const crit = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level);return !isNaN(l)&&!isNaN(b)&&l>=b;});
-    const warn = sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level),w=parseFloat(s.warn_level);return !isNaN(l)&&!isNaN(b)&&!isNaN(w)&&l>=w&&l<b;});
-    waterCtx = `\n\nสถานการณ์น้ำในแม่น้ำจังหวัด (จาก ${sts.length} สถานี):\n- สถานีปกติ ${sts.length-crit.length-warn.length} แห่ง · เฝ้าระวัง ${warn.length} แห่ง · วิกฤติ ${crit.length} แห่ง`;
-    if(crit.length) waterCtx += `\n- สถานีวิกฤติ: ${crit.slice(0,3).map(s=>s.station_id+" "+s.name+" "+parseFloat(s.current_level).toFixed(2)+"ม.").join(", ")}${crit.length>3?" และอีก "+(crit.length-3)+" สถานี":""}`;
-    if(warn.length) waterCtx += `\n- สถานีเฝ้าระวัง: ${warn.slice(0,3).map(s=>s.station_id+" "+s.name).join(", ")}${warn.length>3?" และอีก "+(warn.length-3)+" สถานี":""}`;
+  const wx=_wx,rain=_rainAm,aqi=_aqi;
+  if(!wx){
+    aiRunning=false; if(btn)btn.disabled=false;
+    tx('aiKeyNote','รอข้อมูล...');
+    return;
   }
 
-  // NEW: ดึงสรุปอ่างเก็บน้ำ
-  let resCtx = "";
-  if(_reservoirs && Array.isArray(_reservoirs) && _reservoirs.length){
-    const RES_CAP = {R01:0.400,R02:0.750,R03:2.469,R04:20.800,R05:0.330,R06:2.122,R07:0.842,R08:1.430,R09:0.200,R10:0.695,R11:0.450,R12:0.300,R13:0.623,R14:0.085};
-    const latest = {};
-    _reservoirs.forEach(r => {
-      const id = String(r.reservoir_id||"").toUpperCase();
-      if(!id) return;
-      if(!latest[id] || String(r.date||"") > String(latest[id].date||"")) latest[id] = r;
-    });
-    const pcts = Object.keys(latest).map(id => {
-      const cap = RES_CAP[id]; if(!cap) return null;
-      const v = parseFloat(latest[id].current_volume);
-      if(isNaN(v)) return null;
-      return {id, name:latest[id].reservoir_name, pct:v/cap*100};
-    }).filter(x=>x);
+  const summary = buildSmartSummary(wx, rain, aqi);
+  renderAIHero(summary);
+  tx('aiKeyNote','สรุปเมื่อ '+t12());
+  aiRunning=false; if(btn)btn.disabled=false;
+}
+
+/* แสดงผล hero banner */
+function renderAIHero(s){
+  /* headline */
+  const hl=$('aiHeadline'), hlIco=$('aiHlIcon'), hlTxt=$('aiHlText');
+  if(hl){
+    hl.className='ai-hero-headline '+s.level;
+    if(hlIco) hlIco.textContent=s.headlineIcon;
+    if(hlTxt) hlTxt.innerHTML=s.headline;
+  }
+  /* การ์ดหมวด */
+  const grid=$('aiHeroCards');
+  if(grid){
+    grid.innerHTML=s.cards.map(c=>`
+      <div class="ai-sum-card c-${c.key} ${c.tone||''}">
+        <div class="ai-sum-ico">${c.icon}</div>
+        <div class="ai-sum-body">
+          <div class="ai-sum-label">${c.label}</div>
+          <div class="ai-sum-text">${c.text}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+/* สร้างข้อมูลสรุปแบบ structured — rule-based */
+function buildSmartSummary(wx, rain, aqi){
+  const c=wx.current, d=wx.daily;
+  const hour=new Date().getHours();
+  const timeCtx = hour<6?'ช่วงดึก':hour<12?'ช่วงเช้า':hour<17?'ช่วงบ่าย':hour<20?'ช่วงเย็น':'ช่วงค่ำ';
+  const cards=[];
+
+  /* ── ค่าพื้นฐาน ── */
+  const temp=Math.round(c.temperature_2m);
+  const feels=Math.round(c.apparent_temperature);
+  const cond=wxCode(c.weather_code).t;
+  const hum=Math.round(c.relative_humidity_2m);
+  const wind=Math.round(c.wind_speed_10m||0);
+  const rainToday=d.precipitation_sum?.[0]||0;
+  const rainProb=d.precipitation_probability_max?.[0]||0;
+  const top=rain&&rain.length?[...rain].sort((a,b)=>(b.rain||0)-(a.rain||0))[0]:null;
+  const avgRain=rain&&rain.length?rain.reduce((a,r)=>a+(r.rain||0),0)/rain.length:0;
+
+  /* ── น้ำในแม่น้ำ ── */
+  let critSt=[],warnSt=[],totalSt=0;
+  if(_provincial&&_provincial.stations){
+    const sts=_provincial.stations; totalSt=sts.length;
+    critSt=sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level);return !isNaN(l)&&!isNaN(b)&&l>=b;});
+    warnSt=sts.filter(s=>{const l=parseFloat(s.current_level),b=parseFloat(s.bank_level),w=parseFloat(s.warn_level);return !isNaN(l)&&!isNaN(b)&&!isNaN(w)&&l>=w&&l<b;});
+  }
+
+  /* ── อ่างเก็บน้ำ ── */
+  let resAvg=null,resHigh=[],resLow=[],resCnt=0;
+  if(_reservoirs&&Array.isArray(_reservoirs)&&_reservoirs.length){
+    const RES_CAP={R01:0.4000,R02:0.7500,R03:2.4690,R04:20.8000,R05:0.3300,R06:2.1220,R07:0.8420,R08:1.4300,R09:0.2000,R10:0.6950,R11:0.4500,R12:0.3000,R13:0.6230,R14:0.0850,R15:0.0684};
+    const latest={};
+    _reservoirs.forEach(r=>{const id=String(r.reservoir_id||'').toUpperCase();if(!id)return;if(!latest[id]||String(r.date||'')>String(latest[id].date||''))latest[id]=r;});
+    const pcts=Object.keys(latest).map(id=>{const cap=RES_CAP[id];if(!cap)return null;const v=parseFloat(latest[id].current_volume);if(isNaN(v))return null;return{id,name:latest[id].reservoir_name,pct:v/cap*100};}).filter(x=>x);
     if(pcts.length){
-      const high = pcts.filter(r=>r.pct>=80);
-      const low = pcts.filter(r=>r.pct<30);
-      const avg = pcts.reduce((a,b)=>a+b.pct,0)/pcts.length;
-      resCtx = `\n\nสถานการณ์อ่างเก็บน้ำ (จาก ${pcts.length}/14 อ่าง):\n- เฉลี่ย ${avg.toFixed(0)}% ของความจุ`;
-      if(high.length) resCtx += `\n- อ่างน้ำมากเฝ้าระวัง (≥80%): ${high.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
-      if(low.length) resCtx += `\n- อ่างน้ำน้อย (<30%): ${low.map(r=>r.name+" "+r.pct.toFixed(0)+"%").join(", ")}`;
+      resCnt=pcts.length;
+      resAvg=pcts.reduce((a,b)=>a+b.pct,0)/pcts.length;
+      resHigh=pcts.filter(r=>r.pct>=100);
+      resLow=pcts.filter(r=>r.pct<30);
     }
   }
 
-  const prompt=`คุณเป็นผู้เชี่ยวชาญด้านอุตุนิยมวิทยาและการจัดการภัยพิบัติ จังหวัดหนองบัวลำภู
-วันที่: ${today}
+  /* ── ① HEADLINE — ระดับสถานการณ์รวม ── */
+  let level='ok', headlineIcon='✅', headline='';
+  if(critSt.length>0){
+    level='crit'; headlineIcon='🚨';
+    headline=`<b>สถานการณ์ฉุกเฉิน</b> — พบ <b>${critSt.length} สถานี</b>ระดับน้ำวิกฤติ น้ำล้นตลิ่ง ต้องเฝ้าระวังและเตรียมแจ้งเตือนประชาชนพื้นที่เสี่ยง`;
+  } else if(warnSt.length>0||rainToday>=35||resHigh.length>0){
+    level='warn'; headlineIcon='⚠️';
+    const bits=[];
+    if(warnSt.length) bits.push(`${warnSt.length} สถานีเฝ้าระวัง`);
+    if(rainToday>=35) bits.push(`ฝนตกหนัก ${rainToday.toFixed(0)} มม.`);
+    if(resHigh.length) bits.push(`${resHigh.length} อ่างน้ำเกินความจุ`);
+    headline=`<b>ควรเฝ้าระวัง</b> — ${bits.join(' · ')} แนะนำให้ติดตามสถานการณ์อย่างใกล้ชิด`;
+  } else {
+    level='ok'; headlineIcon='✅';
+    headline=`<b>สถานการณ์ปกติ</b> — สภาพอากาศและระดับน้ำทั่วจังหวัดอยู่ในเกณฑ์ปกติ ${timeCtx}นี้ ${cond} ${temp}°C`;
+  }
 
-ข้อมูลสภาพอากาศปัจจุบัน:
-- อุณหภูมิ: ${Math.round(c.temperature_2m)}°C (รู้สึก ${Math.round(c.apparent_temperature)}°C) สภาพ: ${wxCode(c.weather_code).t}
-- ความชื้น ${Math.round(c.relative_humidity_2m)}% · ลม ${Math.round(c.wind_speed_10m)} km/h · UV ${Math.round(c.uv_index||0)}
-- ฝนวันนี้ ${(d.precipitation_sum[0]||0).toFixed(1)} มม. (โอกาส ${d.precipitation_probability_max[0]||0}%)
-- พยากรณ์ฝน 3 วัน: ${r3}
-${top?`- ฝนสูงสุด 24ชม.: อ.${top.name} ${top.rain.toFixed(1)} มม.`:''}
-${aqi?`- PM2.5: ${aqi.pm25?.toFixed(1)||'-'} μg/m³ ระดับ: ${aqi.cat?.l||'-'}`:''}${waterCtx}${resCtx}
+  /* ── ② การ์ด: สภาพอากาศ ── */
+  let wText=`${timeCtx}นี้ <b>${cond}</b> อุณหภูมิ <b>${temp}°C</b>`;
+  if(Math.abs(feels-temp)>=3) wText+=` รู้สึกเหมือน ${feels}°C`;
+  wText+=` · ความชื้น ${hum}%`;
+  if(wind>=20) wText+=` · ลม ${wind} กม./ชม.`;
+  cards.push({key:'weather',label:'สภาพอากาศ',icon:'🌡️',text:wText,
+    tone:(temp>=38||wind>=40)?'alert':''});
 
-วิเคราะห์ภาพรวมสถานการณ์ จ.หนองบัวลำภู เขียนภาษาไทย 4-5 ประโยค เน้น:
-1) สรุปภาพรวมสภาพอากาศ + น้ำในจังหวัด (ทั้งแม่น้ำและอ่าง)
-2) พื้นที่/อ่าง/สถานีที่ต้องเฝ้าระวังเป็นพิเศษ
-3) แนวโน้มผลกระทบในระยะ 24-48 ชม. ข้างหน้า
-4) คำแนะนำเฉพาะเจาะจงสำหรับหน่วยงานและประชาชน
-ใช้ภาษาราชการ เข้าใจง่าย เน้นใจความสำคัญด้วย **ข้อความ**`;
-  try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.4,maxOutputTokens:800}})});
-    const data=await res.json();
-    if(data?.error){ht('aiTxt',`<span style="color:#fca5a5;">❌ Gemini Error: ${data.error.message}</span>`);aiRunning=false;$('aiBtnRun').disabled=false;return;}
-    const text=data?.candidates?.[0]?.content?.parts?.[0]?.text||'ไม่สามารถวิเคราะห์ได้';
-    typeWriter(text);tx('aiKeyNote','Gemini วิเคราะห์เมื่อ '+t12());
-  }catch(e){ht('aiTxt','<span style="color:#fca5a5;">❌ '+e.message+'</span>');}
-  aiRunning=false;$('aiBtnRun').disabled=false;
+  /* ── ③ การ์ด: ฝน ── */
+  let rText,rTone='';
+  if(rainToday>=35||avgRain>=35){
+    rTone='alert';
+    rText=`ฝนตก<b>หนัก</b> สะสมวันนี้ <b>${rainToday.toFixed(1)} มม.</b>`;
+    if(top&&top.rain>0) rText+=` สูงสุด อ.${top.name} ${top.rain.toFixed(0)} มม.`;
+  } else if(rainToday>=10||avgRain>=10){
+    rText=`ฝน<b>ปานกลาง</b> วันนี้ <b>${rainToday.toFixed(1)} มม.</b>`;
+    if(top&&top.rain>0) rText+=` สูงสุด อ.${top.name}`;
+  } else if(rainToday>0||rainProb>=50){
+    rText=`ฝน<b>เบา</b> วันนี้ ${rainToday.toFixed(1)} มม. · โอกาสมีฝน ${rainProb}%`;
+  } else {
+    rText=`<b>ไม่มีฝน</b> · โอกาสมีฝน ${rainProb}% ระดับน้ำมีแนวโน้มคงที่`;
+  }
+  cards.push({key:'rain',label:'ปริมาณฝน',icon:'🌧️',text:rText,tone:rTone});
+
+  /* ── ④ การ์ด: คุณภาพอากาศ ── */
+  if(aqi&&aqi.pm25!=null){
+    const pm=aqi.pm25;
+    let aText,aTone='';
+    if(pm>100){aTone='danger';aText=`PM2.5 <b>${pm.toFixed(0)}</b> µg/m³ — มีผลต่อสุขภาพ ทุกคนควรเลี่ยงกิจกรรมกลางแจ้ง`;}
+    else if(pm>50){aTone='alert';aText=`PM2.5 <b>${pm.toFixed(0)}</b> µg/m³ — กลุ่มเสี่ยงควรระวัง`;}
+    else aText=`PM2.5 <b>${pm.toFixed(0)}</b> µg/m³ — คุณภาพอากาศ<b>ดี</b> เหมาะกับกิจกรรมกลางแจ้ง`;
+    cards.push({key:'air',label:'คุณภาพอากาศ',icon:'💨',text:aText,tone:aTone});
+  }
+
+  /* ── ⑤ การ์ด: น้ำในแม่น้ำ ── */
+  if(totalSt>0){
+    let rvText,rvTone='';
+    if(critSt.length>0){
+      rvTone='danger';
+      rvText=`<b>${critSt.length} สถานี</b>วิกฤติ น้ำล้นตลิ่ง — ${critSt.slice(0,2).map(s=>s.name||s.station_id).join(', ')}${critSt.length>2?` +${critSt.length-2}`:''}`;
+    } else if(warnSt.length>0){
+      rvTone='alert';
+      rvText=`<b>${warnSt.length} สถานี</b>เฝ้าระวัง ระดับน้ำใกล้ตลิ่ง · อีก ${totalSt-warnSt.length} สถานีปกติ`;
+    } else {
+      rvText=`ทั้ง <b>${totalSt} สถานี</b>ระดับน้ำ<b>ปกติ</b> ต่ำกว่าตลิ่งทุกจุด`;
+    }
+    cards.push({key:'river',label:'น้ำในแม่น้ำ',icon:'🌊',text:rvText,tone:rvTone});
+  }
+
+  /* ── ⑥ การ์ด: อ่างเก็บน้ำ ── */
+  if(resAvg!=null){
+    let resText,resTone='';
+    if(resHigh.length>0){
+      resTone='alert';
+      resText=`เฉลี่ย <b>${resAvg.toFixed(0)}%</b> · มี <b>${resHigh.length} อ่าง</b>น้ำเกินความจุ ควรพร่องน้ำ`;
+    } else if(resLow.length>0){
+      resText=`เฉลี่ย <b>${resAvg.toFixed(0)}%</b> · มี ${resLow.length} อ่างน้ำน้อยกว่า 30%`;
+    } else {
+      resText=`เฉลี่ย <b>${resAvg.toFixed(0)}%</b> ของความจุ · อ่างทั้ง ${resCnt} แห่งอยู่ในเกณฑ์ดี`;
+    }
+    cards.push({key:'res',label:'อ่างเก็บน้ำ',icon:'🏞️',text:resText,tone:resTone});
+  }
+
+  /* ── ⑦ การ์ด: คำแนะนำ ── */
+  let advText,advTone='';
+  if(critSt.length>0){
+    advTone='danger';
+    advText=`ประสานสายด่วน <b>1784</b> · เฝ้าระวังพื้นที่เสี่ยง · เตรียมพร้อมแจ้งเตือนและอพยพประชาชน`;
+  } else if(warnSt.length>0||rainToday>=35){
+    advTone='alert';
+    advText=`เจ้าหน้าที่พื้นที่เสี่ยงเฝ้าติดตามใกล้ชิด · ตรวจสอบระบบระบายน้ำให้พร้อม`;
+  } else {
+    advText=`<b>ไม่มีความเสี่ยงเร่งด่วน</b> · สามารถดำเนินกิจกรรมได้ตามปกติ`;
+  }
+  cards.push({key:'advice',label:'คำแนะนำ',icon:'📋',text:advText,tone:advTone});
+
+  return {level,headlineIcon,headline,cards};
 }
 
 let _typeT=null;
@@ -2267,13 +2616,21 @@ function renderProvincialWater(data){
 
 function renderReservoirs(arr){
   const RES_META = [
-    {id:"R01",name:"ห้วยยางเงาะ",cap:0.400},{id:"R02",name:"ห้วยซับม่วง",cap:0.750},
-    {id:"R03",name:"ห้วยเหล่ายาง",cap:2.469},{id:"R04",name:"อ่างน้ำบอง",cap:20.800},
-    {id:"R05",name:"ห้วยสนามชัย",cap:0.330},{id:"R06",name:"ผาวัง",cap:2.122},
-    {id:"R07",name:"ห้วยลาดกั่ว",cap:0.842},{id:"R08",name:"ห้วยโซ่",cap:1.430},
-    {id:"R09",name:"ห้วยไร่ 1",cap:0.200},{id:"R10",name:"ห้วยไร่ 2",cap:0.695},
-    {id:"R11",name:"ห้วยลำใย",cap:0.450},{id:"R12",name:"ห้วยโป่งซาง",cap:0.300},
-    {id:"R13",name:"ห้วยบ้านคลองเจริญ",cap:0.623},{id:"R14",name:"ผาจ้ำน้ำ",cap:0.085}
+    {id:"R01",name:"อ่างเก็บน้ำห้วยยางเงาะ",cap:0.4000},
+    {id:"R02",name:"อ่างเก็บน้ำห้วยซับม่วง",cap:0.7500},
+    {id:"R03",name:"อ่างเก็บน้ำห้วยเหล่ายาง",cap:2.4690},
+    {id:"R04",name:"อ่างเก็บน้ำห้วยน้ำบอง",cap:20.8000},
+    {id:"R05",name:"อ่างเก็บน้ำบ้านสนามชัย",cap:0.3300},
+    {id:"R06",name:"อ่างเก็บน้ำห้วยผาวัง",cap:2.1220},
+    {id:"R07",name:"อ่างเก็บน้ำห้วยลาดกั่ว",cap:0.8420},
+    {id:"R08",name:"อ่างเก็บน้ำห้วยโซ่",cap:1.4300},
+    {id:"R09",name:"อ่างเก็บน้ำห้วยไร่ 1",cap:0.2000},
+    {id:"R10",name:"อ่างเก็บน้ำห้วยไร่ 2",cap:0.6950},
+    {id:"R11",name:"อ่างเก็บน้ำห้วยลำไย",cap:0.4500},
+    {id:"R12",name:"อ่างเก็บน้ำห้วยโป่งซาง",cap:0.3000},
+    {id:"R13",name:"อ่างเก็บน้ำบ้านคลองเจริญ",cap:0.6230},
+    {id:"R14",name:"อ่างเก็บน้ำผาจ้ำน้ำ",cap:0.0850},
+    {id:"R15",name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร",cap:0.0684}
   ];
   // Build latest by reservoir_id
   const latest = {};
@@ -2287,6 +2644,14 @@ function renderReservoirs(arr){
       }
     });
   }
+  // สีตามสถานะ
+  const ST = {
+    crit:{c:'#f87171',ring:'#ef4444',bg:'rgba(239,68,68,.12)',lbl:'ล้นตลิ่ง'},
+    warn:{c:'#fbbf24',ring:'#f59e0b',bg:'rgba(245,158,11,.12)',lbl:'น้ำมาก'},
+    ok:  {c:'#4ade80',ring:'#10b981',bg:'rgba(16,185,129,.12)',lbl:'ปกติ'},
+    low: {c:'#60a5fa',ring:'#0ea5e9',bg:'rgba(14,165,233,.12)',lbl:'น้ำน้อย'},
+    empty:{c:'#64748b',ring:'#334155',bg:'rgba(100,116,139,.08)',lbl:'ไม่มีข้อมูล'}
+  };
   let totalPct = 0, cnt = 0, warnN = 0, lowN = 0;
   const html = RES_META.map(meta => {
     const live = latest[meta.id];
@@ -2300,11 +2665,31 @@ function renderReservoirs(arr){
       else if(pct < 30) {cls = "low"; lowN++;}
       else cls = "ok";
     }
-    return `<div class="res-mini ${cls}">
-      <div class="code">${meta.id}</div>
-      <div class="nm">${meta.name}</div>
-      <div class="pct">${pct!=null?pct.toFixed(0)+'%':'—'}</div>
-      <div class="vol">${vol!=null?vol.toFixed(3):'—'} / ${meta.cap.toFixed(3)}</div>
+    const st = ST[cls];
+    // ชื่อย่อ — ตัด "อ่างเก็บน้ำ" ออก
+    const shortNm = meta.name.replace(/^อ่างเก็บน้ำ/,'');
+    // progress ring (SVG donut)
+    const R = 19, C = 2*Math.PI*R;
+    const pctClamp = pct != null ? Math.min(pct,100) : 0;
+    const dash = C * pctClamp/100;
+    return `<div class="res-mini ${cls}" title="${meta.name}">
+      <div class="rm-top">
+        <div class="rm-ring">
+          <svg viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/>
+            <circle cx="22" cy="22" r="${R}" fill="none" stroke="${st.ring}" stroke-width="4"
+              stroke-linecap="round" stroke-dasharray="${dash} ${C}"
+              transform="rotate(-90 22 22)"/>
+          </svg>
+          <div class="rm-ring-txt" style="color:${st.c}">${pct!=null?pct.toFixed(0):'—'}<span>%</span></div>
+        </div>
+        <div class="rm-info">
+          <div class="rm-code">${meta.id}</div>
+          <div class="rm-badge" style="background:${st.bg};color:${st.c}">${st.lbl}</div>
+        </div>
+      </div>
+      <div class="rm-name">${shortNm}</div>
+      <div class="rm-vol">${vol!=null?vol.toFixed(3):'—'}<span> / ${meta.cap.toFixed(3)} ล้าน ลบ.ม.</span></div>
     </div>`;
   }).join("");
   document.getElementById('resMiniGrid').innerHTML = html;
@@ -2312,6 +2697,81 @@ function renderReservoirs(arr){
   tx('res-warn-num', warnN);
   tx('res-low-num', lowN);
   tx('resUpd', cnt > 0 ? 'อัปเดต ' + t12() : 'ยังไม่มีข้อมูล');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: คาดการณ์ฝนรายอ่างเก็บน้ำ (Open-Meteo)
+// ═══════════════════════════════════════════════════════════
+const RFC_RESERVOIRS = [
+  {id:"R01",name:"อ่างเก็บน้ำห้วยยางเงาะ",        lat:17.22588,  lon:102.518152},
+  {id:"R02",name:"อ่างเก็บน้ำห้วยซับม่วง",        lat:17.14711,  lon:102.090722},
+  {id:"R03",name:"อ่างเก็บน้ำห้วยเหล่ายาง",       lat:17.23760,  lon:102.462500},
+  {id:"R04",name:"อ่างเก็บน้ำห้วยน้ำบอง",         lat:16.907122, lon:102.417037},
+  {id:"R05",name:"อ่างเก็บน้ำบ้านสนามชัย",        lat:17.43410,  lon:102.137610},
+  {id:"R06",name:"อ่างเก็บน้ำห้วยผาวัง",          lat:17.30870,  lon:102.043300},
+  {id:"R07",name:"อ่างเก็บน้ำห้วยลาดกั่ว",        lat:17.40610,  lon:102.076990},
+  {id:"R08",name:"อ่างเก็บน้ำห้วยโซ่",            lat:17.60320,  lon:102.115480},
+  {id:"R09",name:"อ่างเก็บน้ำห้วยไร่ 1",          lat:17.48270,  lon:102.178450},
+  {id:"R10",name:"อ่างเก็บน้ำห้วยไร่ 2",          lat:17.46310,  lon:102.212270},
+  {id:"R11",name:"อ่างเก็บน้ำห้วยลำไย",           lat:17.44550,  lon:102.226600},
+  {id:"R12",name:"อ่างเก็บน้ำห้วยโป่งซาง",        lat:17.39440,  lon:102.171530},
+  {id:"R13",name:"อ่างเก็บน้ำบ้านคลองเจริญ",      lat:17.59880,  lon:102.147580},
+  {id:"R14",name:"อ่างเก็บน้ำผาจ้ำน้ำ",           lat:17.26380,  lon:102.118730},
+  {id:"R15",name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", lat:17.2314734,lon:102.514000}
+];
+
+/* จัดระดับฝน */
+function rainLevel(mm){
+  if(mm>=90)  return {cls:'vheavy',icon:'⛈️',lbl:'หนักมาก'};
+  if(mm>=35)  return {cls:'heavy', icon:'🌧️',lbl:'หนัก'};
+  if(mm>=10)  return {cls:'mod',   icon:'🌦️',lbl:'ปานกลาง'};
+  if(mm>0.5)  return {cls:'light', icon:'🌥️',lbl:'เบา'};
+  return {cls:'dry', icon:'☀️', lbl:'ไม่มีฝน'};
+}
+
+async function loadReservoirRainForecast(){
+  const grid=document.getElementById('rfcGrid');
+  if(!grid) return;
+  try{
+    const lats=RFC_RESERVOIRS.map(r=>r.lat).join(',');
+    const lons=RFC_RESERVOIRS.map(r=>r.lon).join(',');
+    const url='https://api.open-meteo.com/v1/forecast'+
+      '?latitude='+lats+'&longitude='+lons+
+      '&daily=precipitation_sum,precipitation_probability_max'+
+      '&timezone=Asia%2FBangkok&forecast_days=1';
+    const res=await fetch(url);
+    const data=await res.json();
+    /* Open-Meteo คืน array เมื่อส่งหลายพิกัด */
+    const arr=Array.isArray(data)?data:[data];
+
+    let html='';
+    arr.forEach((d,i)=>{
+      const meta=RFC_RESERVOIRS[i];
+      if(!meta) return;
+      const mm  = d?.daily?.precipitation_sum?.[0] ?? 0;
+      const prob= d?.daily?.precipitation_probability_max?.[0] ?? 0;
+      const lv  = rainLevel(mm);
+      const shortNm = meta.name.replace(/^อ่างเก็บน้ำ/,'');
+      html+=`<div class="rfc-card ${lv.cls}" title="${meta.name}">
+        <div class="rfc-top">
+          <span class="rfc-code">${meta.id}</span>
+          <span class="rfc-icon">${lv.icon}</span>
+        </div>
+        <div class="rfc-name">${shortNm}</div>
+        <div class="rfc-val">${mm.toFixed(1)}<span> มม./24ชม.</span></div>
+        <div class="rfc-meta">
+          <span class="rfc-prob">💧 โอกาส ${prob}%</span>
+          <span class="rfc-lvl">${lv.lbl}</span>
+        </div>
+      </div>`;
+    });
+    grid.innerHTML=html || '<div style="grid-column:1/-1;color:var(--ink-3);text-align:center;padding:20px;">ไม่มีข้อมูลพยากรณ์</div>';
+    tx('rfcUpd','อัปเดต '+t12());
+  }catch(e){
+    console.warn('[rainForecast] fail',e);
+    grid.innerHTML='<div style="grid-column:1/-1;color:#fca5a5;text-align:center;padding:20px;">⚠️ ไม่สามารถโหลดพยากรณ์ฝนได้</div>';
+    tx('rfcUpd','โหลดไม่สำเร็จ');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2455,7 +2915,7 @@ function checkAndNotify(){
   }
   // 3. อ่างเก็บน้ำใกล้ล้น
   if(_reservoirs && Array.isArray(_reservoirs)){
-    const RES_CAP = {R01:0.400,R02:0.750,R03:2.469,R04:20.800,R05:0.330,R06:2.122,R07:0.842,R08:1.430,R09:0.200,R10:0.695,R11:0.450,R12:0.300,R13:0.623,R14:0.085};
+    const RES_CAP = {R01:0.4000,R02:0.7500,R03:2.4690,R04:20.8000,R05:0.3300,R06:2.1220,R07:0.8420,R08:1.4300,R09:0.2000,R10:0.6950,R11:0.4500,R12:0.3000,R13:0.6230,R14:0.0850,R15:0.0684};
     const latest = {};
     _reservoirs.forEach(r => {
       const id = String(r.reservoir_id||"").toUpperCase();
@@ -2564,8 +3024,8 @@ async function manualRefresh(){
 //  LOAD ALL — combined: weather + provincial + reservoirs + notify
 // ═══════════════════════════════════════════════════════════
 async function loadAll(){
-  if(!GEMINI_KEY)tx('aiKeyNote','⚙️ ตั้งค่า GEMINI_API_KEY ใน config.js เพื่อเปิดใช้งาน');
-  else tx('aiKeyNote','Gemini AI · พร้อมใช้งาน');
+  tx('aiKeyNote','AI · พร้อมใช้งาน');
+  
 
   const [wxR,rAmR,heatR,stR,aqiR,pwR,resR] = await Promise.allSettled([
     fetchWx(), fetchRainAm(), fetchHeat(), fetchStRain(), fetchAQI(),
@@ -2580,6 +3040,8 @@ async function loadAll(){
   renderAlert(wx,rAm);renderAQI(aq);renderRainChart(rAm);renderWLP(stR2);
   renderProvincialWater(pw);
   renderReservoirs(res);
+  // คาดการณ์ฝนรายอ่าง — โหลดแยก ไม่บล็อกข้อมูลอื่น
+  loadReservoirRainForecast();
   // อัปเดตสีและ popup ของ marker บนแผนที่ตามข้อมูล backend จริง
   updateStationMarkers(pw);
   updateReservoirMarkers(res);
@@ -2590,7 +3052,7 @@ async function loadAll(){
   _lastUpdate = Date.now();
   updateRefreshUI();
   startCountdown(_nextRefreshMs);
-  if(GEMINI_KEY&&!aiRunning)setTimeout(runGemini,800);
+  if(!aiRunning)setTimeout(runGemini,1500);
 }
 
 initMap();
@@ -2598,7 +3060,7 @@ updateNotifFabUI();
 maybeShowNotifTip();
 loadAll();
 setInterval(loadAll,5*60*1000);
-setInterval(()=>{if(GEMINI_KEY&&!aiRunning)runGemini();},30*60*1000);
+setInterval(()=>{if(!aiRunning)runGemini();},5*60*1000);
 </script>
 </body>
 </html>
