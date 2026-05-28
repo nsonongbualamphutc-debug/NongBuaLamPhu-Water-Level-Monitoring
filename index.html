@@ -18,8 +18,6 @@
 <script src="waterways-loader.js"></script>
 <script src="map-layers.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="map-layers.js"></script>
-<script src="skeleton.js"></script>
 <style>
   :root{
     --bg: #f4f7fb;
@@ -1169,12 +1167,23 @@
     padding:2px 6px;border-radius:8px;
   }
   .fc-day{
-    font-size:11px;color:var(--muted);font-weight:600;
-    text-transform:uppercase;letter-spacing:.5px;
+    font-size:12px;color:var(--muted);font-weight:700;
+    letter-spacing:.2px;
     margin-bottom:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
-  .fc-date{font-size:10px;opacity:.7;margin-bottom:4px;}
+  .fc-card.today .fc-day{color:#fff;font-weight:700;}
+  .fc-date{font-size:10.5px;opacity:.7;margin-bottom:4px;}
   .fc-icon{font-size:30px;line-height:1;margin:6px 0;}
+  /* mobile — ลดขนาดให้ชื่อยาวเช่น "พฤหัสฯ" ใส่ได้ */
+  @media(max-width:560px){
+    .fc-card{padding:10px 6px;}
+    .fc-day{font-size:11px;}
+    .fc-date{font-size:10px;}
+    .fc-icon{font-size:26px;margin:4px 0;}
+  }
   .fc-temp{
     display:flex;align-items:baseline;justify-content:center;gap:4px;
     margin:4px 0;
@@ -1603,6 +1612,11 @@
             <span>เรดาห์ฝน</span>
             <span class="btn-status" id="radarStatus">ปิด</span>
           </button>
+          <button class="map-btn active" id="btnWaterways" onclick="toggleWaterways()">
+            <span class="btn-icon">💧</span>
+            <span>เส้นทางน้ำ</span>
+            <span class="btn-status" id="waterStatus">เปิด</span>
+          </button>
           <button class="map-btn" id="btnHeatmap" onclick="toggleHeatmap()">
             <span class="btn-icon">🔥</span>
             <span>คาดการณ์ฝน</span>
@@ -1851,7 +1865,7 @@
  *  เปลี่ยน API_URL เป็น Google Apps Script Web App URL ของคุณ
  *  ถ้ายังไม่มีจะใช้ข้อมูลตัวอย่าง (DEMO_DATA)
  * ================================================================= */
-  const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
+  const API_URL = window.APP_CONFIG?.API_URL || ""; // ตั้งค่าใน config.js
 
 /* ====== DEMO DATA (จะถูกใช้เมื่อยังไม่ได้ตั้งค่า API_URL) ====== */
 const DEMO_STATIONS = [
@@ -2361,15 +2375,7 @@ function updateSituation(stations, rain){
 }
 
 /* ====== FETCH DATA ====== */
-async function loadData() {
-  Skeleton.show();          // ← เพิ่ม
-  try {
-    // ... โค้ดเดิม ...
-  } catch(e) {
-    console.error(e);
-  } finally {
-    Skeleton.hide();        // ← เพิ่ม
-  }
+async function loadData(){
   let stations = DEMO_STATIONS, rain = DEMO_RAIN;
   if(API_URL){
     try{
@@ -2544,7 +2550,15 @@ function initMap(stations){
   cachedStations = stations;  // เก็บไว้ใช้ใน heatmap
   if(mapInstance){mapInstance.remove();}
   mapLayersInstance = null;  // reset layer manager เมื่อ map ถูก rebuild
-  mapInstance = L.map("map", {zoomControl:true}).setView([17.25, 102.2], 10);
+  mapInstance = L.map("map", {
+    zoomControl: true,
+    preferCanvas: true,            // ⚙ render เร็วขึ้นมาก เมื่อมี marker เยอะ
+    wheelDebounceTime: 40,         // ลด event ขณะหมุน scroll
+    zoomSnap: 0.5,                 // ซูมลื่นขึ้น
+    fadeAnimation: true,
+    markerZoomAnimation: false,    // ปิด animation ตอน zoom ที่ทำให้ popup สะดุด
+    inertiaDeceleration: 4000      // ลื่นแต่ไม่ลื่นเกิน
+  }).setView([17.25, 102.2], 10);
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",{
     attribution:'Tiles &copy; Esri',
     maxNativeZoom:16, maxZoom:19
@@ -2630,7 +2644,15 @@ function initMap(stations){
       <div class="popup-row"><span>ระดับตลิ่ง:</span><strong>${s.bank.toFixed(2)} ม.รทก.</strong></div>
       <div class="popup-row"><span>ต่ำกว่าตลิ่ง:</span><strong>${diff} ม.</strong></div>
       <div class="popup-row"><span>สถานะ:</span><span class="pill ${st}">${statusLabel(st)}</span></div>
-    `);
+    `, {
+      // ⚙ ปรับ popup ให้ไม่หน่วง
+      autoPan: true,
+      autoPanPadding: [20, 20],
+      keepInView: false,        // ไม่ดึงแผนที่กลับมา = ลื่นกว่า
+      closeButton: true,
+      maxWidth: 280,
+      className: 'station-popup'
+    });
     clusterGroup.addLayer(m);
     markers[s.id] = m;
   });
@@ -2690,6 +2712,15 @@ async function enhanceProvincialMap(map) {
   damLayerGroup.addTo(map);
   layers["⚙️ เขื่อน-ฝาย (DWR)"] = damLayerGroup;
   loadDWRWaterFeatures(waterLayerGroup, waterbodyLayerGroup, damLayerGroup, map);
+
+  // 🔹 expose ไว้ให้ปุ่ม toggle เปิด-ปิดได้
+  window._waterLayers = {
+    map: map,
+    lines: waterLayerGroup,
+    bodies: waterbodyLayerGroup,
+    dams: damLayerGroup,
+    districts: districtLayerGroup,
+  };
 
   // ===== Layer 3: อ่างเก็บน้ำ 14 แห่งที่ระบบติดตาม =====
   const RESERVOIRS_MAP = [
@@ -2922,11 +2953,16 @@ async function initRadar(){
 
     // สร้าง tile layer สำหรับแต่ละ frame (ไม่ add เข้า map ก่อน)
     radarLayers = radarFrames.map(frame => {
-      return L.tileLayer(`${data.host}${frame.path}/256/{z}/{x}/{y}/4/1_1.png`, {
+      // ⚙ ปรับให้เห็นชัดทุก zoom level
+      // - tile 512px (คมขึ้น), color scheme 2 (สีสด แดง-ส้ม-ฟ้า)
+      // - maxNativeZoom 12 (RainViewer รองรับสูงสุด)
+      // - smooth=1 snow=1 = เกลี่ยขอบเมฆ + แยกหิมะ/ฝน
+      return L.tileLayer(`${data.host}${frame.path}/512/{z}/{x}/{y}/2/1_1.png`, {
+        tileSize: 256,        // แสดงเป็น 256px (มาตรฐาน Leaflet) แต่โหลดจาก 512 = คม 2x
         opacity: 0,
-        zIndex: 200,
-        maxNativeZoom: 10,   // RainViewer รองรับสูงสุด z=10
-        maxZoom: 19,         // แต่ขยายให้ดูได้ถึง zoom 19
+        zIndex: 400,           // ทับ basemap แต่อยู่ใต้ marker
+        maxNativeZoom: 12,     // ดึง tile ได้ถึง zoom 12 (เห็นเมฆฝนระดับอำเภอ)
+        maxZoom: 19,           // แสดงผลถึง zoom 19 (Leaflet จะ upscale tile z=12 ให้)
         attribution: '© RainViewer'
       });
     });
@@ -2944,6 +2980,35 @@ async function initRadar(){
     console.log(`[Radar] โหลดสำเร็จ ${radarFrames.length} frames`);
   } catch(err){
     console.warn("[Radar] ไม่สามารถโหลดข้อมูลเรดาห์ได้:", err);
+  }
+}
+
+/* ════════════════════════════════════════════════
+ *  เปิด-ปิด เส้นทางน้ำ (DWR: เส้นน้ำ + แหล่งน้ำ + เขื่อน-ฝาย)
+ * ════════════════════════════════════════════════ */
+let waterwaysOn = true;   // เริ่มต้นเปิดอยู่
+function toggleWaterways(){
+  const W = window._waterLayers;
+  if(!W || !W.map){
+    console.warn('[Waterways] ยังโหลดไม่เสร็จ');
+    return;
+  }
+  waterwaysOn = !waterwaysOn;
+  const btn = document.getElementById("btnWaterways");
+  const status = document.getElementById("waterStatus");
+
+  if(waterwaysOn){
+    if(!W.map.hasLayer(W.lines))    W.map.addLayer(W.lines);
+    if(!W.map.hasLayer(W.bodies))   W.map.addLayer(W.bodies);
+    if(!W.map.hasLayer(W.dams))     W.map.addLayer(W.dams);
+    if(btn) btn.classList.add("active");
+    if(status) status.textContent = "เปิด";
+  } else {
+    if(W.map.hasLayer(W.lines))     W.map.removeLayer(W.lines);
+    if(W.map.hasLayer(W.bodies))    W.map.removeLayer(W.bodies);
+    if(W.map.hasLayer(W.dams))      W.map.removeLayer(W.dams);
+    if(btn) btn.classList.remove("active");
+    if(status) status.textContent = "ปิด";
   }
 }
 
@@ -3709,7 +3774,7 @@ function windDirText(deg){
 
 function renderForecast(daily){
   const container = document.getElementById("forecastCards");
-  const dayNamesShort = ["อา","จ","อ","พ","พฤ","ศ","ส"];
+  const dayNamesShort = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสฯ","ศุกร์","เสาร์"];
   const today = new Date().toISOString().slice(0,10);
 
   let html = "";
@@ -3734,7 +3799,7 @@ function renderForecast(daily){
     html += `
       <div class="fc-card ${cls}" title="${wInfo.text}">
         ${heavyRain ? '<div class="fc-badge">⚠️ ฝนหนัก</div>' : ''}
-        <div class="fc-day">${isToday ? "วันนี้" : "วัน" + dayName}</div>
+        <div class="fc-day">${isToday ? "วันนี้" : dayName}</div>
         <div class="fc-date">${dayNum} ${monthShort}</div>
         <div class="fc-icon">${wInfo.icon}</div>
         <div class="fc-temp">
@@ -3895,13 +3960,5 @@ setInterval(loadData, 5*60*1000);
 // อัปเดตพยากรณ์ทุก 30 นาที
 setInterval(loadForecast, 30*60*1000);
 </script>
-  <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('[SW] registered'))
-    .catch(e => console.warn('[SW] error:', e));
-}
-</script>
 </body>
-  
 </html>
