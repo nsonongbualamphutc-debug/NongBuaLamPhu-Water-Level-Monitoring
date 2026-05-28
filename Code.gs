@@ -581,8 +581,35 @@ function getWaterLevels(stationId,days) {
 }
 
 function getLatestWaterByStation() {
-  const rows=sheetToObjects(ss().getSheetByName(SHEET_WATER)), latest={};
-  rows.forEach(r=>{const sid=r.station_id;if(!sid)return;const d=parseDate(r.date);if(!latest[sid]||parseDate(latest[sid].date)<d)latest[sid]=r;});
+  const rows = sheetToObjects(ss().getSheetByName(SHEET_WATER));
+  const latest = {};
+  // สร้างค่าเปรียบเทียบจาก date + time (รวมเวลา) เพื่อหยิบแถวล่าสุดจริง
+  function ts(r) {
+    const d = parseDate(r.date);
+    if (!d) return 0;
+    let val = d.getTime();
+    // บวกเวลาเข้าไป (ถ้ามี) เช่น "14:34" หรือ "02:36 PM"
+    const t = String(r.time || "").trim();
+    if (t) {
+      let hh = 0, mm = 0;
+      const m24 = t.match(/^(\d{1,2}):(\d{2})/);
+      if (m24) { hh = +m24[1]; mm = +m24[2]; }
+      if (/pm/i.test(t) && hh < 12) hh += 12;
+      if (/am/i.test(t) && hh === 12) hh = 0;
+      val += (hh * 60 + mm) * 60000;
+    }
+    return val;
+  }
+  rows.forEach((r, idx) => {
+    const sid = r.station_id;
+    if (!sid) return;
+    r._ts = ts(r);
+    r._idx = idx;  // ลำดับแถว — ใช้ตัดสินเมื่อ ts เท่ากัน (แถวล่างกว่า = ใหม่กว่า)
+    const cur = latest[sid];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) {
+      latest[sid] = r;
+    }
+  });
   return latest;
 }
 
@@ -594,7 +621,7 @@ function getRainfall(days) {
 
 function getReservoirs() {
   const sheet=getOrCreateReservoirSheet(), rows=sheetToObjects(sheet), latest={};
-  rows.forEach(r=>{const id=r.reservoir_id;if(!id)return;const d=parseDate(r.date);if(!latest[id]||parseDate(latest[id].date)<d)latest[id]=r;});
+  rows.forEach((r,idx)=>{const id=r.reservoir_id;if(!id)return;const d=parseDate(r.date);const cur=latest[id];const dCur=cur?parseDate(cur.date):null;if(!cur||(d&&dCur&&d>dCur)||(d&&dCur&&d.getTime()===dCur.getTime()&&idx>(cur._idx||0))){r._idx=idx;latest[id]=r;}});
   // merge กับ master list — คืนครบทุกอ่าง แม้อ่างที่ยังไม่มีข้อมูลใน Sheet
   return RESERVOIR_LIST.map(function(meta){
     const rec = latest[meta.id];
