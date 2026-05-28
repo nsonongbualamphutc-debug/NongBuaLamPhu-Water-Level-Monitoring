@@ -634,6 +634,35 @@ function getDailyReport(targetDate) {
 function saveWaterLevel(p) {
   const sheet = ensureSheet_(SHEET_WATER, HEADERS_WATER);
   const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("station_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // ── ถ้ามีแถวสถานีเดียวกัน + วันเดียวกันอยู่แล้ว → อัปเดตทับ (ไม่บวกเพิ่ม) ──
+  if (idIdx >= 0 && dateIdx >= 0 && p.station_id && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId   = String(data[i][idIdx]).trim() === String(p.station_id).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        // เขียนทับทุก field ที่ส่งมา
+        headers.forEach((h, col) => {
+          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
+            sheet.getRange(i+1, col+1).setValue(p[h]);
+          }
+        });
+        return {
+          ok: true,
+          updated: true,
+          message: "อัปเดตข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)",
+          station_id: p.station_id,
+          recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
+        };
+      }
+    }
+  }
+
+  // ── ไม่มีแถวเดิม → เพิ่มใหม่ ──
   const row = headers.map(h => {
     const v = p[h];
     return (v === undefined || v === null) ? "" : v;
@@ -641,7 +670,8 @@ function saveWaterLevel(p) {
   sheet.appendRow(row);
   return {
     ok: true,
-    message: "บันทึกข้อมูลระดับน้ำ " + (p.station_id||"") + " เรียบร้อย",
+    updated: false,
+    message: "บันทึกข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " เรียบร้อย",
     station_id: p.station_id,
     recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
   };
@@ -650,14 +680,40 @@ function saveWaterLevel(p) {
 function saveRainfall(p) {
   const sheet = ensureSheet_(SHEET_RAIN, HEADERS_RAIN);
   const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const amIdx   = headers.indexOf("amphoe");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // ── ทับแถวเดิม อำเภอ+วันเดียวกัน ──
+  if (amIdx >= 0 && dateIdx >= 0 && p.amphoe && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameAm   = String(data[i][amIdx]).trim() === String(p.amphoe).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameAm && sameDate) {
+        headers.forEach((h, col) => {
+          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
+            sheet.getRange(i+1, col+1).setValue(p[h]);
+          }
+        });
+        return {
+          ok: true, updated: true,
+          message: "อัปเดตข้อมูลฝน " + (p.amphoe||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)",
+          amphoe: p.amphoe,
+          recorded: { date:p.date, rain_24hr:p.rain_24hr, recorder:p.recorder }
+        };
+      }
+    }
+  }
+
   const row = headers.map(h => {
     const v = p[h];
     return (v === undefined || v === null) ? "" : v;
   });
   sheet.appendRow(row);
   return {
-    ok: true,
-    message: "บันทึกข้อมูลฝน " + (p.amphoe||"") + " เรียบร้อย",
+    ok: true, updated: false,
+    message: "บันทึกข้อมูลฝน " + (p.amphoe||"") + " วันที่ " + dateStr + " เรียบร้อย",
     amphoe: p.amphoe,
     recorded: { date:p.date, rain_24hr:p.rain_24hr, recorder:p.recorder }
   };

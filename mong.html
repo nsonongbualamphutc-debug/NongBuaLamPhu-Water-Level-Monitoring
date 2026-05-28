@@ -266,7 +266,7 @@ footer strong { color: #fff; }
       </div>
       <div>
         <div class="hdr-title">ลำน้ำโมง</div>
-        <div class="hdr-sub">Mong River · 2 สถานีตรวจวัด · อำเภอสุวรรณคูหา</div>
+        <div class="hdr-sub">Mong River · <span id="hdrStationCount">—</span> สถานีตรวจวัด · อำเภอสุวรรณคูหา</div>
       </div>
     </div>
     <div class="hdr-right">
@@ -299,7 +299,7 @@ footer strong { color: #fff; }
 <div class="summary-row">
   <div class="sc info">
     <div class="sc-label">สถานีตรวจวัด</div>
-    <div class="sc-value">2</div>
+    <div class="sc-value" id="scStations">—</div>
     <div class="sc-sub">ลำน้ำโมง</div>
   </div>
   <div class="sc normal">
@@ -327,7 +327,7 @@ footer strong { color: #fff; }
 <!-- River Scene -->
 <div class="scene-wrap">
   <div class="scene-head">
-    <h2>🌿 ฉากลำน้ำโมง — ระดับน้ำ Real-time ทั้ง 2 สถานี</h2>
+    <h2>🌿 ฉากลำน้ำโมง — ระดับน้ำ Real-time ทั้ง <span id="sceneStationCount">—</span> สถานี</h2>
     <div class="scene-meta" id="lastUpdate">—</div>
   </div>
 
@@ -562,6 +562,11 @@ function renderSummary() {
     c[statusOf(s)]++;
     diffSum += s.bank - (stationData[s.id]?.current ?? s.bank - 2);
   });
+  // อัปเดตจำนวนสถานีแบบ dynamic (กันเลข hardcode ผิด)
+  const _n = STATIONS.length;
+  const _sc = document.getElementById("scStations"); if(_sc) _sc.textContent = _n;
+  const _hc = document.getElementById("hdrStationCount"); if(_hc) _hc.textContent = _n;
+  const _ssc = document.getElementById("sceneStationCount"); if(_ssc) _ssc.textContent = _n;
   document.getElementById("scNormal").textContent = c.normal;
   document.getElementById("scWarn").textContent   = c.warn;
   document.getElementById("scCrit").textContent   = c.crit;
@@ -881,7 +886,8 @@ async function loadData(from, to) {
       if (from) url += "&from=" + from;
       if (to)   url += "&to="   + to;
  
-      const res  = await fetch(url);
+      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();  // กัน browser cache
+      const res  = await fetch(url, { cache: "no-store" });
       const data = await res.json();
  
       if (data.stations) data.stations.forEach(item => {

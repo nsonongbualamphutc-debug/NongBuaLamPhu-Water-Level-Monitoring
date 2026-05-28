@@ -1492,7 +1492,10 @@ async function saveWater() {
   }
   // remember recorder
   if (recorder) localStorage.setItem("wat_recorder_" + s.id, recorder);
-  showToast("w-toast", "✅ บันทึกเรียบร้อย · Dashboard จะอัปเดตทันที", true);
+  const msg = resp.updated
+    ? "✅ อัปเดตค่าเดิมของวันนี้แล้ว (ทับค่าเก่า ไม่บวกเพิ่ม)"
+    : "✅ บันทึกใหม่เรียบร้อย · Dashboard จะอัปเดตทันที";
+  showToast("w-toast", msg, true);
   // Clear level for next entry
   document.getElementById("w-level").value = "";
   document.getElementById("w-flow").value = "";

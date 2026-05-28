@@ -280,7 +280,7 @@ footer strong { color: #fff; }
       </div>
       <div>
         <div class="hdr-title">ลำน้ำพะเนียง</div>
-        <div class="hdr-sub">Paneang River · 10 สถานีตรวจวัด · ต้นน้ำ นาวัง → เมืองหนองบัวลำภู</div>
+        <div class="hdr-sub">Paneang River · <span id="hdrStationCount">—</span> สถานีตรวจวัด · ต้นน้ำ นาวัง → เมืองหนองบัวลำภู</div>
       </div>
     </div>
     <div class="hdr-right">
@@ -313,7 +313,7 @@ footer strong { color: #fff; }
 <div class="summary-row" id="summaryRow">
   <div class="sc info">
     <div class="sc-label">สถานีตรวจวัด</div>
-    <div class="sc-value">10</div>
+    <div class="sc-value" id="scStations">—</div>
     <div class="sc-sub">ลำน้ำพะเนียง</div>
   </div>
   <div class="sc normal">
@@ -562,6 +562,11 @@ function renderSummary(){
     c[statusOf(s)]++;
     diffSum += s.bank - (stationData[s.id]?.current ?? s.bank-2);
   });
+  // อัปเดตจำนวนสถานีแบบ dynamic (กันเลข hardcode ผิด)
+  const _n = STATIONS.length;
+  const _sc = document.getElementById("scStations"); if(_sc) _sc.textContent = _n;
+  const _hc = document.getElementById("hdrStationCount"); if(_hc) _hc.textContent = _n;
+  const _ssc = document.getElementById("sceneStationCount"); if(_ssc) _ssc.textContent = _n;
   document.getElementById("scNormal").textContent = c.normal;
   document.getElementById("scWarn").textContent   = c.warn;
   document.getElementById("scCrit").textContent   = c.crit;
@@ -860,7 +865,8 @@ async function loadData(from, to) {
       if (from) url += "&from=" + from;
       if (to)   url += "&to="   + to;
  
-      const res  = await fetch(url);
+      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();  // กัน browser cache
+      const res  = await fetch(url, { cache: "no-store" });
       const data = await res.json();
  
       if (data.stations) data.stations.forEach(item => {
