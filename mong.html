@@ -597,7 +597,7 @@ function renderScene() {
     const lv = stationData[s.id]?.current ?? s.bank - 2;
     const st = statusOf(s);
     const diff = s.bank - lv;
-    const pc = Math.max(0.02, Math.min(0.98, 1 - diff / 4.5));
+    const pc = Math.max(0.02, Math.min(0.98, lv / s.bank));
     const pinColor = st === "crit" ? "#dc2626" : st === "warn" ? "#f59e0b" : "#059669";
     const staffH = waterBotY - waterTopY + 14;
     const fillH  = staffH * pc;
@@ -678,14 +678,14 @@ function renderGauges() {
     const lv   = stationData[s.id]?.current ?? s.bank - 2;
     const st   = statusOf(s);
     const diff = s.bank - lv;
-    const minLv = s.bank - 5.5;
-    const range = s.bank - minLv;
-    const fillPct = Math.max(0, Math.min(100, ((lv - minLv) / range) * 100));
-    const warnPct = Math.max(0, Math.min(100, ((s.warn - minLv) / range) * 100));
-    const critPct = Math.max(0, Math.min(100, ((s.crit - minLv) / range) * 100));
+    // สเกลแท่ง: 0 → ตลิ่ง (bank) เพื่อให้ค่าใดๆ แสดงสัดส่วนถูกต้อง
+    // เช่น ตลิ่ง 200 กรอก 100 = 50% ของแท่ง
+    const fillPct = Math.max(0, Math.min(100, (lv / s.bank) * 100));
+    const warnPct = Math.max(0, Math.min(100, (s.warn / s.bank) * 100));
+    const critPct = Math.max(0, Math.min(100, (s.crit / s.bank) * 100));
     const fillPx  = Math.round(Math.min(fillPct * 1.1, 110));
-    const warnPx  = Math.round(warnPct * 1.1);
-    const critPx  = Math.round(critPct * 1.1);
+    const warnPx  = Math.round(Math.min(warnPct * 1.1, 110));
+    const critPx  = Math.round(Math.min(critPct * 1.1, 110));
 
     return `
       <div class="gauge-card ${st}" onclick="openDetail('${s.id}')">

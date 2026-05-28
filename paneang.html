@@ -677,14 +677,12 @@ function renderGauges(){
     const lv = stationData[s.id]?.current ?? s.bank - 2;
     const st = statusOf(s);
     const diff = s.bank - lv;
-    const minLv = s.bank - 5.5;
-    const range = s.bank - minLv;
-    const fillPct = Math.max(0, Math.min(100, ((lv - minLv) / range) * 100));
-    const warnPct = Math.max(0, Math.min(100, ((s.warn - minLv) / range) * 100));
-    const critPct = Math.max(0, Math.min(100, ((s.crit - minLv) / range) * 100));
+    const fillPct = Math.max(0, Math.min(100, (lv / s.bank) * 100));
+    const warnPct = Math.max(0, Math.min(100, (s.warn / s.bank) * 100));
+    const critPct = Math.max(0, Math.min(100, (s.crit / s.bank) * 100));
     const fillPx  = Math.round(Math.min(fillPct * 1.1, 110));
-    const warnPx  = Math.round(warnPct * 1.1);
-    const critPx  = Math.round(critPct * 1.1);
+    const warnPx  = Math.round(Math.min(warnPct * 1.1, 110));
+    const critPx  = Math.round(Math.min(critPct * 1.1, 110));
 
     return `
       <div class="gauge-card ${st}" onclick="openDetail('${s.id}')">
