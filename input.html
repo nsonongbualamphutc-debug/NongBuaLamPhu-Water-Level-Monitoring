@@ -733,6 +733,8 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
         <button class="admin-tab on" onclick="setAdminTab('stations')">💧 PIN รายสถานี (ระดับน้ำ)</button>
         <button class="admin-tab" onclick="setAdminTab('amphoes')">🌧️ PIN รายอำเภอ (ฝน)</button>
         <button class="admin-tab" onclick="setAdminTab('reservoirs')">🏞️ PIN รายอ่าง (อ่างเก็บน้ำ)</button>
+        <button class="admin-tab" onclick="setAdminTab('floodgates')">🚪 PIN รายประตูระบายน้ำ</button>
+        <button class="admin-tab" onclick="setAdminTab('hydros')">🔬 PIN รายสถานีอุทกวิทยา</button>
         <button class="admin-tab" onclick="setAdminTab('subadmins')">🔐 Sub-Admin (ข้ามจุด)</button>
       </div>
 
@@ -752,6 +754,18 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
         <!-- Reservoir PIN tab -->
         <div id="admin-tab-reservoirs" class="hidden">
           <div id="reservoir-pin-content">
+            <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
+          </div>
+        </div>
+        <!-- Floodgate PIN tab -->
+        <div id="admin-tab-floodgates" class="hidden">
+          <div id="floodgate-pin-content">
+            <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
+          </div>
+        </div>
+        <!-- Hydro PIN tab -->
+        <div id="admin-tab-hydros" class="hidden">
+          <div id="hydro-pin-content">
             <div class="loading"><span class="spin"></span>กำลังโหลด...</div>
           </div>
         </div>
@@ -1125,8 +1139,7 @@ function chooseFloodgate(gid) {
   const g = FLOODGATES.find(x => x.gate_id === gid);
   if (!g) return;
   SELECTED = { kind:"floodgate", ...g };
-  // ตรวจ Admin PIN ที่จำไว้
-  const stored = sessionStorage.getItem("wat_admin_pin");
+  const stored = localStorage.getItem("wat_fg_pin_" + gid) || sessionStorage.getItem("wat_admin_pin");
   if (stored) { SESSION_PIN = stored; enterRecord(); return; }
   document.getElementById("pin-label").textContent = "PIN ผู้ดูแลระบบ (Admin)";
   document.getElementById("pin-target").textContent = "🚪 " + g.gate_id + " · " + g.name;
@@ -1141,7 +1154,7 @@ function chooseHydro(code) {
   const h = HYDROS.find(x => x.station_code === code);
   if (!h) return;
   SELECTED = { kind:"hydro", ...h };
-  const stored = sessionStorage.getItem("wat_admin_pin");
+  const stored = localStorage.getItem("wat_hy_pin_" + code) || sessionStorage.getItem("wat_admin_pin");
   if (stored) { SESSION_PIN = stored; enterRecord(); return; }
   document.getElementById("pin-label").textContent = "PIN ผู้ดูแลระบบ (Admin)";
   document.getElementById("pin-target").textContent = "🔬 " + h.station_code + " · " + h.name;
@@ -1259,6 +1272,10 @@ async function submitPin() {
     resp = await api({ action:"loginamphoe", amphoe:SELECTED.name, pin });
   } else if (SELECTED.kind === "reservoir") {
     resp = await api({ action:"loginreservoir", reservoir_id:SELECTED.id, pin });
+  } else if (SELECTED.kind === "floodgate") {
+    resp = await api({ action:"loginfloodgate", gate_id:SELECTED.gate_id, pin });
+  } else if (SELECTED.kind === "hydro") {
+    resp = await api({ action:"loginhydro", station_code:SELECTED.station_code, pin });
   }
   btn.disabled = false; btn.innerHTML = "✓ เข้าระบบ";
   if (!resp || !resp.ok) {
@@ -1286,6 +1303,10 @@ async function submitPin() {
   if (resp.station)   Object.assign(SELECTED, resp.station);
   if (resp.amphoe)    Object.assign(SELECTED, resp.amphoe);
   if (resp.reservoir) Object.assign(SELECTED, resp.reservoir);
+  if (resp.floodgate) Object.assign(SELECTED, resp.floodgate);
+  if (resp.hydro)     Object.assign(SELECTED, resp.hydro);
+  if (SELECTED.kind === "floodgate") localStorage.setItem("wat_fg_pin_" + SELECTED.gate_id, pin);
+  if (SELECTED.kind === "hydro")     localStorage.setItem("wat_hy_pin_" + SELECTED.station_code, pin);
   enterRecord();
 }
 
@@ -1948,12 +1969,14 @@ async function saveFloodgate() {
 
   if (!resp.ok) {
     showToast("fg-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
-    if (resp.code === "INVALID_PIN") SESSION_PIN = "";
+    if (resp.code === "INVALID_PIN") {
+      localStorage.removeItem("wat_fg_pin_" + g.gate_id);
+      SESSION_PIN = "";
+    }
     return;
   }
   if (recorder) localStorage.setItem("wat_recorder_fg_" + g.gate_id, recorder);
-  // remember admin PIN ใน session
-  sessionStorage.setItem("wat_admin_pin", SESSION_PIN);
+  localStorage.setItem("wat_fg_pin_" + g.gate_id, SESSION_PIN);
   const msg = resp.updated
     ? "✅ อัปเดตค่าเดิมของวันนี้แล้ว (ทับค่าเก่า)"
     : "✅ บันทึกใหม่เรียบร้อย · Dashboard จะอัปเดตทันที";
@@ -2054,11 +2077,14 @@ async function saveHydro() {
 
   if (!resp.ok) {
     showToast("hy-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
-    if (resp.code === "INVALID_PIN") SESSION_PIN = "";
+    if (resp.code === "INVALID_PIN") {
+      localStorage.removeItem("wat_hy_pin_" + h.station_code);
+      SESSION_PIN = "";
+    }
     return;
   }
   if (recorder) localStorage.setItem("wat_recorder_hy_" + h.station_code, recorder);
-  sessionStorage.setItem("wat_admin_pin", SESSION_PIN);
+  localStorage.setItem("wat_hy_pin_" + h.station_code, SESSION_PIN);
   const msg = resp.updated
     ? "✅ อัปเดตค่าเดิมของวันนี้แล้ว (ทับค่าเก่า)"
     : "✅ บันทึกใหม่เรียบร้อย · Dashboard จะอัปเดตทันที";
@@ -2151,15 +2177,19 @@ function adminLogout() {
 
 function setAdminTab(t) {
   document.querySelectorAll(".admin-tab").forEach((b,i) => {
-    b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1) || (t==="reservoirs" && i===2) || (t==="subadmins" && i===3));
+    b.classList.toggle("on", (t==="stations" && i===0) || (t==="amphoes" && i===1) || (t==="reservoirs" && i===2) || (t==="floodgates" && i===3) || (t==="hydros" && i===4) || (t==="subadmins" && i===5));
   });
   document.getElementById("admin-tab-stations").classList.toggle("hidden", t!=="stations");
   document.getElementById("admin-tab-amphoes").classList.toggle("hidden", t!=="amphoes");
   document.getElementById("admin-tab-reservoirs").classList.toggle("hidden", t!=="reservoirs");
+  document.getElementById("admin-tab-floodgates").classList.toggle("hidden", t!=="floodgates");
+  document.getElementById("admin-tab-hydros").classList.toggle("hidden", t!=="hydros");
   document.getElementById("admin-tab-subadmins").classList.toggle("hidden", t!=="subadmins");
   if (t === "stations") loadStationPins();
   else if (t === "amphoes") loadAmphoePins();
   else if (t === "reservoirs") loadReservoirPins();
+  else if (t === "floodgates") loadFloodgatePins();
+  else if (t === "hydros") loadHydroPins();
   else if (t === "subadmins") loadSubAdminStatus();
 }
 
@@ -2420,6 +2450,160 @@ async function initReservoirPinsAdmin() {
   if (n === 0) alert("ไม่ได้สร้าง PIN ใหม่ — ทุกอ่างมี PIN อยู่แล้ว");
   else alert("✅ สร้าง PIN ใหม่ " + n + " อ่างเก็บน้ำเรียบร้อย");
   loadReservoirPins();
+}
+
+async function loadFloodgatePins() {
+  const wrap = document.getElementById("floodgate-pin-content");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังโหลด PIN รายประตูระบายน้ำ...</div>';
+  const resp = await api({ action:"listfloodgatepins", adminpin:ADMIN_PIN });
+  if (!Array.isArray(resp) && resp && resp.ok === false) {
+    if (resp.code === "INVALID_PIN" || (resp.error||"").includes("ผู้ดูแล")) { adminLogout(); openAdmin(); return; }
+    wrap.innerHTML = '<div class="admin-empty">⚠️ โหลดไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const rows = Array.isArray(resp) ? resp : [];
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มีรายการประตูระบายน้ำ<br><button class="btn btn-pri" onclick="initFloodgatePinsAdmin()" style="background:#d97706;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกประตู</button></div>`;
+    return;
+  }
+  const hasNone = rows.some(r => !r.has_pin);
+  let topHtml = "";
+  if (hasNone) {
+    topHtml = `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:12px 16px;border-radius:11px;margin-bottom:14px;font-size:13px;">
+      ⚠️ มี ${rows.filter(r=>!r.has_pin).length} จุดยังไม่มี PIN · 
+      <button class="btn-mini gen" onclick="initFloodgatePinsAdmin()" style="margin-left:8px;">สร้าง PIN เริ่มต้นให้ทุกประตู</button>
+    </div>`;
+  }
+  wrap.innerHTML = topHtml + `
+    <div class="tbl-wrap">
+      <table class="atbl">
+        <thead><tr>
+          <th>รหัส</th><th>ประตูระบายน้ำ</th><th>ที่ตั้ง</th><th>PIN</th><th>ผู้รับผิดชอบ</th><th>ใช้ล่าสุด</th><th></th>
+        </tr></thead>
+        <tbody>
+        ${rows.map(r => `
+          <tr data-id="${escapeHtml(r.gate_id)}">
+            <td><span class="code" style="color:#d97706;">${escapeHtml(r.gate_id)}</span></td>
+            <td><strong>${escapeHtml(r.name||"-")}</strong></td>
+            <td>${escapeHtml(r.amphoe||"-")}<br><span class="small muted">${escapeHtml(r.tambon||"")} ${escapeHtml(r.village||"")}</span></td>
+            <td>
+              <input class="pin-edit" type="text" value="${escapeHtml(r.pin||"")}" placeholder="ใส่ PIN ใหม่" data-field="pin" />
+              <span class="pill-st ${r.has_pin?"has":"no"}" style="margin-left:6px;">${r.has_pin?"มี PIN":"ไม่มี"}</span>
+            </td>
+            <td><input class="txt-edit" type="text" value="${escapeHtml(r.recorder_name||"")}" placeholder="ชื่อ" data-field="recorder" /></td>
+            <td class="small muted">${escapeHtml(r.last_used||"-")}</td>
+            <td>
+              <button class="btn-mini gen" onclick="generatePin(this,'floodgate')">🎲</button>
+              <button class="btn-mini save" onclick="saveFloodgatePinRow(this,'${escapeHtml(r.gate_id)}')">บันทึก</button>
+            </td>
+          </tr>
+        `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function loadHydroPins() {
+  const wrap = document.getElementById("hydro-pin-content");
+  wrap.innerHTML = '<div class="loading"><span class="spin"></span>กำลังโหลด PIN รายสถานีอุทกวิทยา...</div>';
+  const resp = await api({ action:"listhydropins", adminpin:ADMIN_PIN });
+  if (!Array.isArray(resp) && resp && resp.ok === false) {
+    if (resp.code === "INVALID_PIN" || (resp.error||"").includes("ผู้ดูแล")) { adminLogout(); openAdmin(); return; }
+    wrap.innerHTML = '<div class="admin-empty">⚠️ โหลดไม่สำเร็จ<br><small>'+(resp.error||"")+'</small></div>';
+    return;
+  }
+  const rows = Array.isArray(resp) ? resp : [];
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="admin-empty">ยังไม่มีรายการสถานีอุทกวิทยา<br><button class="btn btn-pri" onclick="initHydroPinsAdmin()" style="background:#0891b2;margin-top:14px;">⚡ สร้าง PIN เริ่มต้นทุกสถานี</button></div>`;
+    return;
+  }
+  const hasNone = rows.some(r => !r.has_pin);
+  let topHtml = "";
+  if (hasNone) {
+    topHtml = `<div style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:12px 16px;border-radius:11px;margin-bottom:14px;font-size:13px;">
+      ⚠️ มี ${rows.filter(r=>!r.has_pin).length} สถานียังไม่มี PIN · 
+      <button class="btn-mini gen" onclick="initHydroPinsAdmin()" style="margin-left:8px;">สร้าง PIN เริ่มต้นให้ทุกสถานี</button>
+    </div>`;
+  }
+  wrap.innerHTML = topHtml + `
+    <div class="tbl-wrap">
+      <table class="atbl">
+        <thead><tr>
+          <th>รหัส</th><th>สถานีอุทกวิทยา</th><th>ที่ตั้ง</th><th>PIN</th><th>ผู้รับผิดชอบ</th><th>ใช้ล่าสุด</th><th></th>
+        </tr></thead>
+        <tbody>
+        ${rows.map(r => `
+          <tr data-id="${escapeHtml(r.station_code)}">
+            <td><span class="code" style="color:#0891b2;">${escapeHtml(r.station_code)}</span></td>
+            <td><strong>${escapeHtml(r.name||"-")}</strong></td>
+            <td>${escapeHtml(r.amphoe||"-")}<br><span class="small muted">${escapeHtml(r.tambon||"")} ${escapeHtml(r.village||"")}</span></td>
+            <td>
+              <input class="pin-edit" type="text" value="${escapeHtml(r.pin||"")}" placeholder="ใส่ PIN ใหม่" data-field="pin" />
+              <span class="pill-st ${r.has_pin?"has":"no"}" style="margin-left:6px;">${r.has_pin?"มี PIN":"ไม่มี"}</span>
+            </td>
+            <td><input class="txt-edit" type="text" value="${escapeHtml(r.recorder_name||"")}" placeholder="ชื่อ" data-field="recorder" /></td>
+            <td class="small muted">${escapeHtml(r.last_used||"-")}</td>
+            <td>
+              <button class="btn-mini gen" onclick="generatePin(this,'hydro')">🎲</button>
+              <button class="btn-mini save" onclick="saveHydroPinRow(this,'${escapeHtml(r.station_code)}')">บันทึก</button>
+            </td>
+          </tr>
+        `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function saveFloodgatePinRow(btn, gateId) {
+  const tr = btn.closest("tr");
+  const pin = tr.querySelector('input[data-field="pin"]').value.trim();
+  const rec = tr.querySelector('input[data-field="recorder"]').value.trim();
+  if (!pin || pin.length < 3) { alert("PIN ต้องมีอย่างน้อย 3 ตัวอักษร"); return; }
+  btn.disabled = true; btn.textContent = "...";
+  const resp = await api({ action:"setfloodgatepin", adminpin:ADMIN_PIN, gate_id:gateId, new_pin:pin, recorder_name:rec });
+  btn.disabled = false; btn.textContent = "บันทึก";
+  if (!resp.ok) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  btn.textContent = "✓ แล้ว";
+  btn.style.background = "#10b981"; btn.style.color = "#fff";
+  setTimeout(()=>{btn.textContent="บันทึก";btn.style.background="";btn.style.color="";},2000);
+  loadFloodgatePins();
+}
+
+async function saveHydroPinRow(btn, stationCode) {
+  const tr = btn.closest("tr");
+  const pin = tr.querySelector('input[data-field="pin"]').value.trim();
+  const rec = tr.querySelector('input[data-field="recorder"]').value.trim();
+  if (!pin || pin.length < 3) { alert("PIN ต้องมีอย่างน้อย 3 ตัวอักษร"); return; }
+  btn.disabled = true; btn.textContent = "...";
+  const resp = await api({ action:"sethydropin", adminpin:ADMIN_PIN, station_code:stationCode, new_pin:pin, recorder_name:rec });
+  btn.disabled = false; btn.textContent = "บันทึก";
+  if (!resp.ok) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  btn.textContent = "✓ แล้ว";
+  btn.style.background = "#10b981"; btn.style.color = "#fff";
+  setTimeout(()=>{btn.textContent="บันทึก";btn.style.background="";btn.style.color="";},2000);
+  loadHydroPins();
+}
+
+async function initFloodgatePinsAdmin() {
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกประตูระบายน้ำ?\n(เฉพาะจุดที่ยังไม่มี PIN — สุ่ม 4 หลัก)")) return;
+  const resp = await api({ action:"initfloodgatepins", adminpin:ADMIN_PIN });
+  if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  const n = (resp.added && resp.added.length) || 0;
+  if (n === 0) alert("ไม่ได้สร้าง PIN ใหม่ — ทุกประตูมี PIN อยู่แล้ว");
+  else alert("✅ สร้าง PIN ใหม่ " + n + " จุดเรียบร้อย");
+  loadFloodgatePins();
+}
+
+async function initHydroPinsAdmin() {
+  if (!confirm("สร้าง PIN เริ่มต้นให้ทุกสถานีอุทกวิทยา?\n(เฉพาะสถานีที่ยังไม่มี PIN — สุ่ม 4 หลัก)")) return;
+  const resp = await api({ action:"inithydropins", adminpin:ADMIN_PIN });
+  if (resp.ok === false) { alert("❌ " + (resp.error||"ไม่สำเร็จ")); return; }
+  const n = (resp.added && resp.added.length) || 0;
+  if (n === 0) alert("ไม่ได้สร้าง PIN ใหม่ — ทุกสถานีมี PIN อยู่แล้ว");
+  else alert("✅ สร้าง PIN ใหม่ " + n + " สถานีเรียบร้อย");
+  loadHydroPins();
 }
 
 /* ============================================================
