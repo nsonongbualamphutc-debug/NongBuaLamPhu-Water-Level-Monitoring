@@ -11,16 +11,71 @@ const SHEET_STATIONS    = "Stations";
 const SHEET_WATER       = "WaterLevel";
 const SHEET_RAIN        = "Rainfall";
 const SHEET_RESERVOIR   = "Reservoir";
+const SHEET_FLOODGATE   = "Floodgates";        // ปตร. (กรมชลประทาน)
+const SHEET_HYDRO       = "HydroStations";     // สถานีอุทกวิทยา
 const SHEET_SETTINGS    = "Settings";
 const SHEET_PINS        = "StationPins";      // PIN รายสถานี
 const SHEET_AMPHOE_PINS = "AmphoePins";       // PIN รายอำเภอ (สำหรับฝน)
 const SHEET_RESERVOIR_PINS = "ReservoirPins"; // PIN รายอ่างเก็บน้ำ
+const SHEET_HYDRO_PINS  = "HydroPins";         // PIN รายสถานีอุทกวิทยา
+
+// ===== Headers ของชีตใหม่ =====
+const HEADERS_FLOODGATE = [
+  "gate_id","name","village","tambon","amphoe","lat","lon",
+  "threshold_normal","threshold_warn","threshold_crit",
+  "date","time","water_level","gate_opening","flow_rate","recorder","remark"
+];
+const HEADERS_HYDRO = [
+  "station_code","name","village","tambon","amphoe","lat","lon",
+  "bank_height","channel_capacity_cms",
+  "threshold_normal","threshold_warn","threshold_crit",
+  "threshold_normal_height","threshold_warn_height","threshold_crit_height",
+  "date","time","water_level","water_height","flow_rate","recorder","remark"
+];
+
+// ===== Master ข้อมูล ปตร. — กรมชลประทาน 3 จุด =====
+const FLOODGATE_MASTER = [
+  { gate_id:"FG01", name:"ปตร.หนองหว้าใหญ่", village:"บ้านหนองหว้า",
+    tambon:"โพธิ์ชัย", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.179444, lon:102.386111,
+    threshold_normal:214,   threshold_warn:214.5, threshold_crit:214.5 },
+  { gate_id:"FG02", name:"ปตร.ปู่หลอด", village:"บ้านโนนคูณ",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.115278, lon:102.453611,
+    threshold_normal:203,   threshold_warn:203.5, threshold_crit:203.5 },
+  { gate_id:"FG03", name:"ปตร.หัวนา", village:"บ้านหัวนา",
+    tambon:"หัวนา", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.000556, lon:102.423889,
+    threshold_normal:190,   threshold_warn:191,   threshold_crit:191 }
+];
+
+// ===== Master ข้อมูลสถานีอุทกวิทยา 3 จุด =====
+const HYDRO_MASTER = [
+  { station_code:"E.64B", name:"สถานีอุทกวิทยา E.64B", village:"บ้านวังสามหาบ",
+    tambon:"เทพคีรี", amphoe:"นาวัง",
+    lat:17.309722, lon:102.107778,
+    bank_height:5.5, channel_capacity_cms:50,
+    threshold_normal:254.5, threshold_warn:255.5, threshold_crit:255.5,
+    threshold_normal_height:4.5, threshold_warn_height:5.5, threshold_crit_height:5.5 },
+  { station_code:"E.109", name:"สถานีอุทกวิทยา E.109", village:"บ้านวังหมื่น",
+    tambon:"หนองบัว", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.182778, lon:102.431944,
+    bank_height:4.5, channel_capacity_cms:115,
+    threshold_normal:208.5, threshold_warn:209.5, threshold_crit:209.5,
+    threshold_normal_height:3.5, threshold_warn_height:4.5, threshold_crit_height:4.5 },
+  { station_code:"E.68A", name:"สถานีอุทกวิทยา E.68A", village:"บ้านข้องโป้",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.081667, lon:102.450833,
+    bank_height:5.2, channel_capacity_cms:130,
+    threshold_normal:199.2, threshold_warn:199.9, threshold_crit:199.9,
+    threshold_normal_height:4.5, threshold_warn_height:5.2, threshold_crit_height:5.2 }
+];
 
 // ===== PIN =====
 const PIN_PROPERTY_KEY   = "APP_PIN";           // legacy global PIN (เผื่อ reservoir.html, daily report)
 const ADMIN_PIN_KEY      = "ADMIN_PIN";         // master PIN สำหรับ Admin
 const PIN_REQUIRED       = true;                // false = ปิด PIN ระหว่าง dev
-const WRITE_ACTIONS      = ["savewater","saverain","savereservoir","savedailyreport"];
+const WRITE_ACTIONS      = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
 const AMPHOES = ["เมืองหนองบัวลำภู","นากลาง","นาวัง","ศรีบุญเรือง","สุวรรณคูหา","โนนสัง"];
 
 const RESERVOIR_HEADERS = [
@@ -94,6 +149,14 @@ function doGet(e) {
             if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
             else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
           }
+        } else if (action === "savefloodgate" || action === "savehydro") {
+          /* ปตร. + สถานีอุทกวิทยา — ใช้ Admin PIN ที่มีอยู่แล้ว */
+          if (verifyAdminPin(pin)) pinOk = true;
+          else {
+            const expected = getAppPin();
+            if (expected && pin === expected) pinOk = true;
+            else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
+          }
         } else if (verifyAdminPin(pin)) {
           pinOk = true; // savedailyreport via admin
         } else {
@@ -115,6 +178,8 @@ function doGet(e) {
         case "saverain":       data = saveRainfall(payload);    break;
         case "savereservoir":  data = saveReservoir(payload);   break;
         case "savedailyreport":data = saveDailyReport(payload); break;
+        case "savefloodgate":  data = saveFloodgate(payload);   break;
+        case "savehydro":      data = saveHydro(payload);       break;
       }
 
       /* Flush cache เมื่อมีข้อมูลใหม่ */
@@ -359,6 +424,8 @@ function getCachedOrFresh_(action, params) {
     case "water":       data = getWaterLevels(params.station_id, parseInt(params.days||"7")); break;
     case "rain":        data = getRainfall(parseInt(params.days||"7")); break;
     case "reservoir":   data = getReservoirs(); break;
+    case "floodgate":   data = getFloodgates(); break;
+    case "hydro":       data = getHydroStations(); break;
     case "history":     data = getHistory(parseInt(params.limit||"20")); break;
     case "dailyreport": data = getDailyReport(params.date); break;
     case "ping":        return { ok: true, time: new Date().toISOString() };
@@ -388,7 +455,7 @@ function getSummaryWithCache_() {
 function invalidateSummaryCache_() {
   try {
     const cache = CacheService.getScriptCache();
-    const keys  = ["nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_history_20"];
+    const keys  = ["nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_reservoir","nbp_floodgate","nbp_hydro","nbp_history_20"];
     cache.removeAll(keys);
   } catch (e) { /* ignore */ }
 }
@@ -400,7 +467,7 @@ function invalidateSummaryCache_() {
 function clearCache() {
   try {
     CacheService.getScriptCache().removeAll([
-      "nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay",
+      "nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_reservoir","nbp_floodgate","nbp_hydro",
       "nbp_stations_all","nbp_stationlist","nbp_rain_1","nbp_rain_7",
       "nbp_reservoir","nbp_history_20","nbp_dailyreport_latest",
     ]);
@@ -786,6 +853,208 @@ function saveDailyReport(p) {
   }
   sheet.appendRow(headers.map(h=>h==="saved_at"?new Date():(p[h]||"")));
   return {ok:true,message:"บันทึกรายงานวันที่ "+dateStr};
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FLOODGATES (ปตร.) + HYDRO STATIONS (สถานีอุทกวิทยา)
+// ═══════════════════════════════════════════════════════════════
+
+/* ── ปตร. ── */
+function getFloodgates() {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const rows = sheetToObjects(sheet);
+  // หา latest record ของแต่ละ gate_id (ตาม date+time + row index)
+  const latest = {};
+  rows.forEach((r, idx) => {
+    const id = String(r.gate_id || "").trim();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  // merge กับ master — คืนครบทุกจุดเสมอ
+  return FLOODGATE_MASTER.map(function(meta){
+    const rec = latest[meta.gate_id];
+    const r = Object.assign({}, meta);
+    if (rec) {
+      r.water_level = rec.water_level;
+      r.gate_opening = rec.gate_opening;
+      r.flow_rate = rec.flow_rate;
+      r.date = rec.date;
+      r.time = rec.time;
+      r.recorder = rec.recorder;
+      r.remark = rec.remark;
+    } else {
+      r.water_level = null;
+      r._no_data = true;
+    }
+    // คำนวณสถานะตามเกณฑ์
+    r.status = computeFloodgateStatus_(r);
+    return r;
+  });
+}
+
+function computeFloodgateStatus_(r) {
+  const lv = parseFloat(r.water_level);
+  if (isNaN(lv)) return "ไม่มีข้อมูล";
+  if (lv > parseFloat(r.threshold_warn)) return "วิกฤติ";    // ธงแดง
+  if (lv >= parseFloat(r.threshold_normal)) return "เฝ้าระวัง"; // ธงเหลือง
+  return "ปกติ";                                              // ธงเขียว
+}
+
+function saveFloodgate(p) {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx = headers.indexOf("gate_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // เติมข้อมูล meta จาก master ถ้า payload ไม่มี
+  const meta = FLOODGATE_MASTER.find(function(g){ return g.gate_id === p.gate_id; });
+  if (meta) {
+    Object.keys(meta).forEach(function(k){ if (!p[k]) p[k] = meta[k]; });
+  }
+
+  // upsert: ถ้ามี gate_id + date เดิม → ทับ
+  if (idIdx >= 0 && dateIdx >= 0 && p.gate_id && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId = String(data[i][idIdx]).trim() === String(p.gate_id).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        headers.forEach(function(h, col) {
+          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
+            sheet.getRange(i+1, col+1).setValue(p[h]);
+          }
+        });
+        invalidateSummaryCache_();
+        return { ok: true, updated: true, message: "อัปเดต ปตร. " + p.gate_id + " วันที่ " + dateStr + " เรียบร้อย (ทับค่าเดิม)" };
+      }
+    }
+  }
+
+  // ไม่มี → เพิ่มแถวใหม่
+  const row = headers.map(function(h){ return (p[h] === undefined || p[h] === null) ? "" : p[h]; });
+  sheet.appendRow(row);
+  invalidateSummaryCache_();
+  return { ok: true, updated: false, message: "บันทึก ปตร. " + p.gate_id + " เรียบร้อย" };
+}
+
+/* ── สถานีอุทกวิทยา ── */
+function getHydroStations() {
+  const sheet = ensureSheet_(SHEET_HYDRO, HEADERS_HYDRO);
+  ensureMasterData_(sheet, HEADERS_HYDRO, HYDRO_MASTER, "station_code");
+  const rows = sheetToObjects(sheet);
+  const latest = {};
+  rows.forEach(function(r, idx){
+    const id = String(r.station_code || "").trim();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  return HYDRO_MASTER.map(function(meta){
+    const rec = latest[meta.station_code];
+    const r = Object.assign({}, meta);
+    if (rec) {
+      r.water_level = rec.water_level;
+      r.water_height = rec.water_height;
+      r.flow_rate = rec.flow_rate;
+      r.date = rec.date; r.time = rec.time;
+      r.recorder = rec.recorder; r.remark = rec.remark;
+    } else {
+      r.water_level = null; r.water_height = null;
+      r._no_data = true;
+    }
+    r.status = computeHydroStatus_(r);
+    return r;
+  });
+}
+
+function computeHydroStatus_(r) {
+  // ใช้ทั้ง ระดับน้ำ (รทก.) และ ความสูง — ใช้ตัวที่วิกฤติกว่า
+  const lv = parseFloat(r.water_level);
+  const ht = parseFloat(r.water_height);
+  let s1 = null, s2 = null;
+  if (!isNaN(lv)) {
+    if (lv > parseFloat(r.threshold_warn)) s1 = "วิกฤติ";
+    else if (lv >= parseFloat(r.threshold_normal)) s1 = "เฝ้าระวัง";
+    else s1 = "ปกติ";
+  }
+  if (!isNaN(ht)) {
+    if (ht > parseFloat(r.threshold_warn_height)) s2 = "วิกฤติ";
+    else if (ht >= parseFloat(r.threshold_normal_height)) s2 = "เฝ้าระวัง";
+    else s2 = "ปกติ";
+  }
+  if (!s1 && !s2) return "ไม่มีข้อมูล";
+  const rank = { "ปกติ":1, "เฝ้าระวัง":2, "วิกฤติ":3 };
+  if (s1 && !s2) return s1;
+  if (s2 && !s1) return s2;
+  return (rank[s1] >= rank[s2]) ? s1 : s2;
+}
+
+function saveHydro(p) {
+  const sheet = ensureSheet_(SHEET_HYDRO, HEADERS_HYDRO);
+  ensureMasterData_(sheet, HEADERS_HYDRO, HYDRO_MASTER, "station_code");
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx = headers.indexOf("station_code");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // เติม meta
+  const meta = HYDRO_MASTER.find(function(h){ return h.station_code === p.station_code; });
+  if (meta) Object.keys(meta).forEach(function(k){ if (!p[k]) p[k] = meta[k]; });
+
+  if (idIdx >= 0 && dateIdx >= 0 && p.station_code && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId = String(data[i][idIdx]).trim() === String(p.station_code).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        headers.forEach(function(h, col){
+          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
+            sheet.getRange(i+1, col+1).setValue(p[h]);
+          }
+        });
+        invalidateSummaryCache_();
+        return { ok: true, updated: true, message: "อัปเดตสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย (ทับค่าเดิม)" };
+      }
+    }
+  }
+  const row = headers.map(function(h){ return (p[h] === undefined || p[h] === null) ? "" : p[h]; });
+  sheet.appendRow(row);
+  invalidateSummaryCache_();
+  return { ok: true, updated: false, message: "บันทึกสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย" };
+}
+
+/* ── helper: parse date+time string เป็น timestamp ── */
+function parseDateTime_(dateStr, timeStr) {
+  const d = parseDate(dateStr);
+  if (!d) return 0;
+  let val = d.getTime();
+  const t = String(timeStr || "").trim();
+  if (t) {
+    let hh = 0, mm = 0;
+    const m24 = t.match(/^(\d{1,2}):(\d{2})/);
+    if (m24) { hh = +m24[1]; mm = +m24[2]; }
+    if (/pm/i.test(t) && hh < 12) hh += 12;
+    if (/am/i.test(t) && hh === 12) hh = 0;
+    val += (hh * 60 + mm) * 60000;
+  }
+  return val;
+}
+
+/* ── helper: เติม master data ถ้าชีตยังว่าง ── */
+function ensureMasterData_(sheet, headers, master, idField) {
+  if (sheet.getLastRow() > 1) return; // มีข้อมูลแล้ว
+  master.forEach(function(meta){
+    const row = headers.map(function(h){ return meta[h] !== undefined ? meta[h] : ""; });
+    sheet.appendRow(row);
+  });
 }
 
 // ===== PIN MANAGEMENT =====

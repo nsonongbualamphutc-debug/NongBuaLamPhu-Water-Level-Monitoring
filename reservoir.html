@@ -571,7 +571,217 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
   .gauge-card:active{transform:scale(.97)}
   .res-item:active{background:#e0f2fe}
   nav a,.mf-btn,.bm-opt{min-height:40px;display:flex;align-items:center}
+}/* ══════════════════════════════════════════════════
+ *  FLOODGATE + HYDRO DASHBOARD — แดชบอร์ดเกณฑ์ธงเตือน
+ * ══════════════════════════════════════════════════ */
+.hydro-section{margin-top:28px;}
+
+/* Banner */
+.hydro-banner{
+  background:linear-gradient(135deg,#dc2626,#ea580c);
+  color:#fff;border-radius:14px;padding:18px 22px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  margin-bottom:18px;box-shadow:0 8px 24px rgba(220,38,38,.2);
+  position:relative;overflow:hidden;
 }
+.hydro-banner::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#fef08a,transparent);
+  animation:hbShimmer 3s linear infinite;
+}
+@keyframes hbShimmer{to{transform:translateX(100%)}}
+.hb-icon{font-size:34px;flex-shrink:0;}
+.hb-text{flex:1;min-width:0;}
+.hb-title{font-size:17px;font-weight:800;font-family:'Kanit',sans-serif;letter-spacing:.3px;}
+.hb-sub{font-size:12px;opacity:.9;margin-top:3px;}
+.hb-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;font-weight:600;}
+.hb-leg-item{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);padding:5px 11px;border-radius:8px;}
+.hb-flag{font-size:11px;}
+
+/* Panel */
+.hydro-panel{
+  background:#fff;border:1px solid var(--line);border-radius:14px;
+  margin-bottom:16px;box-shadow:var(--shadow);overflow:hidden;
+}
+.hp-head{
+  padding:14px 20px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#f8fafc,#fff);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.hp-head-l{display:flex;align-items:center;gap:13px;}
+.hp-ico{
+  font-size:22px;
+  width:42px;height:42px;border-radius:11px;
+  background:linear-gradient(135deg,#dbeafe,#bfdbfe);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.hp-head h2{
+  font-size:15px;font-weight:700;color:var(--brand);
+  font-family:'Kanit',sans-serif;line-height:1.2;
+}
+.hp-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.hp-count{
+  background:var(--brand-soft);color:var(--brand);
+  padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;
+}
+.hp-body{padding:18px 20px;}
+.hp-loading{
+  text-align:center;padding:30px;color:var(--muted);
+  grid-column:1/-1;
+}
+
+/* ── ปตร. Cards ── */
+.fg-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;
+}
+.fg-card{
+  background:#fff;border:1.5px solid var(--line);border-radius:14px;
+  padding:16px 17px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.fg-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.08);}
+.fg-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+}
+.fg-card.ok::before{background:#10b981;}
+.fg-card.warn::before{background:#f59e0b;}
+.fg-card.crit::before{background:#ef4444;animation:critPulse 2s infinite;}
+.fg-card.empty::before{background:#94a3b8;}
+@keyframes critPulse{50%{box-shadow:0 0 16px #ef4444;}}
+.fg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.fg-id{
+  background:var(--brand);color:#fff;padding:3px 9px;border-radius:6px;
+  font-size:10.5px;font-weight:700;font-family:'Inter',monospace;letter-spacing:.5px;
+}
+.fg-flag{
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.fg-flag.ok{background:#d1fae5;color:#065f46;}
+.fg-flag.warn{background:#fef3c7;color:#92400e;}
+.fg-flag.crit{background:#fee2e2;color:#991b1b;}
+.fg-flag.empty{background:#f1f5f9;color:#475569;}
+.fg-name{font-size:15px;font-weight:700;color:var(--ink);font-family:'Kanit',sans-serif;line-height:1.3;}
+.fg-loc{font-size:11px;color:var(--muted);margin-top:3px;}
+.fg-level-box{
+  background:linear-gradient(135deg,#f0f9ff,#e0f2fe);
+  border-radius:10px;padding:11px 13px;margin-top:11px;
+  display:flex;align-items:baseline;gap:8px;
+}
+.fg-level{
+  font-family:'Inter',monospace;font-size:26px;font-weight:800;line-height:1;
+}
+.fg-card.ok .fg-level{color:#059669;}
+.fg-card.warn .fg-level{color:#d97706;}
+.fg-card.crit .fg-level{color:#dc2626;}
+.fg-card.empty .fg-level{color:#64748b;font-size:20px;}
+.fg-unit{font-size:11px;color:var(--muted);font-weight:600;}
+.fg-thresh{
+  margin-top:10px;font-size:10.5px;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.fg-thresh span{font-family:'Inter',monospace;font-weight:600;}
+.fg-thresh b.t-norm{color:#059669;}
+.fg-thresh b.t-warn{color:#d97706;}
+.fg-thresh b.t-crit{color:#dc2626;}
+.fg-meta{font-size:10px;color:var(--muted);margin-top:8px;}
+.fg-extra{display:flex;gap:10px;margin-top:8px;font-size:11px;}
+.fg-extra > div{flex:1;text-align:center;background:#f8fafc;border-radius:7px;padding:5px;}
+.fg-extra-label{color:var(--muted);font-size:9.5px;}
+.fg-extra-val{font-weight:700;color:var(--ink);font-family:'Inter',monospace;font-size:13px;}
+
+/* ── สถานีอุทกวิทยา Cards (มี dual reading: ระดับ + ความสูง) ── */
+.hy-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;
+}
+.hy-card{
+  background:#fff;border:1.5px solid var(--line);border-radius:14px;
+  padding:18px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.hy-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.08);}
+.hy-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+}
+.hy-card.ok::before{background:#10b981;}
+.hy-card.warn::before{background:#f59e0b;}
+.hy-card.crit::before{background:#ef4444;animation:critPulse 2s infinite;}
+.hy-card.empty::before{background:#94a3b8;}
+.hy-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;}
+.hy-code{
+  background:linear-gradient(135deg,#0c4a6e,#0891b2);color:#fff;
+  padding:4px 11px;border-radius:7px;
+  font-family:'Inter',monospace;font-weight:800;font-size:12px;letter-spacing:.8px;
+}
+.hy-name{font-size:14.5px;font-weight:700;color:var(--ink);font-family:'Kanit',sans-serif;margin-top:8px;}
+.hy-loc{font-size:11px;color:var(--muted);margin-top:2px;}
+.hy-info{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;
+  background:#f8fafc;border-radius:9px;padding:9px;
+}
+.hy-info-item{text-align:center;}
+.hy-info-label{font-size:9.5px;color:var(--muted);}
+.hy-info-val{font-weight:700;font-family:'Inter',monospace;font-size:13px;color:var(--ink);margin-top:1px;}
+.hy-readings{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px;
+}
+.hy-reading{
+  background:linear-gradient(135deg,#eff6ff,#dbeafe);
+  border-radius:10px;padding:11px 13px;text-align:center;
+}
+.hy-rd-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.hy-rd-val{
+  font-family:'Inter',monospace;font-size:22px;font-weight:800;line-height:1.1;margin-top:4px;
+}
+.hy-rd-unit{font-size:10px;color:var(--muted);}
+.hy-card.ok .hy-rd-val{color:#059669;}
+.hy-card.warn .hy-rd-val{color:#d97706;}
+.hy-card.crit .hy-rd-val{color:#dc2626;}
+.hy-card.empty .hy-rd-val{color:#94a3b8;font-size:18px;}
+
+/* ── Hydro Table ── */
+.hydro-table{width:100%;border-collapse:collapse;font-size:12px;}
+.hydro-table th{
+  background:linear-gradient(180deg,#f1f5f9,#e2e8f0);
+  padding:11px 12px;text-align:left;font-weight:700;
+  color:var(--brand);border-bottom:2px solid var(--line);
+  font-family:'Kanit',sans-serif;font-size:11.5px;white-space:nowrap;
+}
+.hydro-table th small{font-weight:400;color:var(--muted);font-size:9.5px;}
+.hydro-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.hydro-table .tac{text-align:center;}
+.hydro-table tr:hover{background:#f8fafc;}
+.hydro-table .ht-type-fg{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;}
+.hydro-table .ht-type-hy{background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;}
+.hydro-table .ht-thresh{font-family:'Inter',monospace;font-weight:700;font-size:11.5px;}
+.hydro-table .ht-thresh.norm{color:#059669;}
+.hydro-table .ht-thresh.warn{color:#d97706;}
+.hydro-table .ht-thresh.crit{color:#dc2626;}
+.hydro-table .ht-status{
+  padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.hydro-table .ht-status.ok{background:#d1fae5;color:#065f46;}
+.hydro-table .ht-status.warn{background:#fef3c7;color:#92400e;}
+.hydro-table .ht-status.crit{background:#fee2e2;color:#991b1b;}
+.hydro-table .ht-status.empty{background:#f1f5f9;color:#64748b;}
+.hydro-table .ht-coord{font-family:'Inter',monospace;font-size:10.5px;color:var(--muted);white-space:nowrap;}
+
+/* Mobile */
+@media(max-width:768px){
+  .hydro-banner{padding:14px 16px;gap:12px;}
+  .hb-title{font-size:15px;}
+  .hb-sub{font-size:11px;}
+  .hb-icon{font-size:28px;}
+  .hp-head{padding:12px 16px;}
+  .hp-body{padding:14px;}
+  .hp-head h2{font-size:14px;}
+  .fg-grid,.hy-grid{grid-template-columns:1fr;gap:11px;}
+  .fg-level,.hy-rd-val{font-size:22px;}
+  .hydro-table{font-size:11px;}
+  .hydro-table th,.hydro-table td{padding:8px 9px;}
+}
+
 </style>
 </head>
 <body>
@@ -829,6 +1039,100 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
       </table>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════
+       FLOODGATES (ปตร.) + HYDRO STATIONS (สถานีอุทกวิทยา)
+       ลำน้ำพะเนียง — ข้อมูลทางการจาก กรมชลประทาน + กรมอุทกวิทยา
+       ═══════════════════════════════════════════════ -->
+  <div class="hydro-section">
+    <!-- Header section -->
+    <div class="hydro-banner">
+      <div class="hb-icon">🚨</div>
+      <div class="hb-text">
+        <div class="hb-title">เกณฑ์ธงเตือนอุทกภัย — ลำน้ำพะเนียง</div>
+        <div class="hb-sub">ประตูระบายน้ำ (กรมชลประทาน) · สถานีอุทกวิทยา (กรมอุทกวิทยา) · รวม 6 จุด</div>
+      </div>
+      <div class="hb-legend">
+        <div class="hb-leg-item"><span class="hb-flag green">🟢</span>ปกติ</div>
+        <div class="hb-leg-item"><span class="hb-flag yellow">🟡</span>เฝ้าระวัง</div>
+        <div class="hb-leg-item"><span class="hb-flag red">🔴</span>วิกฤติ</div>
+      </div>
+    </div>
+
+    <!-- ───── ปตร. ───── -->
+    <div class="hydro-panel">
+      <div class="hp-head">
+        <div class="hp-head-l">
+          <span class="hp-ico">🚪</span>
+          <div>
+            <h2>ประตูระบายน้ำ (ปตร.)</h2>
+            <div class="hp-sub">กรมชลประทาน · ระดับน้ำตามเกณฑ์ธงเตือน</div>
+          </div>
+        </div>
+        <span class="hp-count" id="fgCount">— จุด</span>
+      </div>
+      <div class="hp-body">
+        <div class="fg-grid" id="fgGrid">
+          <div class="hp-loading">กำลังโหลดข้อมูล...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── สถานีอุทกวิทยา ───── -->
+    <div class="hydro-panel">
+      <div class="hp-head">
+        <div class="hp-head-l">
+          <span class="hp-ico">🔬</span>
+          <div>
+            <h2>สถานีอุทกวิทยา</h2>
+            <div class="hp-sub">กรมอุทกวิทยา · ระดับน้ำ + ความสูง + อัตราการไหล</div>
+          </div>
+        </div>
+        <span class="hp-count" id="hyCount">— จุด</span>
+      </div>
+      <div class="hp-body">
+        <div class="hy-grid" id="hyGrid">
+          <div class="hp-loading">กำลังโหลดข้อมูล...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── ตารางสรุปทั้งหมด ───── -->
+    <div class="hydro-panel">
+      <div class="hp-head">
+        <div class="hp-head-l">
+          <span class="hp-ico">📋</span>
+          <div>
+            <h2>ตารางสรุปเกณฑ์ธงเตือนทั้งหมด</h2>
+            <div class="hp-sub">เกณฑ์การแจ้งเตือนของทั้ง 6 จุดวัด</div>
+          </div>
+        </div>
+      </div>
+      <div class="hp-body" style="padding:0;overflow-x:auto;">
+        <table class="hydro-table">
+          <thead>
+            <tr>
+              <th>รหัส</th>
+              <th>ประเภท</th>
+              <th>ชื่อจุดวัด</th>
+              <th>ที่ตั้ง</th>
+              <th>พิกัด</th>
+              <th class="tac">ตลิ่ง (ม.)</th>
+              <th class="tac">ความจุ (ลบ.ม./วิ)</th>
+              <th>เกณฑ์ปกติ<br><small>ธงเขียว</small></th>
+              <th>เกณฑ์เฝ้าระวัง<br><small>ธงเหลือง</small></th>
+              <th>เกณฑ์วิกฤติ<br><small>ธงแดง</small></th>
+              <th>สถานะปัจจุบัน</th>
+            </tr>
+          </thead>
+          <tbody id="hydroTable">
+            <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--muted);">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <footer class="app-footer">
@@ -1600,7 +1904,7 @@ function renderCharts() {
 async function loadData() {
   if (API_URL) {
     try {
-      const res  = await fetch(API_URL + '?action=reservoir');
+      const res  = await fetch(API_URL + '?action=reservoir&_t=' + Date.now(), { cache: "no-store" });
       const data = await res.json();
       if (Array.isArray(data)) {
         data.forEach(item => {
@@ -1612,6 +1916,233 @@ async function loadData() {
     } catch(e) { console.warn('API unavailable, using demo data'); }
   }
   renderAll();
+  // โหลด ปตร. + อุทกวิทยา แยก (ไม่บล็อก reservoir)
+  loadFloodgateAndHydro();
+}
+
+/* ════════════════════════════════════════════════
+ *  FLOODGATES + HYDRO STATIONS
+ * ════════════════════════════════════════════════ */
+let _floodgates = [];
+let _hydros     = [];
+
+async function loadFloodgateAndHydro(){
+  if (!API_URL) return;
+  try {
+    const [fgRes, hyRes] = await Promise.all([
+      fetch(API_URL + '?action=floodgate&_t=' + Date.now(), { cache: "no-store" }),
+      fetch(API_URL + '?action=hydro&_t=' + Date.now(),     { cache: "no-store" })
+    ]);
+    _floodgates = await fgRes.json();
+    _hydros     = await hyRes.json();
+    if (!Array.isArray(_floodgates)) _floodgates = [];
+    if (!Array.isArray(_hydros))     _hydros     = [];
+  } catch(e) {
+    console.warn('Floodgate/Hydro API unavailable:', e);
+    _floodgates = []; _hydros = [];
+  }
+  renderFloodgates();
+  renderHydros();
+  renderHydroTable();
+  addFloodgateHydroMarkersToMap();
+}
+
+function statusClass(s){
+  if (s === "วิกฤติ")    return "crit";
+  if (s === "เฝ้าระวัง") return "warn";
+  if (s === "ปกติ")     return "ok";
+  return "empty";
+}
+function statusEmoji(s){
+  if (s === "วิกฤติ")    return "🔴";
+  if (s === "เฝ้าระวัง") return "🟡";
+  if (s === "ปกติ")     return "🟢";
+  return "⚪";
+}
+
+/* ── ปตร. cards ── */
+function renderFloodgates(){
+  const grid = document.getElementById('fgGrid');
+  if (!grid) return;
+  document.getElementById('fgCount').textContent = _floodgates.length + ' จุด';
+  if (!_floodgates.length){
+    grid.innerHTML = '<div class="hp-loading">ไม่มีข้อมูล</div>';
+    return;
+  }
+  grid.innerHTML = _floodgates.map(g => {
+    const cls = statusClass(g.status);
+    const lv  = (g.water_level != null && !isNaN(parseFloat(g.water_level)))
+      ? parseFloat(g.water_level).toFixed(2)
+      : '—';
+    const opening = g.gate_opening != null && g.gate_opening !== ''
+      ? parseFloat(g.gate_opening).toFixed(2) : '—';
+    const flow = g.flow_rate != null && g.flow_rate !== ''
+      ? parseFloat(g.flow_rate).toFixed(1) : '—';
+    return `<div class="fg-card ${cls}">
+      <div class="fg-top">
+        <span class="fg-id">${g.gate_id}</span>
+        <span class="fg-flag ${cls}">${statusEmoji(g.status)} ${g.status || 'ไม่มีข้อมูล'}</span>
+      </div>
+      <div class="fg-name">${g.name}</div>
+      <div class="fg-loc">บ้าน${g.village} · ต.${g.tambon} · อ.${g.amphoe}</div>
+      <div class="fg-level-box">
+        <span class="fg-level">${lv}</span>
+        <span class="fg-unit">ม.รทก.</span>
+      </div>
+      <div class="fg-thresh">
+        <span>ปกติ <b class="t-norm">&lt; ${g.threshold_normal}</b></span>
+        <span>เฝ้าระวัง <b class="t-warn">${g.threshold_normal}–${g.threshold_warn}</b></span>
+        <span>วิกฤติ <b class="t-crit">&gt; ${g.threshold_warn}</b></span>
+      </div>
+      <div class="fg-extra">
+        <div><div class="fg-extra-label">บานประตูเปิด</div><div class="fg-extra-val">${opening} ม.</div></div>
+        <div><div class="fg-extra-label">อัตราไหล</div><div class="fg-extra-val">${flow}</div></div>
+      </div>
+      ${g.date ? `<div class="fg-meta">⏱ อัปเดต: ${g.date} ${g.time||''}</div>` : '<div class="fg-meta">⏱ ยังไม่มีข้อมูลที่บันทึก</div>'}
+    </div>`;
+  }).join('');
+}
+
+/* ── สถานีอุทกวิทยา cards ── */
+function renderHydros(){
+  const grid = document.getElementById('hyGrid');
+  if (!grid) return;
+  document.getElementById('hyCount').textContent = _hydros.length + ' สถานี';
+  if (!_hydros.length){
+    grid.innerHTML = '<div class="hp-loading">ไม่มีข้อมูล</div>';
+    return;
+  }
+  grid.innerHTML = _hydros.map(h => {
+    const cls = statusClass(h.status);
+    const lv = (h.water_level != null && !isNaN(parseFloat(h.water_level)))
+      ? parseFloat(h.water_level).toFixed(2) : '—';
+    const ht = (h.water_height != null && !isNaN(parseFloat(h.water_height)))
+      ? parseFloat(h.water_height).toFixed(2) : '—';
+    return `<div class="hy-card ${cls}">
+      <div class="hy-top">
+        <span class="hy-code">${h.station_code}</span>
+        <span class="fg-flag ${cls}">${statusEmoji(h.status)} ${h.status || 'ไม่มีข้อมูล'}</span>
+      </div>
+      <div class="hy-name">${h.name}</div>
+      <div class="hy-loc">บ้าน${h.village} · ต.${h.tambon} · อ.${h.amphoe}</div>
+      <div class="hy-info">
+        <div class="hy-info-item">
+          <div class="hy-info-label">ตลิ่ง</div>
+          <div class="hy-info-val">${h.bank_height} ม.</div>
+        </div>
+        <div class="hy-info-item">
+          <div class="hy-info-label">ความจุลำน้ำ</div>
+          <div class="hy-info-val">${h.channel_capacity_cms} ลบ.ม./วิ</div>
+        </div>
+      </div>
+      <div class="hy-readings">
+        <div class="hy-reading">
+          <div class="hy-rd-label">ระดับน้ำ</div>
+          <div class="hy-rd-val">${lv}</div>
+          <div class="hy-rd-unit">ม.รทก.</div>
+        </div>
+        <div class="hy-reading">
+          <div class="hy-rd-label">ความสูง</div>
+          <div class="hy-rd-val">${ht}</div>
+          <div class="hy-rd-unit">เมตร</div>
+        </div>
+      </div>
+      <div class="fg-thresh" style="margin-top:11px;">
+        <span>ระดับ: ปกติ <b class="t-norm">&lt;${h.threshold_normal}</b> · วิกฤติ <b class="t-crit">&gt;${h.threshold_warn}</b></span>
+      </div>
+      ${h.date ? `<div class="fg-meta">⏱ อัปเดต: ${h.date} ${h.time||''}</div>` : '<div class="fg-meta">⏱ ยังไม่มีข้อมูล</div>'}
+    </div>`;
+  }).join('');
+}
+
+/* ── ตารางสรุป ── */
+function renderHydroTable(){
+  const tbody = document.getElementById('hydroTable');
+  if (!tbody) return;
+  const all = [
+    ..._floodgates.map(g => ({...g, _type:'fg', _id:g.gate_id, _code:g.gate_id})),
+    ..._hydros.map(h => ({...h, _type:'hy', _id:h.station_code, _code:h.station_code}))
+  ];
+  if (!all.length){ tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--muted);">ไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = all.map(r => {
+    const cls = statusClass(r.status);
+    const typeBadge = r._type === 'fg'
+      ? '<span class="ht-type-fg">🚪 ปตร.</span>'
+      : '<span class="ht-type-hy">🔬 อุทกวิทยา</span>';
+    return `<tr>
+      <td><strong style="font-family:'Inter',monospace;">${r._code}</strong></td>
+      <td>${typeBadge}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>บ้าน${r.village}<br><small style="color:var(--muted);">ต.${r.tambon} อ.${r.amphoe}</small></td>
+      <td class="ht-coord">${r.lat.toFixed(4)}<br>${r.lon.toFixed(4)}</td>
+      <td class="tac">${r.bank_height ? r.bank_height : '—'}</td>
+      <td class="tac">${r.channel_capacity_cms ? r.channel_capacity_cms : '—'}</td>
+      <td class="ht-thresh norm">&lt; ${r.threshold_normal}</td>
+      <td class="ht-thresh warn">${r.threshold_normal} – ${r.threshold_warn}</td>
+      <td class="ht-thresh crit">&gt; ${r.threshold_warn}</td>
+      <td><span class="ht-status ${cls}">${statusEmoji(r.status)} ${r.status||'—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Map markers สำหรับ ปตร. + อุทกวิทยา ── */
+let _fghyMarkers = [];
+function addFloodgateHydroMarkersToMap(){
+  if (typeof map === 'undefined' || !map) return;
+  // ลบ markers เดิม
+  _fghyMarkers.forEach(m => map.removeLayer(m));
+  _fghyMarkers = [];
+  // ปตร. — ใช้ icon รูป gate (สี่เหลี่ยม)
+  _floodgates.forEach(g => {
+    if (!g.lat || !g.lon) return;
+    const cls = statusClass(g.status);
+    const color = cls === 'crit' ? '#dc2626' : cls === 'warn' ? '#f59e0b' : cls === 'ok' ? '#10b981' : '#94a3b8';
+    const icon = L.divIcon({
+      className: 'fg-marker',
+      html: `<div style="width:32px;height:32px;background:${color};border:3px solid #fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.4);transform:rotate(45deg);">
+              <span style="transform:rotate(-45deg);">🚪</span>
+            </div>`,
+      iconSize: [38, 38], iconAnchor: [19, 19]
+    });
+    const m = L.marker([g.lat, g.lon], { icon: icon }).addTo(map);
+    m.bindPopup(`
+      <div style="font-family:'Sarabun',sans-serif;min-width:200px;">
+        <div style="background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:5px;display:inline-block;font-size:11px;font-weight:700;margin-bottom:7px;">🚪 ปตร. ${g.gate_id}</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;">${g.name}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:3px;">บ้าน${g.village} ต.${g.tambon} อ.${g.amphoe}</div>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0;">
+        <div style="font-size:12px;"><strong>ระดับน้ำ:</strong> ${g.water_level != null ? parseFloat(g.water_level).toFixed(2) + ' ม.รทก.' : 'ไม่มีข้อมูล'}</div>
+        <div style="font-size:12px;margin-top:3px;"><strong>สถานะ:</strong> <span style="color:${color};font-weight:700;">${statusEmoji(g.status)} ${g.status||'—'}</span></div>
+        <div style="font-size:10.5px;color:#64748b;margin-top:6px;">เกณฑ์: ปกติ&lt;${g.threshold_normal} · วิกฤติ&gt;${g.threshold_warn}</div>
+      </div>
+    `);
+    _fghyMarkers.push(m);
+  });
+  // อุทกวิทยา — ใช้ icon รูปวงกลม
+  _hydros.forEach(h => {
+    if (!h.lat || !h.lon) return;
+    const cls = statusClass(h.status);
+    const color = cls === 'crit' ? '#dc2626' : cls === 'warn' ? '#f59e0b' : cls === 'ok' ? '#10b981' : '#94a3b8';
+    const icon = L.divIcon({
+      className: 'hy-marker',
+      html: `<div style="width:34px;height:34px;background:#fff;border:4px solid ${color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 3px 10px rgba(0,0,0,.4);">🔬</div>`,
+      iconSize: [38, 38], iconAnchor: [19, 19]
+    });
+    const m = L.marker([h.lat, h.lon], { icon: icon }).addTo(map);
+    m.bindPopup(`
+      <div style="font-family:'Sarabun',sans-serif;min-width:220px;">
+        <div style="background:#dbeafe;color:#1e40af;padding:3px 9px;border-radius:5px;display:inline-block;font-size:11px;font-weight:700;margin-bottom:7px;">🔬 อุทกวิทยา ${h.station_code}</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;">${h.name}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:3px;">บ้าน${h.village} ต.${h.tambon} อ.${h.amphoe}</div>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0;">
+        <div style="font-size:12px;"><strong>ระดับน้ำ:</strong> ${h.water_level != null ? parseFloat(h.water_level).toFixed(2) + ' ม.รทก.' : '—'}</div>
+        <div style="font-size:12px;"><strong>ความสูง:</strong> ${h.water_height != null ? parseFloat(h.water_height).toFixed(2) + ' ม.' : '—'}</div>
+        <div style="font-size:12px;margin-top:3px;"><strong>สถานะ:</strong> <span style="color:${color};font-weight:700;">${statusEmoji(h.status)} ${h.status||'—'}</span></div>
+        <div style="font-size:10.5px;color:#64748b;margin-top:6px;">ตลิ่ง ${h.bank_height}ม. · ความจุ ${h.channel_capacity_cms} ลบ.ม./วิ</div>
+      </div>
+    `);
+    _fghyMarkers.push(m);
+  });
 }
 
 function renderAll() {

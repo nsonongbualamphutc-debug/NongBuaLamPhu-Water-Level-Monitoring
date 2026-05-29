@@ -546,6 +546,130 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
           <div class="toast" id="rs-toast"></div>
         </div>
       </div>
+
+      <!-- ════════ FLOODGATE FORM ════════ -->
+      <div class="rec-card" id="floodgate-form" style="display:none;">
+        <div class="amphoe-banner" style="background:linear-gradient(135deg,#92400e 0%,#f59e0b 100%);">
+          <span class="ico">🚪</span>
+          <div class="l">
+            <div class="code" id="fg-code" style="font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;opacity:.8;letter-spacing:.5px;">—</div>
+            <h3 id="fg-name">—</h3>
+            <div class="sub" id="fg-meta">บันทึกข้อมูลประตูระบายน้ำ (กรมชลประทาน)</div>
+          </div>
+          <button class="logout" onclick="logout()">ออกระบบ</button>
+        </div>
+        <div class="rec-body">
+          <div class="last-card" id="fg-last" style="display:none;background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border-color:#fcd34d;">
+            <span class="ico">📊</span>
+            <div style="flex:1;">
+              <div class="lbl" style="color:#92400e;">บันทึกล่าสุด</div>
+              <div class="val" id="fg-last-val">—</div>
+              <div class="meta" id="fg-last-meta">—</div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg full">
+              <label>วันที่ <span class="req">*</span></label>
+              <input type="date" id="fg-date" />
+            </div>
+            <div class="fg full">
+              <label>ระดับน้ำ (ม.รทก.) <span class="req">*</span></label>
+              <input type="number" id="fg-level" step="0.01" placeholder="เช่น 213.50" oninput="updateFloodgateStatus()" />
+              <div class="status-banner neutral" id="fg-status">
+                <span class="dot"></span>
+                <span class="msg">กรอกระดับน้ำเพื่อตรวจสอบสถานะ</span>
+              </div>
+              <span class="hint" id="fg-thresh-hint">เกณฑ์ธงเตือน —</span>
+            </div>
+            <div class="fg">
+              <label>บานประตูเปิด (เมตร)</label>
+              <input type="number" id="fg-opening" step="0.01" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>อัตราการไหล (ลบ.ม./วินาที)</label>
+              <input type="number" id="fg-flow" step="0.1" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>ผู้บันทึก</label>
+              <input type="text" id="fg-recorder" placeholder="ชื่อผู้บันทึก" />
+            </div>
+            <div class="fg">
+              <label>หมายเหตุ</label>
+              <input type="text" id="fg-remark" placeholder="ไม่บังคับ" />
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn-sec" onclick="changePoint()">← เปลี่ยน ปตร.</button>
+            <button class="btn btn-pri" id="fg-save" onclick="saveFloodgate()" style="background:#d97706;">💾 บันทึกข้อมูล</button>
+          </div>
+          <div class="toast" id="fg-toast"></div>
+        </div>
+      </div>
+
+      <!-- ════════ HYDRO STATION FORM ════════ -->
+      <div class="rec-card" id="hydro-form" style="display:none;">
+        <div class="amphoe-banner" style="background:linear-gradient(135deg,#1e3a8a 0%,#0891b2 100%);">
+          <span class="ico">🔬</span>
+          <div class="l">
+            <div class="code" id="hy-code" style="font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;opacity:.8;letter-spacing:.5px;">—</div>
+            <h3 id="hy-name">—</h3>
+            <div class="sub" id="hy-meta">บันทึกข้อมูลสถานีอุทกวิทยา (กรมอุทกวิทยา)</div>
+          </div>
+          <button class="logout" onclick="logout()">ออกระบบ</button>
+        </div>
+        <div class="rec-body">
+          <div class="last-card" id="hy-last" style="display:none;background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border-color:#93c5fd;">
+            <span class="ico">📊</span>
+            <div style="flex:1;">
+              <div class="lbl" style="color:#1e3a8a;">บันทึกล่าสุด</div>
+              <div class="val" id="hy-last-val">—</div>
+              <div class="meta" id="hy-last-meta">—</div>
+            </div>
+          </div>
+
+          <div class="fgrid">
+            <div class="fg full">
+              <label>วันที่ <span class="req">*</span></label>
+              <input type="date" id="hy-date" />
+            </div>
+            <div class="fg">
+              <label>ระดับน้ำ (ม.รทก.) <span class="req">*</span></label>
+              <input type="number" id="hy-level" step="0.01" placeholder="เช่น 209.50" oninput="updateHydroStatus()" />
+            </div>
+            <div class="fg">
+              <label>ความสูงน้ำ (เมตร) <span class="req">*</span></label>
+              <input type="number" id="hy-height" step="0.01" placeholder="เช่น 4.50" oninput="updateHydroStatus()" />
+            </div>
+            <div class="fg full">
+              <div class="status-banner neutral" id="hy-status">
+                <span class="dot"></span>
+                <span class="msg">กรอกค่าเพื่อตรวจสอบสถานะ</span>
+              </div>
+              <span class="hint" id="hy-thresh-hint">เกณฑ์ —</span>
+            </div>
+            <div class="fg">
+              <label>อัตราการไหล (ลบ.ม./วินาที)</label>
+              <input type="number" id="hy-flow" step="0.1" placeholder="ไม่บังคับ" />
+            </div>
+            <div class="fg">
+              <label>ผู้บันทึก</label>
+              <input type="text" id="hy-recorder" placeholder="ชื่อผู้บันทึก" />
+            </div>
+            <div class="fg full">
+              <label>หมายเหตุ</label>
+              <input type="text" id="hy-remark" placeholder="ไม่บังคับ" />
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn-sec" onclick="changePoint()">← เปลี่ยนสถานี</button>
+            <button class="btn btn-pri" id="hy-save" onclick="saveHydro()" style="background:#0891b2;">💾 บันทึกข้อมูล</button>
+          </div>
+          <div class="toast" id="hy-toast"></div>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT: RECENT RECORDS SIDEBAR -->
@@ -745,6 +869,41 @@ const RESERVOIRS = [
   {id:"R15", name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", amphoe:"เมืองหนองบัวลำภู", capacity:0.0684,  type:"เล็ก"}
 ];
 
+/* ── ปตร. (กรมชลประทาน) 3 จุด ── */
+const FLOODGATES = [
+  { gate_id:"FG01", name:"ปตร.หนองหว้าใหญ่", village:"บ้านหนองหว้า",
+    tambon:"โพธิ์ชัย", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.179444, lon:102.386111,
+    threshold_normal:214, threshold_warn:214.5 },
+  { gate_id:"FG02", name:"ปตร.ปู่หลอด", village:"บ้านโนนคูณ",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.115278, lon:102.453611,
+    threshold_normal:203, threshold_warn:203.5 },
+  { gate_id:"FG03", name:"ปตร.หัวนา", village:"บ้านหัวนา",
+    tambon:"หัวนา", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.000556, lon:102.423889,
+    threshold_normal:190, threshold_warn:191 }
+];
+
+/* ── สถานีอุทกวิทยา 3 จุด ── */
+const HYDROS = [
+  { station_code:"E.64B", name:"สถานีอุทกวิทยา E.64B", village:"บ้านวังสามหาบ",
+    tambon:"เทพคีรี", amphoe:"นาวัง",
+    lat:17.309722, lon:102.107778,
+    bank_height:5.5, channel_capacity_cms:50,
+    threshold_normal:254.5, threshold_warn:255.5 },
+  { station_code:"E.109", name:"สถานีอุทกวิทยา E.109", village:"บ้านวังหมื่น",
+    tambon:"หนองบัว", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.182778, lon:102.431944,
+    bank_height:4.5, channel_capacity_cms:115,
+    threshold_normal:208.5, threshold_warn:209.5 },
+  { station_code:"E.68A", name:"สถานีอุทกวิทยา E.68A", village:"บ้านข้องโป้",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.081667, lon:102.450833,
+    bank_height:5.2, channel_capacity_cms:130,
+    threshold_normal:199.2, threshold_warn:199.9 }
+];
+
 /* ============================================================
  *  API helper — GET via query string (avoid CORS preflight + 302 redirect)
  * ============================================================ */
@@ -848,7 +1007,44 @@ function renderChoose() {
       </div>
     `;
   }).join("");
-  document.getElementById("reservoir-groups").innerHTML = resHtml;
+
+  // ── เพิ่ม: ปตร. (3 จุด) ──
+  const fgHtml = `
+    <div class="river-group">
+      <div class="river-h">
+        <span>🚪 ประตูระบายน้ำ (กรมชลประทาน)</span>
+        <span class="count">${FLOODGATES.length} จุด</span>
+      </div>
+      <div class="station-grid">
+        ${FLOODGATES.map(g => `
+          <button class="station-btn" onclick="chooseFloodgate('${g.gate_id}')">
+            <span class="code" style="color:#d97706;">${g.gate_id}</span>
+            <span class="name">${g.name}</span>
+            <span class="meta">📍 อ.${g.amphoe} · เกณฑ์ ${g.threshold_normal}/${g.threshold_warn} ม.</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>`;
+
+  // ── เพิ่ม: สถานีอุทกวิทยา (3 จุด) ──
+  const hyHtml = `
+    <div class="river-group">
+      <div class="river-h">
+        <span>🔬 สถานีอุทกวิทยา (กรมอุทกวิทยา)</span>
+        <span class="count">${HYDROS.length} สถานี</span>
+      </div>
+      <div class="station-grid">
+        ${HYDROS.map(h => `
+          <button class="station-btn" onclick="chooseHydro('${h.station_code}')">
+            <span class="code" style="color:#1e40af;">${h.station_code}</span>
+            <span class="name">${h.name}</span>
+            <span class="meta">📍 อ.${h.amphoe} · ตลิ่ง ${h.bank_height}ม. · ความจุ ${h.channel_capacity_cms} ลบ.ม./วิ</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>`;
+
+  document.getElementById("reservoir-groups").innerHTML = resHtml + fgHtml + hyHtml;
 }
 
 function chooseStation(stid) {
@@ -918,6 +1114,38 @@ function chooseReservoir(rid) {
   document.getElementById("pin-label").textContent = "PIN สำหรับอ่างเก็บน้ำ";
   document.getElementById("pin-target").textContent = "🏞️ " + r.id + " · " + r.name;
   document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+/* ── ปตร. + สถานีอุทกวิทยา — ใช้ Admin PIN ── */
+function chooseFloodgate(gid) {
+  const g = FLOODGATES.find(x => x.gate_id === gid);
+  if (!g) return;
+  SELECTED = { kind:"floodgate", ...g };
+  // ตรวจ Admin PIN ที่จำไว้
+  const stored = sessionStorage.getItem("wat_admin_pin");
+  if (stored) { SESSION_PIN = stored; enterRecord(); return; }
+  document.getElementById("pin-label").textContent = "PIN ผู้ดูแลระบบ (Admin)";
+  document.getElementById("pin-target").textContent = "🚪 " + g.gate_id + " · " + g.name;
+  document.getElementById("pin-meta").textContent = "📍 อ." + g.amphoe + " · เกณฑ์ " + g.threshold_normal + "/" + g.threshold_warn + " ม.รทก.";
+  document.getElementById("pin-input").value = "";
+  document.getElementById("pin-error").classList.remove("on");
+  showScreen("scr-pin");
+  setTimeout(()=>document.getElementById("pin-input").focus(),200);
+}
+
+function chooseHydro(code) {
+  const h = HYDROS.find(x => x.station_code === code);
+  if (!h) return;
+  SELECTED = { kind:"hydro", ...h };
+  const stored = sessionStorage.getItem("wat_admin_pin");
+  if (stored) { SESSION_PIN = stored; enterRecord(); return; }
+  document.getElementById("pin-label").textContent = "PIN ผู้ดูแลระบบ (Admin)";
+  document.getElementById("pin-target").textContent = "🔬 " + h.station_code + " · " + h.name;
+  document.getElementById("pin-meta").textContent = "📍 อ." + h.amphoe + " · ตลิ่ง " + h.bank_height + "ม. · ความจุ " + h.channel_capacity_cms + " ลบ.ม./วิ";
   document.getElementById("pin-input").value = "";
   document.getElementById("pin-error").classList.remove("on");
   showScreen("scr-pin");
@@ -1069,6 +1297,8 @@ function enterRecord() {
   if (SELECTED.kind === "station") enterWaterForm();
   else if (SELECTED.kind === "amphoe") enterRainForm();
   else if (SELECTED.kind === "reservoir") enterReservoirForm();
+  else if (SELECTED.kind === "floodgate") enterFloodgateForm();
+  else if (SELECTED.kind === "hydro")     enterHydroForm();
   applyAdminBadgeOnForm();
 }
 
@@ -1100,6 +1330,8 @@ function hideAllForms() {
   document.getElementById("water-form").style.display = "none";
   document.getElementById("rain-form").style.display = "none";
   document.getElementById("reservoir-form").style.display = "none";
+  const fgF = document.getElementById("floodgate-form"); if (fgF) fgF.style.display = "none";
+  const hyF = document.getElementById("hydro-form"); if (hyF) hyF.style.display = "none";
 }
 
 function enterWaterForm() {
@@ -1635,6 +1867,206 @@ async function saveReservoir() {
   document.getElementById("rs-outflow").value = "";
   updateReservoirStatus();
   loadReservoirContext();
+}
+
+/* ════════════════════════════════════════════════
+ *  FLOODGATE (ปตร.) — บันทึกข้อมูล
+ * ════════════════════════════════════════════════ */
+function enterFloodgateForm() {
+  hideAllForms();
+  document.getElementById("floodgate-form").style.display = "block";
+  const g = SELECTED;
+  document.getElementById("fg-code").textContent = g.gate_id;
+  document.getElementById("fg-name").textContent = g.name;
+  document.getElementById("fg-meta").textContent = "📍 อ." + g.amphoe + " · บ้าน" + g.village + " ต." + g.tambon;
+  document.getElementById("fg-thresh-hint").textContent =
+    "เกณฑ์: ปกติ <" + g.threshold_normal + " · เฝ้าระวัง " + g.threshold_normal + "-" + g.threshold_warn + " · วิกฤติ >" + g.threshold_warn + " ม.รทก.";
+  const now = new Date();
+  document.getElementById("fg-date").value = now.toISOString().slice(0,10);
+  document.getElementById("fg-level").value = "";
+  document.getElementById("fg-opening").value = "";
+  document.getElementById("fg-flow").value = "";
+  document.getElementById("fg-remark").value = "";
+  document.getElementById("fg-recorder").value = localStorage.getItem("wat_recorder_fg_" + g.gate_id) || "";
+  updateFloodgateStatus();
+}
+
+function updateFloodgateStatus() {
+  const g = SELECTED; if (!g || g.kind !== "floodgate") return;
+  const lv = parseFloat(document.getElementById("fg-level").value);
+  const banner = document.getElementById("fg-status");
+  if (isNaN(lv)) {
+    banner.className = "status-banner neutral";
+    banner.querySelector(".msg").textContent = "กรอกระดับน้ำเพื่อตรวจสอบสถานะ";
+    return;
+  }
+  let cls = "ok", msg = "🟢 ปกติ — ระดับน้ำต่ำกว่าเกณฑ์ปกติ";
+  if (lv > g.threshold_warn) { cls = "crit"; msg = "🔴 วิกฤติ — ระดับน้ำเกินเกณฑ์วิกฤติ (" + g.threshold_warn + " ม.) — เตรียมแจ้งเตือนประชาชน"; }
+  else if (lv >= g.threshold_normal) { cls = "warn"; msg = "🟡 เฝ้าระวัง — ระดับน้ำใกล้เกณฑ์วิกฤติ"; }
+  banner.className = "status-banner " + cls;
+  banner.querySelector(".msg").textContent = msg;
+}
+
+async function saveFloodgate() {
+  const g = SELECTED;
+  const date = document.getElementById("fg-date").value;
+  const level = document.getElementById("fg-level").value.trim();
+  const opening = document.getElementById("fg-opening").value.trim();
+  const flow = document.getElementById("fg-flow").value.trim();
+  const recorder = document.getElementById("fg-recorder").value.trim();
+  const remark = document.getElementById("fg-remark").value.trim();
+
+  if (!date) return showToast("fg-toast", "กรุณากรอกวันที่", false);
+  const today = new Date(); today.setHours(23,59,59,999);
+  if (new Date(date) > today) return showToast("fg-toast", "วันที่ต้องไม่เกินวันนี้", false);
+  if (!level || isNaN(parseFloat(level))) return showToast("fg-toast", "กรุณากรอกระดับน้ำเป็นตัวเลข", false);
+
+  const lvNum = parseFloat(level);
+  if (lvNum < 0 || lvNum > 500) return showToast("fg-toast", "ระดับน้ำต้องอยู่ระหว่าง 0–500 ม.รทก.", false);
+
+  for (const [val, label] of [[opening, "บานประตูเปิด"], [flow, "อัตราการไหล"]]) {
+    if (val !== "" && (isNaN(parseFloat(val)) || parseFloat(val) < 0))
+      return showToast("fg-toast", label + " ต้องเป็นตัวเลขและไม่ติดลบ", false);
+  }
+
+  const btn = document.getElementById("fg-save");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
+
+  const resp = await api({
+    action: "savefloodgate", pin: SESSION_PIN,
+    gate_id: g.gate_id, name: g.name, village: g.village, tambon: g.tambon, amphoe: g.amphoe,
+    lat: g.lat, lon: g.lon,
+    threshold_normal: g.threshold_normal, threshold_warn: g.threshold_warn,
+    date, time: new Date().toTimeString().slice(0,5),
+    water_level: lvNum,
+    gate_opening: opening ? parseFloat(opening) : "",
+    flow_rate: flow ? parseFloat(flow) : "",
+    recorder, remark
+  });
+
+  btn.disabled = false; btn.innerHTML = "💾 บันทึกข้อมูล";
+
+  if (!resp.ok) {
+    showToast("fg-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
+    if (resp.code === "INVALID_PIN") SESSION_PIN = "";
+    return;
+  }
+  if (recorder) localStorage.setItem("wat_recorder_fg_" + g.gate_id, recorder);
+  // remember admin PIN ใน session
+  sessionStorage.setItem("wat_admin_pin", SESSION_PIN);
+  const msg = resp.updated
+    ? "✅ อัปเดตค่าเดิมของวันนี้แล้ว (ทับค่าเก่า)"
+    : "✅ บันทึกใหม่เรียบร้อย · Dashboard จะอัปเดตทันที";
+  showToast("fg-toast", msg, true);
+  document.getElementById("fg-level").value = "";
+  document.getElementById("fg-opening").value = "";
+  document.getElementById("fg-flow").value = "";
+  updateFloodgateStatus();
+}
+
+/* ════════════════════════════════════════════════
+ *  HYDRO STATION (สถานีอุทกวิทยา) — บันทึกข้อมูล
+ * ════════════════════════════════════════════════ */
+function enterHydroForm() {
+  hideAllForms();
+  document.getElementById("hydro-form").style.display = "block";
+  const h = SELECTED;
+  document.getElementById("hy-code").textContent = h.station_code;
+  document.getElementById("hy-name").textContent = h.name;
+  document.getElementById("hy-meta").textContent = "📍 อ." + h.amphoe + " · บ้าน" + h.village + " · ตลิ่ง " + h.bank_height + " ม. · ความจุลำน้ำ " + h.channel_capacity_cms + " ลบ.ม./วิ";
+  document.getElementById("hy-thresh-hint").textContent =
+    "เกณฑ์ระดับน้ำ: <" + h.threshold_normal + " ปกติ · " + h.threshold_normal + "-" + h.threshold_warn + " เฝ้าระวัง · >" + h.threshold_warn + " วิกฤติ ม.รทก.";
+  const now = new Date();
+  document.getElementById("hy-date").value = now.toISOString().slice(0,10);
+  document.getElementById("hy-level").value = "";
+  document.getElementById("hy-height").value = "";
+  document.getElementById("hy-flow").value = "";
+  document.getElementById("hy-remark").value = "";
+  document.getElementById("hy-recorder").value = localStorage.getItem("wat_recorder_hy_" + h.station_code) || "";
+  updateHydroStatus();
+}
+
+function updateHydroStatus() {
+  const h = SELECTED; if (!h || h.kind !== "hydro") return;
+  const lv = parseFloat(document.getElementById("hy-level").value);
+  const ht = parseFloat(document.getElementById("hy-height").value);
+  const banner = document.getElementById("hy-status");
+  if (isNaN(lv) && isNaN(ht)) {
+    banner.className = "status-banner neutral";
+    banner.querySelector(".msg").textContent = "กรอกค่าเพื่อตรวจสอบสถานะ";
+    return;
+  }
+  let status = "ok", label = "ปกติ", emoji = "🟢";
+  // เช็คทั้งระดับน้ำและความสูง — เอาตัวที่หนักกว่า
+  if (!isNaN(lv)) {
+    if (lv > h.threshold_warn) { status = "crit"; label = "วิกฤติ"; emoji = "🔴"; }
+    else if (lv >= h.threshold_normal && status !== "crit") { status = "warn"; label = "เฝ้าระวัง"; emoji = "🟡"; }
+  }
+  if (!isNaN(ht)) {
+    const tn = h.threshold_normal - (h.threshold_warn - h.threshold_normal === 1 ? 1 : 0); // estimate
+    if (ht > h.bank_height && status !== "crit") { status = "crit"; label = "วิกฤติ — เกินตลิ่ง"; emoji = "🔴"; }
+    else if (ht >= h.bank_height - 1 && status === "ok") { status = "warn"; label = "เฝ้าระวัง — ใกล้ตลิ่ง"; emoji = "🟡"; }
+  }
+  banner.className = "status-banner " + status;
+  banner.querySelector(".msg").textContent = emoji + " " + label;
+}
+
+async function saveHydro() {
+  const h = SELECTED;
+  const date = document.getElementById("hy-date").value;
+  const level = document.getElementById("hy-level").value.trim();
+  const height = document.getElementById("hy-height").value.trim();
+  const flow = document.getElementById("hy-flow").value.trim();
+  const recorder = document.getElementById("hy-recorder").value.trim();
+  const remark = document.getElementById("hy-remark").value.trim();
+
+  if (!date) return showToast("hy-toast", "กรุณากรอกวันที่", false);
+  const today = new Date(); today.setHours(23,59,59,999);
+  if (new Date(date) > today) return showToast("hy-toast", "วันที่ต้องไม่เกินวันนี้", false);
+  if ((!level || isNaN(parseFloat(level))) && (!height || isNaN(parseFloat(height))))
+    return showToast("hy-toast", "กรุณากรอก ระดับน้ำ หรือ ความสูง อย่างน้อย 1 ค่า", false);
+
+  if (level !== "" && (parseFloat(level) < 0 || parseFloat(level) > 500))
+    return showToast("hy-toast", "ระดับน้ำต้องอยู่ระหว่าง 0–500 ม.รทก.", false);
+  if (height !== "" && (parseFloat(height) < 0 || parseFloat(height) > 30))
+    return showToast("hy-toast", "ความสูงต้องอยู่ระหว่าง 0–30 ม.", false);
+
+  if (flow !== "" && (isNaN(parseFloat(flow)) || parseFloat(flow) < 0))
+    return showToast("hy-toast", "อัตราการไหลต้องเป็นตัวเลขและไม่ติดลบ", false);
+
+  const btn = document.getElementById("hy-save");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังบันทึก...';
+
+  const resp = await api({
+    action: "savehydro", pin: SESSION_PIN,
+    station_code: h.station_code, name: h.name, village: h.village, tambon: h.tambon, amphoe: h.amphoe,
+    lat: h.lat, lon: h.lon,
+    bank_height: h.bank_height, channel_capacity_cms: h.channel_capacity_cms,
+    threshold_normal: h.threshold_normal, threshold_warn: h.threshold_warn,
+    date, time: new Date().toTimeString().slice(0,5),
+    water_level: level ? parseFloat(level) : "",
+    water_height: height ? parseFloat(height) : "",
+    flow_rate: flow ? parseFloat(flow) : "",
+    recorder, remark
+  });
+
+  btn.disabled = false; btn.innerHTML = "💾 บันทึกข้อมูล";
+
+  if (!resp.ok) {
+    showToast("hy-toast", "❌ " + (resp.error || "บันทึกไม่สำเร็จ"), false);
+    if (resp.code === "INVALID_PIN") SESSION_PIN = "";
+    return;
+  }
+  if (recorder) localStorage.setItem("wat_recorder_hy_" + h.station_code, recorder);
+  sessionStorage.setItem("wat_admin_pin", SESSION_PIN);
+  const msg = resp.updated
+    ? "✅ อัปเดตค่าเดิมของวันนี้แล้ว (ทับค่าเก่า)"
+    : "✅ บันทึกใหม่เรียบร้อย · Dashboard จะอัปเดตทันที";
+  showToast("hy-toast", msg, true);
+  document.getElementById("hy-level").value = "";
+  document.getElementById("hy-height").value = "";
+  document.getElementById("hy-flow").value = "";
+  updateHydroStatus();
 }
 
 function logout() {
