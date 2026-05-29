@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
 :root {
   --bg: #f0fdfa; --card: #fff; --ink: #0f172a; --muted: #64748b;
@@ -22,57 +23,7 @@
 html,body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
 
 /* ── HEADER ── */
-header{
-  background:linear-gradient(135deg,#083344 0%,#155e75 50%,#0e7490 100%);
-  color:#fff;position:sticky;top:0;z-index:1000;
-  box-shadow:0 4px 20px rgba(0,0,0,.25);
-}
-header::after{
-  content:"";display:block;height:3px;
-  background:linear-gradient(90deg,#06b6d4,#67e8f9,#a5f3fc,#06b6d4);
-  background-size:200% 100%;animation:shimmer 3s linear infinite;
-}
-@keyframes shimmer{to{background-position:-200% 0}}
-.hdr-inner{
-  max-width:1600px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;gap:16px;flex-wrap:wrap;
-}
-.hdr-brand{display:flex;align-items:center;gap:14px}
-.hdr-logo{
-  width:50px;height:50px;border-radius:14px;
-  background:linear-gradient(135deg,rgba(6,182,212,.35),rgba(8,51,68,.2));
-  border:1px solid rgba(103,232,249,.4);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 20px rgba(6,182,212,.3);animation:logoGlow 3s ease-in-out infinite;
-}
-@keyframes logoGlow{50%{box-shadow:0 0 32px rgba(6,182,212,.55)}}
-.hdr-title{font-size:20px;font-weight:800;font-family:'Kanit',sans-serif}
-.hdr-sub{font-size:11px;color:#a5f3fc;opacity:.85;margin-top:2px;letter-spacing:.5px}
-.hdr-right{display:flex;align-items:center;gap:12px}
-.hdr-badge{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(0,0,0,.25);border:1px solid rgba(103,232,249,.3);
-  padding:7px 14px;border-radius:10px;font-size:12px;color:#cffafe;
-}
-.hdr-badge .dot{
-  width:8px;height:8px;border-radius:50%;background:#22c55e;
-  box-shadow:0 0 8px #22c55e;animation:blink 1.5s ease-in-out infinite;
-}
-@keyframes blink{50%{opacity:.4;transform:scale(.8)}}
-.hdr-time{font-family:'Courier New',monospace;font-size:13px;color:#67e8f9;letter-spacing:1px}
-
-/* ── NAV ── */
-nav{background:#fff;border-bottom:1px solid var(--line)}
-.nav-inner{max-width:1600px;margin:0 auto;display:flex;padding:0 24px;overflow-x:auto}
-nav a{
-  padding:14px 20px;color:var(--muted);text-decoration:none;font-size:14px;
-  font-weight:500;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;
-}
-nav a:hover{color:var(--river)}
-nav a.active{color:var(--brand);border-bottom-color:var(--river);font-weight:700}
-
-/* ── MAIN ── */
+/* header/nav/main — จาก theme.css */
 main{max-width:1600px;margin:0 auto;padding:24px}
 
 /* ── SUMMARY CARDS ── */
@@ -536,8 +487,7 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
 }
 .pop-row:last-child{border:none}
 
-footer{background:#083344;color:#67e8f9;padding:24px;text-align:center;font-size:12px}
-footer strong{color:#fff}
+/* footer — จาก theme.css */
 ::-webkit-scrollbar{width:8px;height:6px}
 ::-webkit-scrollbar-track{background:#f0fdfa}
 ::-webkit-scrollbar-thumb{background:#67e8f9;border-radius:4px}
@@ -626,7 +576,7 @@ footer strong{color:#fff}
 </head>
 <body>
 
-<header>
+<header class="app-header">
   <div class="hdr-inner">
     <div class="hdr-brand">
       <div class="hdr-logo">
@@ -650,7 +600,7 @@ footer strong{color:#fff}
   </div>
 </header>
 
-<nav>
+<nav class="app-nav">
   <div class="nav-inner">
     <a href="index.html">🏠 หน้าหลัก</a>
     <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
@@ -881,7 +831,7 @@ footer strong{color:#fff}
   </div>
 </main>
 
-<footer>
+<footer class="app-footer">
   <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong><br>
   ข้อมูลอ้างอิงจากโครงการชลประทานหนองบัวลำภู สำนักงานชลประทานที่ 5<br>
   © 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู
