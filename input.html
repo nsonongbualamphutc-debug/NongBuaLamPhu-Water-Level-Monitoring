@@ -841,7 +841,7 @@ function renderChoose() {
             <button class="station-btn" onclick="chooseReservoir('${r.id}')">
               <span class="code" style="color:#059669;">${r.id}</span>
               <span class="name">${r.name}</span>
-              <span class="meta">💧 ความจุ ${r.capacity.toFixed(4)} ล้าน ลบ.ม.</span>
+              <span class="meta">💧 ความจุ ${r.capacity.toFixed(3)} ล้าน ลบ.ม.</span>
             </button>
           `).join("")}
         </div>
@@ -917,7 +917,7 @@ function chooseReservoir(rid) {
   }
   document.getElementById("pin-label").textContent = "PIN สำหรับอ่างเก็บน้ำ";
   document.getElementById("pin-target").textContent = "🏞️ " + r.id + " · " + r.name;
-  document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
+  document.getElementById("pin-meta").textContent = "📍 อ.​" + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
   document.getElementById("pin-input").value = "";
   document.getElementById("pin-error").classList.remove("on");
   showScreen("scr-pin");
@@ -1151,8 +1151,8 @@ function enterReservoirForm() {
   const r = SELECTED;
   document.getElementById("rs-code").textContent = r.id;
   document.getElementById("rs-name").textContent = r.name;
-  document.getElementById("rs-meta").textContent = "📍 อ." + r.amphoe + " · ความจุ " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
-  document.getElementById("rs-cap-hint").textContent = "ความจุอ่าง: " + r.capacity.toFixed(4) + " ล้าน ลบ.ม.";
+  document.getElementById("rs-meta").textContent = "📍 อ." + r.amphoe + " · ความจุ " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
+  document.getElementById("rs-cap-hint").textContent = "ความจุอ่าง: " + r.capacity.toFixed(3) + " ล้าน ลบ.ม.";
   document.getElementById("side-title").textContent = "📊 ประวัติ " + r.id;
   const now = new Date();
   document.getElementById("rs-date").value = now.toISOString().slice(0,10);
@@ -1592,8 +1592,8 @@ async function saveReservoir() {
 
   // ปริมาณน้ำต้องไม่เกินความจุมากผิดปกติ (เตือนถ้าเกิน 120%)
   if (r.capacity && volNum > r.capacity * 1.2) {
-    if (!confirm("⚠️ ปริมาณน้ำ " + volNum.toFixed(4) + " ล้าน ลบ.ม. " +
-        "เกินความจุอ่าง (" + r.capacity.toFixed(4) + ") มากผิดปกติ\n\n" +
+    if (!confirm("⚠️ ปริมาณน้ำ " + volNum.toFixed(3) + " ล้าน ลบ.ม. " +
+        "เกินความจุอ่าง (" + r.capacity.toFixed(3) + ") มากผิดปกติ\n\n" +
         "ยืนยันบันทึกหรือไม่?")) return;
   }
 
