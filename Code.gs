@@ -17,6 +17,7 @@ const SHEET_SETTINGS    = "Settings";
 const SHEET_PINS        = "StationPins";      // PIN รายสถานี
 const SHEET_AMPHOE_PINS = "AmphoePins";       // PIN รายอำเภอ (สำหรับฝน)
 const SHEET_RESERVOIR_PINS = "ReservoirPins"; // PIN รายอ่างเก็บน้ำ
+const SHEET_FLOODGATE_PINS = "FloodgatePins"; // PIN รายประตูระบายน้ำ
 const SHEET_HYDRO_PINS  = "HydroPins";         // PIN รายสถานีอุทกวิทยา
 
 // ===== Headers ของชีตใหม่ =====
@@ -115,7 +116,7 @@ function doGet(e) {
 
   let data;
 
-  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport"];
+  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
 
   try {
 
@@ -149,13 +150,21 @@ function doGet(e) {
             if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
             else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
           }
-        } else if (action === "savefloodgate" || action === "savehydro") {
-          /* ปตร. + สถานีอุทกวิทยา — ใช้ Admin PIN ที่มีอยู่แล้ว */
-          if (verifyAdminPin(pin)) pinOk = true;
+        } else if (action === "savefloodgate") {
+          const gid = String(params.gate_id || "").toUpperCase();
+          if (!gid) { pinError = "ไม่ระบุรหัสประตูระบายน้ำ (gate_id)"; }
           else {
-            const expected = getAppPin();
-            if (expected && pin === expected) pinOk = true;
-            else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
+            const acc = verifyFloodgateAccess(gid, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "floodgate") touchFloodgatePinLastUsed(gid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับประตูระบายน้ำ " + gid;
+          }
+        } else if (action === "savehydro") {
+          const code = String(params.station_code || "").toUpperCase();
+          if (!code) { pinError = "ไม่ระบุรหัสสถานีอุทกวิทยา (station_code)"; }
+          else {
+            const acc = verifyHydroAccess(code, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "hydro") touchHydroPinLastUsed(code); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับสถานีอุทกวิทยา " + code;
           }
         } else if (verifyAdminPin(pin)) {
           pinOk = true; // savedailyreport via admin
@@ -212,6 +221,22 @@ function doGet(e) {
       if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
       return respond({ ok: true, role: acc.role, reservoir: getReservoirContext(rid) }, callback);
     }
+    if (action === "loginfloodgate") {
+      const gid = String(params.gate_id || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!gid) return respond({ ok: false, error: "ไม่ระบุรหัสประตูระบายน้ำ" }, callback);
+      const acc = verifyFloodgateAccess(gid, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, floodgate: getFloodgateContext(gid) }, callback);
+    }
+    if (action === "loginhydro") {
+      const code = String(params.station_code || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!code) return respond({ ok: false, error: "ไม่ระบุรหัสสถานีอุทกวิทยา" }, callback);
+      const acc = verifyHydroAccess(code, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, hydro: getHydroContext(code) }, callback);
+    }
     if (action === "loginwateradmin")   return respond(checkSubAdminRole("water",     String(params.pin||"")), callback);
     if (action === "loginrainadmin")    return respond(checkSubAdminRole("rain",      String(params.pin||"")), callback);
     if (action === "loginreservoiradmin") return respond(checkSubAdminRole("reservoir",String(params.pin||"")), callback);
@@ -226,7 +251,9 @@ function doGet(e) {
       "liststationpins","setstationpin","initstationpins",
       "listamphoepins","setamphoepin","initamphoepins",
       "listreservoirpins","setreservoirpin","initreservoirpins",
-      "stationcontext","amphoecontext","reservoircontext"
+      "listfloodgatepins","setfloodgatepin","initfloodgatepins",
+      "listhydropins","sethydropin","inithydropins",
+      "stationcontext","amphoecontext","reservoircontext","floodgatecontext","hydrocontext"
     ];
     if (adminActions.indexOf(action) !== -1) {
       const adminpin = String(params.adminpin || params.pin || "").trim();
@@ -253,6 +280,20 @@ function doGet(e) {
           return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
         return respond({ ok: true, reservoir: getReservoirContext(rid) }, callback);
       }
+      if (action === "floodgatecontext") {
+        const gid = String(params.gate_id || "").toUpperCase();
+        if (!gid) return respond({ ok: false, error: "ไม่ระบุรหัสประตูระบายน้ำ" }, callback);
+        if (!isAdmin && !verifyFloodgatePin(gid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, floodgate: getFloodgateContext(gid) }, callback);
+      }
+      if (action === "hydrocontext") {
+        const code = String(params.station_code || "").toUpperCase();
+        if (!code) return respond({ ok: false, error: "ไม่ระบุรหัสสถานีอุทกวิทยา" }, callback);
+        if (!isAdmin && !verifyHydroPin(code, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, hydro: getHydroContext(code) }, callback);
+      }
       if (!isAdmin) return respond({ ok: false, error: "ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
       switch (action) {
         case "liststationpins":   data = listStationPins();                                                break;
@@ -264,6 +305,12 @@ function doGet(e) {
         case "listreservoirpins": data = listReservoirPins();                                             break;
         case "setreservoirpin":   data = setReservoirPin_(params.reservoir_id, params.new_pin, params.recorder_name); break;
         case "initreservoirpins": data = initReservoirPins();                                             break;
+        case "listfloodgatepins": data = listFloodgatePins();                                             break;
+        case "setfloodgatepin":   data = setFloodgatePin_(params.gate_id, params.new_pin, params.recorder_name); break;
+        case "initfloodgatepins": data = initFloodgatePins();                                             break;
+        case "listhydropins":     data = listHydroPins();                                                 break;
+        case "sethydropin":       data = setHydroPin_(params.station_code, params.new_pin, params.recorder_name); break;
+        case "inithydropins":     data = initHydroPins();                                                 break;
       }
       return respond(data, callback);
     }
@@ -296,7 +343,7 @@ function doPost(e) {
   }
 
   const action = (payload.action || "").toLowerCase();
-  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport"];
+  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
 
   /* PIN CHECK — ใช้ logic เดียวกับ doGet (แยกรายสถานี/อำเภอ/อ่าง) */
   if (PIN_REQUIRED && WRITE_ACTIONS.indexOf(action) !== -1) {
@@ -327,6 +374,22 @@ function doPost(e) {
         if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
         else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
       }
+    } else if (action === "savefloodgate") {
+      const gid = String(payload.gate_id || "").toUpperCase();
+      if (!gid) { pinError = "ไม่ระบุรหัสประตูระบายน้ำ"; }
+      else {
+        const acc = verifyFloodgateAccess(gid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "floodgate") touchFloodgatePinLastUsed(gid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับประตูระบายน้ำ " + gid;
+      }
+    } else if (action === "savehydro") {
+      const code = String(payload.station_code || "").toUpperCase();
+      if (!code) { pinError = "ไม่ระบุรหัสสถานีอุทกวิทยา"; }
+      else {
+        const acc = verifyHydroAccess(code, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "hydro") touchHydroPinLastUsed(code); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับสถานีอุทกวิทยา " + code;
+      }
     } else if (verifyAdminPin(pin)) {
       pinOk = true;
     } else {
@@ -346,8 +409,12 @@ function doPost(e) {
       case "saverain":       result = saveRainfall(payload);    break;
       case "savereservoir":  result = saveReservoir(payload);   break;
       case "savedailyreport":result = saveDailyReport(payload); break;
+      case "savefloodgate":  result = saveFloodgate(payload);   break;
+      case "savehydro":      result = saveHydro(payload);       break;
       case "summary":        result = getSummaryWithCache_();   break;
       case "reservoir":      result = getReservoirs();          break;
+      case "floodgate":      result = getFloodgates();          break;
+      case "hydro":          result = getHydroStations();       break;
       default:               result = { ok: false, error: "unknown action: " + action };
     }
     /* Flush cache เมื่อมีการบันทึกข้อมูล */
@@ -1448,6 +1515,207 @@ function initReservoirPins() {
     }
   });
   return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " อ่าง", added: added };
+}
+
+// ===== FLOODGATE + HYDRO PIN MANAGEMENT =====
+function ensureFloodgatePinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_FLOODGATE_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_FLOODGATE_PINS);
+    sh.appendRow(["gate_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#92400e").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["gate_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function ensureHydroPinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_HYDRO_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_HYDRO_PINS);
+    sh.appendRow(["station_code","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#0e7490").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["station_code","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function getFloodgatePinRow_(gateId) {
+  const sh = ensureFloodgatePinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(gateId || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, gate_id: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function getHydroPinRow_(stationCode) {
+  const sh = ensureHydroPinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(stationCode || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, station_code: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyFloodgatePin(gateId, pin) {
+  const r = getFloodgatePinRow_(gateId);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function verifyHydroPin(stationCode, pin) {
+  const r = getHydroPinRow_(stationCode);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function verifyFloodgateAccess(gateId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyFloodgatePin(gateId, pin)) return { ok:true, role:"floodgate" };
+  return { ok:false };
+}
+
+function verifyHydroAccess(stationCode, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyHydroPin(stationCode, pin)) return { ok:true, role:"hydro" };
+  return { ok:false };
+}
+
+function touchFloodgatePinLastUsed(gateId) {
+  try {
+    const r = getFloodgatePinRow_(gateId);
+    if (r) ensureFloodgatePinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function touchHydroPinLastUsed(stationCode) {
+  try {
+    const r = getHydroPinRow_(stationCode);
+    if (r) ensureHydroPinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function listFloodgatePins() {
+  ensureFloodgatePinsSheet_();
+  return FLOODGATE_MASTER.map(g => {
+    const row = getFloodgatePinRow_(g.gate_id);
+    return {
+      gate_id: g.gate_id, name: g.name, village: g.village, tambon: g.tambon, amphoe: g.amphoe,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function listHydroPins() {
+  ensureHydroPinsSheet_();
+  return HYDRO_MASTER.map(h => {
+    const row = getHydroPinRow_(h.station_code);
+    return {
+      station_code: h.station_code, name: h.name, village: h.village, tambon: h.tambon, amphoe: h.amphoe,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function setFloodgatePin_(gateId, newPin, recorderName) {
+  if (!gateId) return { ok:false, error:"ไม่ระบุรหัสประตูระบายน้ำ" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureFloodgatePinsSheet_();
+  const row = getFloodgatePinRow_(gateId);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(gateId).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + gateId + " เรียบร้อย", gate_id: gateId };
+}
+
+function setHydroPin_(stationCode, newPin, recorderName) {
+  if (!stationCode) return { ok:false, error:"ไม่ระบุรหัสสถานีอุทกวิทยา" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureHydroPinsSheet_();
+  const row = getHydroPinRow_(stationCode);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(stationCode).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + stationCode + " เรียบร้อย", station_code: stationCode };
+}
+
+function initFloodgatePins() {
+  ensureFloodgatePinsSheet_();
+  const added = [];
+  FLOODGATE_MASTER.forEach(g => {
+    const existing = getFloodgatePinRow_(g.gate_id);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setFloodgatePin_(g.gate_id, pin, "");
+      added.push({ gate_id: g.gate_id, name: g.name, pin: pin });
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " จุด", added: added };
+}
+
+function initHydroPins() {
+  ensureHydroPinsSheet_();
+  const added = [];
+  HYDRO_MASTER.forEach(h => {
+    const existing = getHydroPinRow_(h.station_code);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setHydroPin_(h.station_code, pin, "");
+      added.push({ station_code: h.station_code, name: h.name, pin: pin });
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " สถานี", added: added };
+}
+
+function getFloodgateContext(gateId) {
+  const meta = FLOODGATE_MASTER.find(g => g.gate_id === String(gateId).toUpperCase());
+  if (!meta) return { ok:false, error:"ไม่พบประตูระบายน้ำ " + gateId };
+  const pinRow = getFloodgatePinRow_(gateId);
+  return Object.assign({ ok:true, recorder_name: pinRow ? pinRow.recorder_name : "" }, meta);
+}
+
+function getHydroContext(stationCode) {
+  const meta = HYDRO_MASTER.find(h => h.station_code.toUpperCase() === String(stationCode).toUpperCase());
+  if (!meta) return { ok:false, error:"ไม่พบสถานีอุทกวิทยา " + stationCode };
+  const pinRow = getHydroPinRow_(stationCode);
+  return Object.assign({ ok:true, recorder_name: pinRow ? pinRow.recorder_name : "" }, meta);
 }
 
 function getReservoirContext(reservoirId) {
