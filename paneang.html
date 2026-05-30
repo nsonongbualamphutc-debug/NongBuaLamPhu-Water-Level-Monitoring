@@ -8,8 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
-<script src="date-range-picker.js"></script> 
-<link rel="stylesheet" href="theme.css">
 <style>
 :root {
   --bg: #f0f6ff;
@@ -25,6 +23,9 @@
   --crit: #dc2626;
   --brand: #0c4a6e;
   --shadow: 0 2px 12px rgba(15,23,42,.08);
+  /* ประตูระบายน้ำ */
+  --fg-color: #7c3aed;
+  --fg-light: #ede9fe;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
@@ -96,13 +97,27 @@ main { max-width: 1600px; margin: 0 auto; padding: 24px; }
 .sc.normal::before { background: var(--normal); }
 .sc.warn::before { background: var(--warn); }
 .sc.crit::before { background: var(--crit); }
+.sc.fg::before { background: var(--fg-color); }
 .sc-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
 .sc-value { font-size: 32px; font-weight: 800; line-height: 1; }
 .sc.info .sc-value { color: var(--river-deep); }
 .sc.normal .sc-value { color: #15803d; }
 .sc.warn .sc-value { color: #92400e; }
 .sc.crit .sc-value { color: #991b1b; }
+.sc.fg .sc-value { color: var(--fg-color); }
 .sc-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* BROADCAST TOAST */
+#broadcastToast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: linear-gradient(135deg, #0c4a6e, #0284c7);
+  color: #fff; padding: 12px 20px; border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.25);
+  font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px;
+  transform: translateY(80px); opacity: 0; transition: all .4s cubic-bezier(.34,1.26,.64,1);
+  pointer-events: none;
+}
+#broadcastToast.show { transform: translateY(0); opacity: 1; }
 
 /* SCENE WRAP */
 .scene-wrap {
@@ -127,16 +142,19 @@ main { max-width: 1600px; margin: 0 auto; padding: 24px; }
 /* GAUGE CARD */
 .gauge-card {
   background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px;
-  padding: 14px 12px 12px; width: 150px; flex-shrink: 0;
+  padding: 14px 12px 12px; width: 160px; flex-shrink: 0;
   cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s;
   position: relative;
 }
 .gauge-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.12); border-color: var(--river); }
 .gauge-card.normal { border-top: 4px solid var(--normal); }
-.gauge-card.warn { border-top: 4px solid var(--warn); }
-.gauge-card.crit { border-top: 4px solid var(--crit); animation: cardPulse 2s ease-in-out infinite; }
+.gauge-card.warn   { border-top: 4px solid var(--warn); }
+.gauge-card.crit   { border-top: 4px solid var(--crit); animation: cardPulse 2s ease-in-out infinite; }
+.gauge-card.fg-card { border-top: 4px solid var(--fg-color); }
 @keyframes cardPulse { 50% { box-shadow: 0 4px 20px rgba(220,38,38,.35); } }
+
 .gc-no { position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 700; color: var(--muted); background: rgba(0,0,0,.06); padding: 2px 6px; border-radius: 5px; }
+.gc-no.fg-no { color: var(--fg-color); background: var(--fg-light); }
 .gc-name { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 2px; padding-right: 28px; line-height: 1.3; }
 .gc-loc { font-size: 10px; color: var(--muted); margin-bottom: 10px; }
 
@@ -161,6 +179,7 @@ main { max-width: 1600px; margin: 0 auto; padding: 24px; }
 .gc-fill.normal { background: linear-gradient(180deg, #86efac, #16a34a); }
 .gc-fill.warn   { background: linear-gradient(180deg, #fde68a, #f59e0b); }
 .gc-fill.crit   { background: linear-gradient(180deg, #fca5a5, #dc2626); }
+.gc-fill.fg-fill { background: linear-gradient(180deg, #c4b5fd, #7c3aed); }
 
 /* Threshold lines on tube */
 .gc-line { position: absolute; left: 0; right: 0; height: 2px; z-index: 5; }
@@ -183,6 +202,8 @@ main { max-width: 1600px; margin: 0 auto; padding: 24px; }
   content: ""; position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
   border: 4px solid transparent; border-right-color: var(--brand);
 }
+.gc-val-bbl.fg-bbl { background: var(--fg-color); }
+.gc-val-bbl.fg-bbl::before { border-right-color: var(--fg-color); }
 
 /* Stats below tube */
 .gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
@@ -190,11 +211,107 @@ main { max-width: 1600px; margin: 0 auto; padding: 24px; }
 .gc-stat .sv { font-size: 14px; font-weight: 800; color: var(--brand); line-height: 1; }
 .gc-stat .sv.up { color: var(--crit); }
 .gc-stat .sv.ok { color: var(--normal); }
+.gc-stat .sv.fg-v { color: var(--fg-color); }
 .gc-stat .sl { font-size: 9px; color: var(--muted); margin-top: 2px; }
 .gc-badge { display: flex; align-items: center; justify-content: center; width: 100%; padding: 5px; border-radius: 8px; margin-top: 8px; font-size: 11px; font-weight: 700; }
 .gc-badge.normal { background: #dcfce7; color: #15803d; }
 .gc-badge.warn   { background: #fef3c7; color: #a16207; }
 .gc-badge.crit   { background: #fee2e2; color: #b91c1c; }
+.gc-badge.fg-badge { background: var(--fg-light); color: var(--fg-color); }
+
+/* FG Link badge on PN card */
+.gc-link-badge {
+  margin-top: 6px; padding: 4px 7px; border-radius: 7px;
+  background: var(--fg-light); color: var(--fg-color);
+  font-size: 10px; font-weight: 700; text-align: center;
+  border: 1px solid rgba(124,58,237,.2);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+
+/* FLOODGATE SECTION */
+.fg-section {
+  background: #fff; border-radius: 20px; overflow: hidden;
+  box-shadow: var(--shadow); margin-bottom: 24px;
+  border: 1px solid rgba(124,58,237,.25);
+}
+.fg-section-head {
+  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(124,58,237,.15);
+  background: linear-gradient(135deg, #f5f3ff, #fff);
+}
+.fg-section-head h2 { font-size: 15px; font-weight: 700; color: var(--fg-color); display: flex; align-items: center; gap: 10px; }
+.fg-section-head h2::before { content: ""; width: 4px; height: 18px; background: var(--fg-color); border-radius: 2px; }
+.fg-cards-row { display: flex; gap: 16px; padding: 20px 24px; overflow-x: auto; }
+
+/* FLOODGATE BIG CARD */
+.fg-big-card {
+  background: linear-gradient(180deg, #f5f3ff, #ede9fe);
+  border: 1.5px solid rgba(124,58,237,.25); border-radius: 18px;
+  padding: 0; overflow: hidden; min-width: 260px; flex: 1;
+  cursor: pointer; transition: transform .2s, box-shadow .2s;
+}
+.fg-big-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(124,58,237,.18); }
+.fg-big-card.crit { border-color: var(--crit); animation: cardPulse 2s ease-in-out infinite; }
+.fg-big-card.warn { border-color: var(--warn); }
+
+.fg-big-head {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.fg-big-head .fid { font-size: 11px; font-weight: 700; opacity: .8; letter-spacing: .5px; font-family: 'Kanit', sans-serif; }
+.fg-big-head .fname { font-size: 15px; font-weight: 700; font-family: 'Kanit', sans-serif; margin-top: 2px; }
+.fg-big-head .famp { font-size: 11px; opacity: .85; margin-top: 2px; }
+.fg-link-pn {
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3);
+  border-radius: 8px; padding: 4px 9px; font-size: 10.5px; font-weight: 700;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.fg-big-body { padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+
+/* Big tube for FG */
+.fg-tube-wrap { display: flex; justify-content: center; }
+.fg-tube-outer { position: relative; }
+.fg-tube {
+  width: 40px; height: 130px; background: #ddd6fe; border-radius: 20px;
+  overflow: hidden; border: 2.5px solid #c4b5fd;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,.1); position: relative;
+}
+.fg-fill-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0 0 18px 18px;
+  transition: height 1.4s cubic-bezier(.34,1.26,.64,1);
+}
+.fg-fill-bar.fg-normal { background: linear-gradient(180deg, #c4b5fd, #7c3aed); }
+.fg-fill-bar.fg-warn   { background: linear-gradient(180deg, #fde68a, #f59e0b); }
+.fg-fill-bar.fg-crit   { background: linear-gradient(180deg, #fca5a5, #dc2626); }
+.fg-fill-bar::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 7px;
+  background: rgba(255,255,255,.45); border-radius: 50%;
+  animation: waveTop 2.5s ease-in-out infinite;
+}
+.fg-thresh-line { position: absolute; left: 0; right: 0; height: 2px; z-index: 5; }
+.fg-thresh-line.w { background: rgba(245,158,11,.8); }
+.fg-thresh-line.c { background: rgba(220,38,38,.8); }
+.fg-ticks-wrap { position: absolute; top: 4px; right: 3px; bottom: 4px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.fg-tick { width: 6px; height: 1px; background: rgba(0,0,0,.2); }
+.fg-tick:nth-child(5n+1) { width: 9px; background: rgba(0,0,0,.35); }
+
+.fg-stats-col { display: flex; flex-direction: column; gap: 10px; }
+.fg-stat-item { background: rgba(255,255,255,.7); border-radius: 10px; padding: 10px 12px; border: 1px solid rgba(124,58,237,.12); }
+.fg-stat-item .lbl { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: .3px; margin-bottom: 3px; }
+.fg-stat-item .val { font-size: 20px; font-weight: 800; color: var(--fg-color); font-family: 'Kanit', sans-serif; line-height: 1; }
+.fg-stat-item .val.warn-v { color: var(--warn); }
+.fg-stat-item .val.crit-v { color: var(--crit); }
+.fg-stat-item .unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+.fg-stat-item .sub { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+
+.fg-big-footer { padding: 10px 16px; border-top: 1px solid rgba(124,58,237,.12); display: flex; align-items: center; justify-content: space-between; }
+.fg-pill { padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
+.fg-pill.fg-normal { background: var(--fg-light); color: var(--fg-color); }
+.fg-pill.fg-warn   { background: #fef3c7; color: #a16207; }
+.fg-pill.fg-crit   { background: #fee2e2; color: #b91c1c; }
+.fg-link-note { font-size: 10.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
 
 /* DETAIL PANEL */
 .detail-panel {
@@ -246,6 +363,7 @@ tbody tr:hover { background: #f8fafc; cursor: pointer; }
 .pill.normal { background: #dcfce7; color: #15803d; }
 .pill.warn   { background: #fef3c7; color: #a16207; }
 .pill.crit   { background: #fee2e2; color: #b91c1c; }
+.pill.fg-pill-table { background: var(--fg-light); color: var(--fg-color); }
 .mini-bar-wrap { width: 72px; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
 .mini-bar { height: 100%; border-radius: 4px; }
 .mini-bar.normal { background: var(--normal); }
@@ -271,7 +389,10 @@ footer strong { color: #fff; }
 </head>
 <body>
 
-<header class="app-header">
+<!-- Broadcast Toast -->
+<div id="broadcastToast">🔄 ข้อมูลใหม่จากระบบบันทึก — กำลังอัปเดต...</div>
+
+<header>
   <div class="hdr-inner">
     <div class="hdr-brand">
       <div class="hdr-logo">
@@ -281,7 +402,7 @@ footer strong { color: #fff; }
       </div>
       <div>
         <div class="hdr-title">ลำน้ำพะเนียง</div>
-        <div class="hdr-sub">Paneang River · <span id="hdrStationCount">—</span> สถานีตรวจวัด · ต้นน้ำ นาวัง → เมืองหนองบัวลำภู</div>
+        <div class="hdr-sub">Paneang River · 10 สถานีตรวจวัด · ต้นน้ำ นาวัง → เมืองหนองบัวลำภู</div>
       </div>
     </div>
     <div class="hdr-right">
@@ -294,7 +415,7 @@ footer strong { color: #fff; }
   </div>
 </header>
 
-<nav class="app-nav">
+<nav>
   <div class="nav-inner">
     <a href="index.html">🏠 หน้าหลัก</a>
     <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
@@ -309,284 +430,338 @@ footer strong { color: #fff; }
 </nav>
 
 <main>
-
-<!-- Summary -->
-<div class="summary-row" id="summaryRow">
-  <div class="sc info">
-    <div class="sc-label">สถานีตรวจวัด</div>
-    <div class="sc-value" id="scStations">—</div>
-    <div class="sc-sub">ลำน้ำพะเนียง</div>
-  </div>
-  <div class="sc normal">
-    <div class="sc-label">สถานะปกติ</div>
-    <div class="sc-value" id="scNormal">—</div>
-    <div class="sc-sub">ต่ำกว่าตลิ่ง</div>
-  </div>
-  <div class="sc warn">
-    <div class="sc-label">เฝ้าระวัง</div>
-    <div class="sc-value" id="scWarn">—</div>
-    <div class="sc-sub">ใกล้ตลิ่ง</div>
-  </div>
-  <div class="sc crit">
-    <div class="sc-label">วิกฤติ</div>
-    <div class="sc-value" id="scCrit">—</div>
-    <div class="sc-sub">น้ำเกินตลิ่ง</div>
-  </div>
-  <div class="sc info">
-    <div class="sc-label">ต่ำกว่าตลิ่ง เฉลี่ย</div>
-    <div class="sc-value" id="scAvg">—</div>
-    <div class="sc-sub">เมตร</div>
-  </div>
-</div>
-
-<!-- River Scene -->
-<div class="scene-wrap">
-  <div class="scene-head">
-    <h2>🌊 ฉากลำน้ำพะเนียง — ระดับน้ำ Real-time ทุกสถานี</h2>
-    <div class="scene-meta" id="lastUpdate">—</div>
-  </div>
-
-  <!-- SVG Scene -->
-  <div style="position:relative; background: linear-gradient(180deg,#e0f2fe,#bae6fd 80%);">
-    <svg id="riverScene" class="river-scene-svg" viewBox="0 0 1200 240"
-         xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#e0f2fe"/>
-          <stop offset="100%" stop-color="#bae6fd"/>
-        </linearGradient>
-        <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#38bdf8" stop-opacity=".92"/>
-          <stop offset="100%" stop-color="#0369a1"/>
-        </linearGradient>
-        <linearGradient id="bankTopG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#4ade80"/>
-        </linearGradient>
-        <linearGradient id="bankBotG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#059669"/>
-        </linearGradient>
-        <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-
-      <!-- Sky -->
-      <rect width="1200" height="240" fill="url(#skyG)"/>
-
-      <!-- Clouds -->
-      <g opacity=".55">
-        <ellipse cx="110" cy="38" rx="58" ry="22" fill="white"/>
-        <ellipse cx="82" cy="50" rx="36" ry="16" fill="white"/>
-        <ellipse cx="148" cy="46" rx="42" ry="16" fill="white"/>
-        <ellipse cx="470" cy="28" rx="72" ry="26" fill="white"/>
-        <ellipse cx="438" cy="42" rx="46" ry="18" fill="white"/>
-        <ellipse cx="514" cy="40" rx="54" ry="19" fill="white"/>
-        <ellipse cx="890" cy="33" rx="62" ry="24" fill="white"/>
-        <ellipse cx="858" cy="46" rx="40" ry="16" fill="white"/>
-        <ellipse cx="934" cy="44" rx="48" ry="17" fill="white"/>
-        <ellipse cx="1150" cy="36" rx="50" ry="20" fill="white"/>
-        <ellipse cx="1120" cy="46" rx="34" ry="14" fill="white"/>
-      </g>
-
-      <!-- Background hills -->
-      <ellipse cx="200" cy="188" rx="220" ry="85" fill="#4ade80" opacity=".18"/>
-      <ellipse cx="650" cy="198" rx="280" ry="75" fill="#22c55e" opacity=".1"/>
-      <ellipse cx="1080" cy="185" rx="200" ry="80" fill="#4ade80" opacity=".15"/>
-
-      <!-- Top bank -->
-      <path d="M0,98 Q120,86 280,94 Q440,102 620,88 Q800,76 960,90 Q1100,100 1200,94 L1200,72 L0,72 Z"
-            fill="url(#bankTopG)" opacity=".95"/>
-      <path d="M0,96 Q120,84 280,92 Q440,100 620,86 Q800,74 960,88 Q1100,98 1200,92"
-            fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".5"/>
-
-      <!-- Bottom bank -->
-      <path d="M0,170 Q180,160 360,172 Q560,182 740,168 Q920,156 1100,164 L1200,168 L1200,240 L0,240 Z"
-            fill="url(#bankBotG)" opacity=".95"/>
-      <path d="M0,168 Q180,158 360,170 Q560,180 740,166 Q920,154 1100,162 L1200,166"
-            fill="none" stroke="#059669" stroke-width="1.5" opacity=".5"/>
-
-      <!-- Water body -->
-      <path d="M0,96 Q120,84 280,92 Q440,100 620,86 Q800,74 960,88 Q1100,98 1200,92
-               L1200,166 Q1100,160 920,154 Q740,166 560,180 Q380,170 180,160 L0,168 Z"
-            fill="url(#waterG)" opacity=".88"/>
-
-      <!-- Water ripples animation -->
-      <g opacity=".3">
-        <ellipse cx="180" cy="132" rx="38" ry="5" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="20" to="50" dur="3s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="3s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="540" cy="124" rx="32" ry="4" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="16" to="44" dur="3.5s" begin="1s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="3.5s" begin="1s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="870" cy="128" rx="42" ry="5" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="22" to="55" dur="4s" begin="2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="4s" begin="2s" repeatCount="indefinite"/>
-        </ellipse>
-      </g>
-
-      <!-- Flow arrow -->
-      <g fill="rgba(255,255,255,.55)">
-        <polygon points="1140,128 1158,133 1140,138"/><polygon points="1162,128 1180,133 1162,138"/>
-        <text x="1104" y="148" font-size="9" fill="rgba(255,255,255,.6)" font-family="Sarabun">ทิศทางน้ำ →</text>
-      </g>
-
-      <!-- River name -->
-      <text x="30" y="138" font-size="16" font-weight="bold" fill="rgba(255,255,255,.7)" font-family="Kanit">ลำน้ำพะเนียง</text>
-
-      <!-- Station pins (JS rendered) -->
-      <g id="scenePins"></g>
-    </svg>
-
-    <!-- Hover tooltip -->
-    <div id="sceneTip"></div>
-  </div>
-
-  <!-- Gauge scroller -->
-  <div class="stations-scroll-wrap">
-    <div class="stations-row" id="gaugesRow"></div>
-  </div>
-</div>
-
-<!-- Detail Panel -->
-<div class="detail-panel" id="detailPanel">
-  <div class="dp-head">
-    <h3 id="dpTitle">—</h3>
-    <button class="dp-close" onclick="closeDetail()">×</button>
-  </div>
-  <div class="dp-body">
-    <div class="dp-info-grid" id="dpInfo"></div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">แนวโน้มระดับน้ำ (คลิกเพื่อดูรายละเอียด)</div>
-      <div class="dp-chart-wrap"><canvas id="dpChart"></canvas></div>
+  <!-- Summary -->
+  <div class="summary-row" id="summaryRow">
+    <div class="sc info">
+      <div class="sc-label">สถานีตรวจวัด</div>
+      <div class="sc-value">10</div>
+      <div class="sc-sub">ลำน้ำพะเนียง</div>
     </div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">ประวัติการตรวจวัด</div>
-      <div class="dp-trend" id="dpTrend"></div>
+    <div class="sc normal">
+      <div class="sc-label">สถานะปกติ</div>
+      <div class="sc-value" id="scNormal">—</div>
+      <div class="sc-sub">ต่ำกว่าตลิ่ง</div>
+    </div>
+    <div class="sc warn">
+      <div class="sc-label">เฝ้าระวัง</div>
+      <div class="sc-value" id="scWarn">—</div>
+      <div class="sc-sub">ใกล้ตลิ่ง</div>
+    </div>
+    <div class="sc crit">
+      <div class="sc-label">วิกฤติ</div>
+      <div class="sc-value" id="scCrit">—</div>
+      <div class="sc-sub">น้ำเกินตลิ่ง</div>
+    </div>
+    <div class="sc info">
+      <div class="sc-label">ต่ำกว่าตลิ่ง เฉลี่ย</div>
+      <div class="sc-value" id="scAvg">—</div>
+      <div class="sc-sub">เมตร</div>
+    </div>
+    <div class="sc fg">
+      <div class="sc-label">ประตูระบายน้ำ (ชป.)</div>
+      <div class="sc-value">3</div>
+      <div class="sc-sub">FG01 · FG02 · FG03</div>
     </div>
   </div>
-</div>
 
-<!-- Charts -->
-<div class="charts-row">
-  <div class="chart-panel">
-    <div class="cp-head"><h3>แนวโน้มระดับน้ำ 7 วันย้อนหลัง (ม.รทก.)</h3></div>
-    <div class="cp-body"><canvas id="trendChart"></canvas></div>
+  <!-- River Scene -->
+  <div class="scene-wrap">
+    <div class="scene-head">
+      <h2>🌊 ฉากลำน้ำพะเนียง — ระดับน้ำ Real-time ทุกสถานี</h2>
+      <div class="scene-meta" id="lastUpdate">—</div>
+    </div>
+    <div style="position:relative; background: linear-gradient(180deg,#e0f2fe,#bae6fd 80%);">
+      <svg id="riverScene" class="river-scene-svg" viewBox="0 0 1200 240"
+        xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e0f2fe"/>
+            <stop offset="100%" stop-color="#bae6fd"/>
+          </linearGradient>
+          <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity=".92"/>
+            <stop offset="100%" stop-color="#0369a1"/>
+          </linearGradient>
+          <linearGradient id="bankTopG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#4ade80"/>
+          </linearGradient>
+          <linearGradient id="bankBotG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#059669"/>
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <rect width="1200" height="240" fill="url(#skyG)"/>
+        <g opacity=".55">
+          <ellipse cx="110" cy="38" rx="58" ry="22" fill="white"/>
+          <ellipse cx="82" cy="50" rx="36" ry="16" fill="white"/>
+          <ellipse cx="148" cy="46" rx="42" ry="16" fill="white"/>
+          <ellipse cx="470" cy="28" rx="72" ry="26" fill="white"/>
+          <ellipse cx="438" cy="42" rx="46" ry="18" fill="white"/>
+          <ellipse cx="514" cy="40" rx="54" ry="19" fill="white"/>
+          <ellipse cx="890" cy="33" rx="62" ry="24" fill="white"/>
+          <ellipse cx="858" cy="46" rx="40" ry="16" fill="white"/>
+          <ellipse cx="934" cy="44" rx="48" ry="17" fill="white"/>
+          <ellipse cx="1150" cy="36" rx="50" ry="20" fill="white"/>
+          <ellipse cx="1120" cy="46" rx="34" ry="14" fill="white"/>
+        </g>
+        <ellipse cx="200" cy="188" rx="220" ry="85" fill="#4ade80" opacity=".18"/>
+        <ellipse cx="650" cy="198" rx="280" ry="75" fill="#22c55e" opacity=".1"/>
+        <ellipse cx="1080" cy="185" rx="200" ry="80" fill="#4ade80" opacity=".15"/>
+        <path d="M0,98 Q120,86 280,94 Q440,102 620,88 Q800,76 960,90 Q1100,100 1200,94 L1200,72 L0,72 Z"
+          fill="url(#bankTopG)" opacity=".95"/>
+        <path d="M0,96 Q120,84 280,92 Q440,100 620,86 Q800,74 960,88 Q1100,98 1200,92"
+          fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".5"/>
+        <path d="M0,170 Q180,160 360,172 Q560,182 740,168 Q920,156 1100,164 L1200,168 L1200,240 L0,240 Z"
+          fill="url(#bankBotG)" opacity=".95"/>
+        <path d="M0,168 Q180,158 360,170 Q560,180 740,166 Q920,154 1100,162 L1200,166"
+          fill="none" stroke="#059669" stroke-width="1.5" opacity=".5"/>
+        <path d="M0,96 Q120,84 280,92 Q440,100 620,86 Q800,74 960,88 Q1100,98 1200,92
+          L1200,166 Q1100,160 920,154 Q740,166 560,180 Q380,170 180,160 L0,168 Z"
+          fill="url(#waterG)" opacity=".88"/>
+        <g opacity=".3">
+          <ellipse cx="180" cy="132" rx="38" ry="5" fill="none" stroke="white" stroke-width="1.5">
+            <animate attributeName="rx" from="20" to="50" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from=".5" to="0" dur="3s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="540" cy="124" rx="32" ry="4" fill="none" stroke="white" stroke-width="1.5">
+            <animate attributeName="rx" from="16" to="44" dur="3.5s" begin="1s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from=".5" to="0" dur="3.5s" begin="1s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="870" cy="128" rx="42" ry="5" fill="none" stroke="white" stroke-width="1.5">
+            <animate attributeName="rx" from="22" to="55" dur="4s" begin="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" from=".5" to="0" dur="4s" begin="2s" repeatCount="indefinite"/>
+          </ellipse>
+        </g>
+        <g fill="rgba(255,255,255,.55)">
+          <polygon points="1140,128 1158,133 1140,138"/><polygon points="1162,128 1180,133 1162,138"/>
+          <text x="1104" y="148" font-size="9" fill="rgba(255,255,255,.6)" font-family="Sarabun">ทิศทางน้ำ →</text>
+        </g>
+        <text x="30" y="138" font-size="16" font-weight="bold" fill="rgba(255,255,255,.7)" font-family="Kanit">ลำน้ำพะเนียง</text>
+        <g id="scenePins"></g>
+      </svg>
+      <div id="sceneTip"></div>
+    </div>
+    <div class="stations-scroll-wrap">
+      <div class="stations-row" id="gaugesRow"></div>
+    </div>
   </div>
-  <div class="chart-panel">
-    <div class="cp-head"><h3>% ระดับน้ำเทียบตลิ่ง รายสถานี</h3></div>
-    <div class="cp-body"><canvas id="pctChart"></canvas></div>
-  </div>
-</div>
 
-<!-- Table -->
-<div class="table-panel">
-  <div class="tp-head"><h3>ตารางสถานีตรวจวัดทั้งหมด — ลำน้ำพะเนียง</h3></div>
-  <div style="overflow-x:auto;">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th><th>ชื่อสถานี</th><th>ที่ตั้ง</th>
-          <th style="text-align:right">ตลิ่ง (ม.)</th>
-          <th style="text-align:right">เฝ้าระวัง</th>
-          <th style="text-align:right">ระดับน้ำ</th>
-          <th>% ตลิ่ง</th>
-          <th style="text-align:right">ต่ำกว่าตลิ่ง</th>
-          <th>สถานะ</th>
-        </tr>
-      </thead>
-      <tbody id="stationTableBody"></tbody>
-    </table>
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-head">
+      <h3 id="dpTitle">—</h3>
+      <button class="dp-close" onclick="closeDetail()">×</button>
+    </div>
+    <div class="dp-body">
+      <div class="dp-info-grid" id="dpInfo"></div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">แนวโน้มระดับน้ำ</div>
+        <div class="dp-chart-wrap"><canvas id="dpChart"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">ประวัติการตรวจวัด</div>
+        <div class="dp-trend" id="dpTrend"></div>
+      </div>
+    </div>
   </div>
-</div>
 
+  <!-- ===== ประตูระบายน้ำ กรมชลประทาน ===== -->
+  <div class="fg-section">
+    <div class="fg-section-head">
+      <h2>🚪 ประตูระบายน้ำ กรมชลประทาน — ลำน้ำพะเนียง</h2>
+      <span style="font-size:12px;color:var(--muted)" id="fgLastUpdate">—</span>
+    </div>
+    <div class="fg-cards-row" id="fgCardsRow"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-panel">
+      <div class="cp-head"><h3>แนวโน้มระดับน้ำ 7 วันย้อนหลัง (ม.รทก.)</h3></div>
+      <div class="cp-body"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-panel">
+      <div class="cp-head"><h3>% ระดับน้ำเทียบตลิ่ง รายสถานี</h3></div>
+      <div class="cp-body"><canvas id="pctChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="tp-head"><h3>ตารางสถานีตรวจวัดทั้งหมด — ลำน้ำพะเนียง</h3></div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>ชื่อสถานี</th><th>ที่ตั้ง</th>
+            <th style="text-align:right">ตลิ่ง (ม.)</th>
+            <th style="text-align:right">เฝ้าระวัง</th>
+            <th style="text-align:right">ระดับน้ำ</th>
+            <th>% ตลิ่ง</th>
+            <th style="text-align:right">ต่ำกว่าตลิ่ง</th>
+            <th>สถานะ</th>
+            <th>ปตร. (ชป.)</th>
+          </tr>
+        </thead>
+        <tbody id="stationTableBody"></tbody>
+      </table>
+    </div>
+  </div>
 </main>
 
-<footer class="app-footer">
+<footer>
   <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong><br>
   ศาลากลางจังหวัดหนองบัวลำภู ชั้น 3 · จ.หนองบัวลำภู 39000 · © 2025
 </footer>
 
 <script>
 /* ============================================================
- *  DATA CONFIG
+ * DATA CONFIG
  * ============================================================ */
-const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
+const API_URL = window.APP_CONFIG?.API_URL ||
+  "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
 
+/* 10 สถานีลำน้ำพะเนียง */
 const STATIONS = [
-  {id:"PN01",no:1,name:"วังปลาป้อม",     village:"บ้านโคกเจริญ",  amphoe:"นาวัง",              bank:290.0,warn:289.5,crit:290.0},
-  {id:"PN02",no:2,name:"โคกกระทอ",       village:"บ้านโคกกระทอ",  amphoe:"นาวัง",              bank:266.0,warn:265.5,crit:266.0},
-  {id:"PN03",no:3,name:"วังสามหาบ",       village:"บ้านวังสามหาบ", amphoe:"นาวัง",              bank:258.0,warn:257.5,crit:258.0},
-  {id:"PN04",no:4,name:"บ้านหนองด่าน",    village:"บ้านหนองด่าน",  amphoe:"นากลาง",            bank:249.0,warn:248.5,crit:249.0},
-  {id:"PN05",no:5,name:"บ้านฝั่งแดง",     village:"บ้านฝั่งแดง",  amphoe:"นากลาง",            bank:237.0,warn:236.5,crit:237.0},
-  {id:"PN06",no:6,name:"ปตร.หนองหว้าใหญ่",village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู",bank:216.0,warn:215.5,crit:216.0},
-  {id:"PN07",no:7,name:"วังหมื่น",         village:"บ้านวังหมื่น",   amphoe:"เมืองหนองบัวลำภู",bank:210.0,warn:209.5,crit:210.0},
-  {id:"PN08",no:8,name:"ปตร.ปู่หลอด",     village:"บ้านโนนคูณ",   amphoe:"เมืองหนองบัวลำภู",bank:203.0,warn:202.5,crit:203.0},
-  {id:"PN09",no:9,name:"บ้านข้องโป้",     village:"บ้านข้องโป้",   amphoe:"เมืองหนองบัวลำภู",bank:201.0,warn:200.5,crit:201.0},
-  {id:"PN10",no:10,name:"ปตร.หัวนา",      village:"บ้านดอนหัน",    amphoe:"เมืองหนองบัวลำภู",bank:191.0,warn:190.5,crit:191.0},
+  {id:"PN01",no:1, name:"วังปลาป้อม",          village:"บ้านโคกเจริญ",     amphoe:"นาวัง",               bank:290.0,warn:289.5,crit:290.0},
+  {id:"PN02",no:2, name:"โคกกระทอ",             village:"บ้านโคกกระทอ",     amphoe:"นาวัง",               bank:266.0,warn:265.5,crit:266.0},
+  {id:"PN03",no:3, name:"วังสามหาบ",            village:"บ้านวังสามหาบ",    amphoe:"นาวัง",               bank:258.0,warn:257.5,crit:258.0},
+  {id:"PN04",no:4, name:"บ้านหนองด่าน",         village:"บ้านหนองด่าน",     amphoe:"นากลาง",              bank:249.0,warn:248.5,crit:249.0},
+  {id:"PN05",no:5, name:"บ้านฝั่งแดง",          village:"บ้านฝั่งแดง",     amphoe:"นากลาง",              bank:237.0,warn:236.5,crit:237.0},
+  {id:"PN06",no:6, name:"ปตร.หนองหว้าใหญ่",    village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู",  bank:216.0,warn:215.5,crit:216.0, fg_id:"FG01"},
+  {id:"PN07",no:7, name:"วังหมื่น",             village:"บ้านวังหมื่น",     amphoe:"เมืองหนองบัวลำภู",  bank:210.0,warn:209.5,crit:210.0},
+  {id:"PN08",no:8, name:"ปตร.ปู่หลอด",          village:"บ้านโนนคูณ",      amphoe:"เมืองหนองบัวลำภู",  bank:203.0,warn:202.5,crit:203.0, fg_id:"FG02"},
+  {id:"PN09",no:9, name:"บ้านข้องโป้",          village:"บ้านข้องโป้",     amphoe:"เมืองหนองบัวลำภู",  bank:201.0,warn:200.5,crit:201.0},
+  {id:"PN10",no:10,name:"ปตร.หัวนา",           village:"บ้านดอนหัน",      amphoe:"เมืองหนองบัวลำภู",  bank:191.0,warn:190.5,crit:191.0, fg_id:"FG03"},
 ];
 
-let stationData = {};
+/* 3 ประตูระบายน้ำ กรมชลประทาน — linked กับ PN06/08/10 */
+const FLOODGATES = [
+  { id:"FG01", name:"ปตร.หนองหว้าใหญ่", village:"บ้านหนองหว้า",
+    tambon:"โพธิ์ชัย", amphoe:"เมืองหนองบัวลำภู",
+    pn_id:"PN06",                         /* สถานีพะเนียงที่ link กัน */
+    threshold_normal:214.0, threshold_warn:214.5, threshold_crit:216.0 },
+  { id:"FG02", name:"ปตร.ปู่หลอด",     village:"บ้านโนนคูณ",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    pn_id:"PN08",
+    threshold_normal:203.0, threshold_warn:203.5, threshold_crit:205.0 },
+  { id:"FG03", name:"ปตร.หัวนา",       village:"บ้านดอนหัน",
+    tambon:"หัวนา", amphoe:"เมืองหนองบัวลำภู",
+    pn_id:"PN10",
+    threshold_normal:190.0, threshold_warn:191.0, threshold_crit:192.0 },
+];
 
+/* ============================================================
+ * STATE
+ * ============================================================ */
+let stationData = {}; /* { PN01: { current, history, _isLive } } */
+let fgData      = {}; /* { FG01: { level, opening, flow, _isLive } } */
 
-function genDemo(s){
+/* ============================================================
+ * DEMO DATA GENERATORS
+ * ============================================================ */
+function genDemo(s) {
   const base = s.bank - 1.5;
-  const cur = +(base + (Math.random() - 0.3) * 2.2).toFixed(2);
-  const hist = Array.from({length:8},(_,i)=> +(cur + (Math.random()-.5)*.7).toFixed(2));
+  const cur  = +(base + (Math.random() - 0.3) * 2.2).toFixed(2);
+  const hist = Array.from({length:8}, () => +(cur + (Math.random()-.5)*.7).toFixed(2));
   hist[hist.length-1] = cur;
   return { current: cur, history: hist };
 }
+function genDemoFG(fg) {
+  const base = fg.threshold_normal - 0.8;
+  const lv   = +(base + (Math.random() - 0.3) * 2.5).toFixed(2);
+  return { level: lv, opening: +(Math.random()*1.5).toFixed(2), flow: +(Math.random()*30).toFixed(1) };
+}
+function initDemo() {
+  STATIONS.forEach(s  => { stationData[s.id]  = genDemo(s);   });
+  FLOODGATES.forEach(fg=> { fgData[fg.id]      = genDemoFG(fg); });
+}
 
-function initDemo(){ STATIONS.forEach(s => { stationData[s.id] = genDemo(s); }); }
-
-function statusOf(s){
+/* ============================================================
+ * STATUS HELPERS
+ * ============================================================ */
+function statusOf(s) {
   const lv = stationData[s.id]?.current ?? s.bank - 2;
-  if(lv >= s.crit) return "crit";
-  if(lv >= s.warn) return "warn";
+  if (lv >= s.crit) return "crit";
+  if (lv >= s.warn) return "warn";
   return "normal";
 }
-const ST_LABEL = {normal:"ปกติ", warn:"เฝ้าระวัง", crit:"วิกฤติ"};
-const ST_EMOJI = {normal:"🟢", warn:"🟡", crit:"🔴"};
+function fgStatusOf(fg) {
+  const lv = fgData[fg.id]?.level ?? fg.threshold_normal - 0.5;
+  if (lv >= fg.threshold_crit) return "fg-crit";
+  if (lv >= fg.threshold_warn) return "fg-warn";
+  return "fg-normal";
+}
+const ST_LABEL = { normal:"ปกติ", warn:"เฝ้าระวัง", crit:"วิกฤติ" };
+const ST_EMOJI = { normal:"🟢", warn:"🟡", crit:"🔴" };
+const FG_LABEL = { "fg-normal":"ปกติ", "fg-warn":"เฝ้าระวัง", "fg-crit":"วิกฤติ" };
+const FG_EMOJI = { "fg-normal":"🟢", "fg-warn":"🟡", "fg-crit":"🔴" };
 
-/* CLOCK */
-function tick(){
+/* ============================================================
+ * BROADCAST CHANNEL — รับสัญญาณจาก input.html
+ * ============================================================ */
+(function setupBroadcast() {
+  try {
+    const ch = new BroadcastChannel("nbl_water_update");
+    ch.onmessage = (e) => {
+      const { type } = e.data || {};
+      if (type === "data_saved") {
+        showBroadcastToast();
+        /* delay 1.5 วิ แล้ว reload ข้อมูล ให้ Apps Script เขียน Sheet เสร็จก่อน */
+        setTimeout(() => loadData(), 1500);
+      }
+    };
+  } catch(e) { console.warn("BroadcastChannel ไม่รองรับ:", e); }
+})();
+
+function showBroadcastToast() {
+  const t = document.getElementById("broadcastToast");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 4000);
+}
+
+/* ============================================================
+ * CLOCK
+ * ============================================================ */
+function tick() {
   const t = new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
   const el = document.getElementById("liveTime");
-  if(el) el.textContent = t;
+  if (el) el.textContent = t;
 }
-setInterval(tick,1000); tick();
+setInterval(tick, 1000); tick();
 
-/* SUMMARY */
-function renderSummary(){
-  const c = {normal:0,warn:0,crit:0};
+/* ============================================================
+ * SUMMARY
+ * ============================================================ */
+function renderSummary() {
+  const c = { normal:0, warn:0, crit:0 };
   let diffSum = 0;
   STATIONS.forEach(s => {
     c[statusOf(s)]++;
     diffSum += s.bank - (stationData[s.id]?.current ?? s.bank-2);
   });
-  // อัปเดตจำนวนสถานีแบบ dynamic (กันเลข hardcode ผิด)
-  const _n = STATIONS.length;
-  const _sc = document.getElementById("scStations"); if(_sc) _sc.textContent = _n;
-  const _hc = document.getElementById("hdrStationCount"); if(_hc) _hc.textContent = _n;
-  const _ssc = document.getElementById("sceneStationCount"); if(_ssc) _ssc.textContent = _n;
   document.getElementById("scNormal").textContent = c.normal;
   document.getElementById("scWarn").textContent   = c.warn;
   document.getElementById("scCrit").textContent   = c.crit;
   document.getElementById("scAvg").textContent    = (diffSum/STATIONS.length).toFixed(2);
 
   const worst = c.crit > 0 ? "crit" : c.warn > 0 ? "warn" : "normal";
-  const dot = document.getElementById("statusDot");
+  const dot   = document.getElementById("statusDot");
   dot.className = "dot" + (worst !== "normal" ? " " + worst : "");
   document.getElementById("statusLabel").textContent =
     worst === "crit" ? "⚠ มีสถานีวิกฤติ" : worst === "warn" ? "เฝ้าระวัง" : "สถานการณ์ปกติ";
 
-  document.getElementById("lastUpdate").textContent =
-    "อัปเดต " + new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}) + " น.";
+  const now = new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"});
+  document.getElementById("lastUpdate").textContent  = "อัปเดต " + now + " น.";
+  document.getElementById("fgLastUpdate").textContent = "อัปเดต " + now + " น.";
 }
 
-/* SCENE PINS */
-function renderScene(){
+/* ============================================================
+ * SCENE PINS
+ * ============================================================ */
+function renderScene() {
   const g = document.getElementById("scenePins");
-  if(!g) return;
+  if (!g) return;
   g.innerHTML = "";
 
   const N = STATIONS.length;
@@ -595,49 +770,48 @@ function renderScene(){
   const waterTopY = 92, waterBotY = 165;
 
   STATIONS.forEach((s, i) => {
-    const x = startX + i * step;
+    const x  = startX + i * step;
     const lv = stationData[s.id]?.current ?? s.bank - 2;
     const st = statusOf(s);
     const diff = s.bank - lv;
-    const pc = Math.max(0.02, Math.min(0.98, 1 - diff/4.5));
+    const pc   = Math.max(0.02, Math.min(0.98, 1 - diff/4.5));
     const pinColor = st === "crit" ? "#dc2626" : st === "warn" ? "#f59e0b" : "#16a34a";
+    const hasFG = !!s.fg_id;
 
-    /* Gauge staff */
     const staffH = waterBotY - waterTopY + 14;
-    const fillH  = staffH * pc;
-
-    /* Name label truncate */
+    const fillH  = Math.round(staffH * pc);
     const nm = s.name.length > 8 ? s.name.slice(0,7)+"…" : s.name;
+
+    /* เพิ่มเครื่องหมาย ⚙ ถ้าเป็น ปตร. */
+    const fgMark = hasFG
+      ? `<rect x="${x-8}" y="${waterBotY+35}" width="16" height="11" rx="3" fill="#7c3aed" opacity=".9"/>
+         <text x="${x}" y="${waterBotY+44}" text-anchor="middle" font-size="8" fill="white" font-family="Sarabun">ชป.</text>`
+      : "";
 
     g.innerHTML += `
       <g class="sp" data-id="${s.id}" onclick="openDetail('${s.id}')" style="cursor:pointer;">
-        <!-- staff -->
         <rect x="${x-3}" y="${waterTopY-6}" width="6" height="${staffH}"
-              rx="3" fill="rgba(255,255,255,.25)" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
-        <!-- fill -->
+          rx="3" fill="rgba(255,255,255,.25)" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
         <rect x="${x-3}" y="${waterBotY + 8 - fillH}" width="6" height="${fillH}"
-              rx="3" fill="${pinColor}" opacity=".85"/>
-        <!-- pin head circle -->
+          rx="3" fill="${pinColor}" opacity=".85"/>
         <circle cx="${x}" cy="${waterTopY - 16}" r="10"
-                fill="${pinColor}" stroke="white" stroke-width="2"
-                filter="url(#glow)"/>
+          fill="${pinColor}" stroke="white" stroke-width="2" filter="url(#glow)"/>
         <text x="${x}" y="${waterTopY - 12}" text-anchor="middle"
-              font-size="8" font-weight="bold" fill="white" font-family="Sarabun">${s.no}</text>
-        <!-- level tag -->
+          font-size="8" font-weight="bold" fill="white" font-family="Sarabun">${s.no}</text>
         <rect x="${x-22}" y="${waterTopY - 38}" width="44" height="15" rx="5"
-              fill="${pinColor}" opacity=".9"/>
+          fill="${pinColor}" opacity=".9"/>
         <text x="${x}" y="${waterTopY - 27}" text-anchor="middle"
-              font-size="8.5" font-weight="700" fill="white" font-family="Courier New">${lv.toFixed(2)}</text>
-        <!-- name tag -->
+          font-size="8.5" font-weight="700" fill="white" font-family="Courier New">${lv.toFixed(2)}</text>
         <rect x="${x-30}" y="${waterBotY + 18}" width="60" height="15" rx="4"
-              fill="rgba(255,255,255,.92)"/>
+          fill="rgba(255,255,255,.92)"/>
         <text x="${x}" y="${waterBotY + 29}" text-anchor="middle"
-              font-size="9" font-weight="700" fill="#0c4a6e" font-family="Sarabun">${nm}</text>
+          font-size="9" font-weight="700" fill="#0c4a6e" font-family="Sarabun">${nm}</text>
+        ${fgMark}
         ${st === "crit" ? `
-          <circle cx="${x}" cy="${waterTopY-16}" r="10" fill="none" stroke="${pinColor}" stroke-width="2">
-            <animate attributeName="r" from="10" to="22" dur="1.6s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" from=".6" to="0" dur="1.6s" repeatCount="indefinite"/>
-          </circle>` : ""}
+        <circle cx="${x}" cy="${waterTopY-16}" r="10" fill="none" stroke="${pinColor}" stroke-width="2">
+          <animate attributeName="r" from="10" to="22" dur="1.6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" from=".6" to="0" dur="1.6s" repeatCount="indefinite"/>
+        </circle>` : ""}
       </g>
     `;
   });
@@ -647,11 +821,13 @@ function renderScene(){
   const tip = document.getElementById("sceneTip");
   g.querySelectorAll(".sp").forEach(pin => {
     const id = pin.dataset.id;
-    const s = STATIONS.find(x => x.id === id);
-    if(!s) return;
+    const s  = STATIONS.find(x => x.id === id);
+    if (!s) return;
+    const fg = s.fg_id ? FLOODGATES.find(f => f.id === s.fg_id) : null;
     pin.addEventListener("mouseenter", () => {
       const lv = stationData[s.id]?.current ?? s.bank - 2;
       const st = statusOf(s);
+      const fgLv = fg ? (fgData[fg.id]?.level ?? "—") : null;
       tip.style.display = "block";
       tip.innerHTML = `<div style="font-weight:800;margin-bottom:3px;">${s.name}</div>
         <div style="color:#64748b;font-size:10.5px;margin-bottom:5px;">อ.${s.amphoe}</div>
@@ -659,31 +835,47 @@ function renderScene(){
           <span>ระดับน้ำ: <strong>${lv.toFixed(2)} ม.</strong></span>
           <span>ตลิ่ง: ${s.bank.toFixed(2)}</span>
         </div>
+        ${fg ? `<div style="margin-top:5px;font-size:11px;color:#7c3aed;font-weight:600;">⚙ ${fg.id}: ${typeof fgLv==="number"?fgLv.toFixed(2):fgLv} ม. (ชป.)</div>` : ""}
         <div style="margin-top:4px;font-size:11px;">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>`;
     });
     pin.addEventListener("mousemove", e => {
       const r = svgWrap.getBoundingClientRect();
       tip.style.left = (e.clientX - r.left + 16) + "px";
-      tip.style.top  = (e.clientY - r.top - 16) + "px";
+      tip.style.top  = (e.clientY - r.top  - 16) + "px";
     });
     pin.addEventListener("mouseleave", () => { tip.style.display = "none"; });
   });
 }
 
-/* GAUGES */
-function renderGauges(){
+/* ============================================================
+ * GAUGES — PN cards (บางใบมี FG badge ด้านล่าง)
+ * ============================================================ */
+function renderGauges() {
   const row = document.getElementById("gaugesRow");
-  if(!row) return;
+  if (!row) return;
+
   row.innerHTML = STATIONS.map(s => {
-    const lv = stationData[s.id]?.current ?? s.bank - 2;
-    const st = statusOf(s);
-    const diff = s.bank - lv;
-    const fillPct = Math.max(0, Math.min(100, (lv / s.bank) * 100));
-    const warnPct = Math.max(0, Math.min(100, (s.warn / s.bank) * 100));
-    const critPct = Math.max(0, Math.min(100, (s.crit / s.bank) * 100));
+    const lv    = stationData[s.id]?.current ?? s.bank - 2;
+    const st    = statusOf(s);
+    const diff  = s.bank - lv;
+    const minLv = s.bank - 5.5;
+    const range = s.bank - minLv;
+    const fillPct = Math.max(0, Math.min(100, ((lv - minLv) / range) * 100));
+    const warnPct = Math.max(0, Math.min(100, ((s.warn - minLv) / range) * 100));
+    const critPct = Math.max(0, Math.min(100, ((s.crit - minLv) / range) * 100));
     const fillPx  = Math.round(Math.min(fillPct * 1.1, 110));
-    const warnPx  = Math.round(Math.min(warnPct * 1.1, 110));
-    const critPx  = Math.round(Math.min(critPct * 1.1, 110));
+    const warnPx  = Math.round(warnPct * 1.1);
+    const critPx  = Math.round(critPct * 1.1);
+
+    /* ถ้ามี FG ที่ link กัน — ดึงระดับน้ำมาแสดงด้วย */
+    const fg    = s.fg_id ? FLOODGATES.find(f => f.id === s.fg_id) : null;
+    const fgLv  = fg ? (fgData[fg.id]?.level ?? null) : null;
+    const fgSt  = fg ? fgStatusOf(fg) : null;
+    const fgBadge = fg ? `
+      <div class="gc-link-badge" onclick="event.stopPropagation();openFGDetail('${fg.id}')">
+        ⚙ ${fg.id} · ${fgLv !== null ? fgLv.toFixed(2)+" ม." : "—"}
+        <span style="margin-left:2px;">${FG_EMOJI[fgSt]||""}</span>
+      </div>` : "";
 
     return `
       <div class="gauge-card ${st}" onclick="openDetail('${s.id}')">
@@ -712,24 +904,129 @@ function renderGauges(){
           </div>
         </div>
         <div class="gc-badge ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>
+        ${fgBadge}
+        ${stationData[s.id]?._isLive
+          ? '<div style="font-size:9px;color:#15803d;text-align:center;margin-top:4px;font-weight:700;">🟢 LIVE</div>'
+          : '<div style="font-size:9px;color:#92400e;text-align:center;margin-top:4px;font-weight:700;">🟡 DEMO</div>'}
       </div>`;
   }).join("");
 }
 
-/* DETAIL PANEL */
+/* ============================================================
+ * FLOODGATE BIG CARDS
+ * ============================================================ */
+function renderFGCards() {
+  const row = document.getElementById("fgCardsRow");
+  if (!row) return;
+
+  row.innerHTML = FLOODGATES.map(fg => {
+    const d    = fgData[fg.id] || {};
+    const lv   = d.level   ?? fg.threshold_normal - 0.5;
+    const op   = d.opening ?? null;
+    const fl   = d.flow    ?? null;
+    const rawSt = fgStatusOf(fg);               /* "fg-normal" | "fg-warn" | "fg-crit" */
+    const stSimple = rawSt.replace("fg-","");    /* "normal" | "warn" | "crit" */
+
+    /* linked PN station */
+    const pn   = STATIONS.find(x => x.id === fg.pn_id);
+    const pnLv = pn ? (stationData[pn.id]?.current ?? pn.bank - 2) : null;
+
+    /* tube calc: range = crit - (normal-1.5) */
+    const minLv   = fg.threshold_normal - 1.5;
+    const maxLv   = fg.threshold_crit   + 0.5;
+    const range   = maxLv - minLv;
+    const fillPct = Math.max(0, Math.min(100, ((lv - minLv) / range) * 100));
+    const wPct    = Math.max(0, Math.min(100, ((fg.threshold_warn - minLv) / range) * 100));
+    const cPct    = Math.max(0, Math.min(100, ((fg.threshold_crit - minLv) / range) * 100));
+    const fillPx  = Math.round(fillPct * 1.3);
+    const wPx     = Math.round(wPct    * 1.3);
+    const cPx     = Math.round(cPct    * 1.3);
+
+    const stColorMap = { "fg-normal":"#7c3aed", "fg-warn":"#f59e0b", "fg-crit":"#dc2626" };
+    const stColor = stColorMap[rawSt];
+
+    return `
+      <div class="fg-big-card ${stSimple}" onclick="openFGDetail('${fg.id}')">
+        <div class="fg-big-head">
+          <div>
+            <div class="fid">${fg.id} · กรมชลประทาน</div>
+            <div class="fname">${fg.name}</div>
+            <div class="famp">📍 อ.${fg.amphoe}</div>
+          </div>
+          ${pn ? `<div class="fg-link-pn">🌊 ${pn.id} · ${pn.name}</div>` : ""}
+        </div>
+        <div class="fg-big-body">
+          <div class="fg-tube-wrap">
+            <div class="fg-tube-outer">
+              <div class="fg-tube">
+                <div class="fg-ticks-wrap">${Array.from({length:22},()=>'<div class="fg-tick"></div>').join("")}</div>
+                <div class="fg-thresh-line w" style="bottom:${wPx}px;" title="เฝ้าระวัง ${fg.threshold_warn}"></div>
+                <div class="fg-thresh-line c" style="bottom:${cPx}px;" title="วิกฤติ ${fg.threshold_crit}"></div>
+                <div class="fg-fill-bar fg-${stSimple}" style="height:${fillPx}px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fg-stats-col">
+            <div class="fg-stat-item">
+              <div class="lbl">ระดับน้ำ ณ ปัจจุบัน</div>
+              <div class="val ${stSimple==="warn"?"warn-v":stSimple==="crit"?"crit-v":""}" style="${stSimple==="normal"?"color:var(--fg-color)":""}">
+                ${lv.toFixed(2)}<span class="unit">ม.รทก.</span>
+              </div>
+              <div class="sub">เกณฑ์เฝ้าระวัง: ${fg.threshold_warn.toFixed(1)} ม.</div>
+            </div>
+            ${pn && pnLv !== null ? `
+            <div class="fg-stat-item">
+              <div class="lbl">🌊 สถานี ${pn.id} ที่เชื่อมกัน</div>
+              <div class="val" style="font-size:16px;color:var(--brand);">${pnLv.toFixed(2)}<span class="unit">ม.รทก.</span></div>
+              <div class="sub">ตลิ่ง ${pn.bank.toFixed(2)} ม. · ต่ำกว่า ${(pn.bank-pnLv).toFixed(2)} ม.</div>
+            </div>` : ""}
+            ${op !== null ? `
+            <div class="fg-stat-item">
+              <div class="lbl">บานประตูเปิด</div>
+              <div class="val fg-v" style="font-size:16px;">${op.toFixed(2)}<span class="unit">ม.</span></div>
+            </div>` : ""}
+            ${fl !== null ? `
+            <div class="fg-stat-item">
+              <div class="lbl">อัตราการไหล</div>
+              <div class="val fg-v" style="font-size:16px;">${fl.toFixed(1)}<span class="unit">ลบ.ม./วิ</span></div>
+            </div>` : ""}
+          </div>
+        </div>
+        <div class="fg-big-footer">
+          <span class="fg-pill ${rawSt}">${FG_EMOJI[rawSt]} ${FG_LABEL[rawSt]}</span>
+          <span class="fg-link-note">
+            ${d._isLive
+              ? '<span style="color:#15803d;font-weight:700;">🟢 LIVE</span>'
+              : '<span style="color:#92400e;font-weight:700;">🟡 DEMO</span>'}
+            &nbsp;· อัปเดต ${new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})} น.
+          </span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ============================================================
+ * DETAIL PANEL — PN Station
+ * ============================================================ */
 let dpChartInst = null;
-function openDetail(id){
+function openDetail(id) {
   const s = STATIONS.find(x => x.id === id);
-  if(!s) return;
-  const d = stationData[id];
-  const lv = d?.current ?? s.bank - 2;
-  const st = statusOf(s);
+  if (!s) return;
+  const d   = stationData[id];
+  const lv  = d?.current ?? s.bank - 2;
+  const st  = statusOf(s);
   const diff = s.bank - lv;
   const hist = d?.history ?? [];
 
-  document.getElementById("dpTitle").textContent = `${ST_EMOJI[st]} สถานี${s.name} — อ.${s.amphoe}`;
+  /* ดึงข้อมูล FG ที่เชื่อมกัน */
+  const fg   = s.fg_id ? FLOODGATES.find(f => f.id === s.fg_id) : null;
+  const fgD  = fg ? fgData[fg.id] : null;
+
+  document.getElementById("dpTitle").textContent =
+    `${ST_EMOJI[st]} สถานี${s.name} — อ.${s.amphoe}${fg ? ` · เชื่อมกับ ${fg.id}` : ""}`;
 
   const stColor = st === "crit" ? "#dc2626" : st === "warn" ? "#f59e0b" : "#0284c7";
+
   document.getElementById("dpInfo").innerHTML = `
     <div class="dp-info-item">
       <div class="label">ระดับน้ำปัจจุบัน</div>
@@ -744,37 +1041,44 @@ function openDetail(id){
       <div class="value" style="color:${diff<=0.5?"#dc2626":"#16a34a"}">${diff.toFixed(2)}<span class="unit">ม.</span></div>
     </div>
     <div class="dp-info-item">
-      <div class="label">ระดับเฝ้าระวัง</div>
-      <div class="value" style="color:#f59e0b">${s.warn.toFixed(2)}<span class="unit">ม.รทก.</span></div>
+      <div class="label">${fg ? `⚙ ${fg.id} ระดับน้ำ` : "ระดับเฝ้าระวัง"}</div>
+      <div class="value" style="color:${fg?"#7c3aed":"#f59e0b"}">
+        ${fg && fgD ? fgD.level.toFixed(2) : s.warn.toFixed(2)}<span class="unit">ม.รทก.</span>
+      </div>
     </div>`;
 
   const labels = hist.map((_,i) => i === hist.length-1 ? "ตอนนี้" : `-${hist.length-1-i}h`);
-  if(dpChartInst) dpChartInst.destroy();
+  if (dpChartInst) dpChartInst.destroy();
   dpChartInst = new Chart(document.getElementById("dpChart"), {
     type: "line",
     data: {
       labels,
-      datasets:[
-        {label:"ระดับน้ำ",data:hist,borderColor:stColor,backgroundColor:stColor+"22",tension:.4,fill:true,pointRadius:4,pointBackgroundColor:stColor},
-        {label:"ตลิ่ง",data:hist.map(()=>s.bank),borderColor:"#dc2626",borderDash:[5,3],borderWidth:1.5,pointRadius:0},
-        {label:"เฝ้าระวัง",data:hist.map(()=>s.warn),borderColor:"#f59e0b",borderDash:[4,3],borderWidth:1.5,pointRadius:0}
+      datasets: [
+        { label:"ระดับน้ำ", data:hist, borderColor:stColor, backgroundColor:stColor+"22",
+          tension:.4, fill:true, pointRadius:4, pointBackgroundColor:stColor },
+        { label:"ตลิ่ง",       data:hist.map(()=>s.bank), borderColor:"#dc2626", borderDash:[5,3], borderWidth:1.5, pointRadius:0 },
+        { label:"เฝ้าระวัง",  data:hist.map(()=>s.warn), borderColor:"#f59e0b", borderDash:[4,3], borderWidth:1.5, pointRadius:0 },
+        ...(fg && fgD ? [{
+          label:`${fg.id} ระดับ`, data:hist.map(()=>fgD.level),
+          borderColor:"#7c3aed", borderDash:[3,3], borderWidth:1.5, pointRadius:0
+        }] : [])
       ]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:"bottom",labels:{font:{family:"Sarabun",size:10},boxWidth:10}}},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:"bottom", labels:{ font:{family:"Sarabun",size:10}, boxWidth:10 }} },
       scales:{
-        y:{ticks:{font:{family:"Sarabun",size:10},callback:v=>v.toFixed(1)}},
-        x:{ticks:{font:{family:"Sarabun",size:10}}}
+        y:{ ticks:{ font:{family:"Sarabun",size:10}, callback:v=>v.toFixed(1) } },
+        x:{ ticks:{ font:{family:"Sarabun",size:10} } }
       }
     }
   });
 
-  const maxH = Math.max(...hist,1);
+  const maxH = Math.max(...hist, 1);
   document.getElementById("dpTrend").innerHTML = hist.slice(-6).map((v,i,arr) => {
     const tl = i===arr.length-1?"ตอนนี้":`-${arr.length-1-i}h`;
-    const w = Math.round((v/maxH)*100);
-    const c = v>=s.crit?"#dc2626":v>=s.warn?"#f59e0b":"#0284c7";
+    const w  = Math.round((v/maxH)*100);
+    const c  = v>=s.crit?"#dc2626":v>=s.warn?"#f59e0b":"#0284c7";
     return `<div class="dp-trend-item">
       <span class="ti-time">${tl}</span>
       <div class="ti-bar-wrap"><div class="ti-bar" style="width:${w}%;background:${c};"></div></div>
@@ -784,25 +1088,61 @@ function openDetail(id){
 
   const panel = document.getElementById("detailPanel");
   panel.classList.add("show");
-  panel.scrollIntoView({behavior:"smooth",block:"start"});
-}
-function closeDetail(){
-  document.getElementById("detailPanel").classList.remove("show");
-  if(dpChartInst){dpChartInst.destroy();dpChartInst=null;}
+  panel.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
-/* TABLE */
-function renderTable(){
+/* Detail สำหรับ FG — scroll ลงไปที่ fg-section แล้วไฮไลต์การ์ด */
+function openFGDetail(id) {
+  const fgSection = document.querySelector(".fg-section");
+  if (fgSection) fgSection.scrollIntoView({ behavior:"smooth", block:"start" });
+  /* ไฮไลต์การ์ด */
+  document.querySelectorAll(".fg-big-card").forEach((el, i) => {
+    const fg = FLOODGATES[i];
+    el.style.outline = (fg && fg.id === id) ? "3px solid #7c3aed" : "";
+    el.style.outlineOffset = "3px";
+  });
+  setTimeout(() => {
+    document.querySelectorAll(".fg-big-card").forEach(el => { el.style.outline = ""; });
+  }, 2500);
+}
+
+function closeDetail() {
+  document.getElementById("detailPanel").classList.remove("show");
+  if (dpChartInst) { dpChartInst.destroy(); dpChartInst = null; }
+}
+
+/* ============================================================
+ * TABLE
+ * ============================================================ */
+function renderTable() {
   const body = document.getElementById("stationTableBody");
-  if(!body) return;
+  if (!body) return;
+
   body.innerHTML = STATIONS.map(s => {
-    const lv = stationData[s.id]?.current ?? s.bank-2;
-    const st = statusOf(s);
+    const lv   = stationData[s.id]?.current ?? s.bank-2;
+    const st   = statusOf(s);
     const diff = s.bank - lv;
-    const pct = Math.round((lv/s.bank)*100);
+    const pct  = Math.round((lv/s.bank)*100);
+
+    /* FG column */
+    const fg    = s.fg_id ? FLOODGATES.find(f => f.id === s.fg_id) : null;
+    const fgLv  = fg ? (fgData[fg.id]?.level ?? null) : null;
+    const fgSt  = fg ? fgStatusOf(fg) : null;
+    const fgCell = fg
+      ? `<span class="pill fg-pill-table" onclick="event.stopPropagation();openFGDetail('${fg.id}')" style="cursor:pointer;">
+           ⚙ ${fg.id}<br>
+           <span style="font-weight:400;font-size:10px;">${fgLv!==null?fgLv.toFixed(2)+" ม.":"—"}</span>
+         </span>`
+      : '<span style="color:#cbd5e1;font-size:11px;">—</span>';
+
     return `<tr onclick="openDetail('${s.id}')">
       <td><strong style="color:var(--muted)">PN${String(s.no).padStart(2,"0")}</strong></td>
-      <td><strong>${s.name}</strong>${stationData[s.id]?._isLive ? '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#dcfce7;color:#15803d;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟢 LIVE</span>' : '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟡 DEMO</span>'}</td>
+      <td>
+        <strong>${s.name}</strong>
+        ${stationData[s.id]?._isLive
+          ? '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#dcfce7;color:#15803d;border-radius:4px;font-size:10px;font-weight:700;">🟢 LIVE</span>'
+          : '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;">🟡 DEMO</span>'}
+      </td>
       <td>${s.village}<br><small style="color:var(--muted)">อ.${s.amphoe}</small></td>
       <td style="text-align:right;font-family:monospace;">${s.bank.toFixed(2)}</td>
       <td style="text-align:right;font-family:monospace;color:#f59e0b;">${s.warn.toFixed(2)}</td>
@@ -815,91 +1155,134 @@ function renderTable(){
       </td>
       <td style="text-align:right;font-weight:700;color:${diff<=0.5?"#dc2626":diff<=1.5?"#f59e0b":"#16a34a"};">${diff.toFixed(2)}</td>
       <td><span class="pill ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span></td>
+      <td>${fgCell}</td>
     </tr>`;
   }).join("");
 }
 
-/* CHARTS */
-let _tc=null, _pc=null;
-function renderCharts(){
-  const labels7=[];
-  const now=new Date();
-  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);labels7.push(d.toLocaleDateString("th-TH",{day:"numeric",month:"short"}));}
+/* ============================================================
+ * CHARTS
+ * ============================================================ */
+let _tc = null, _pc = null;
+function renderCharts() {
+  const labels7 = [];
+  const now = new Date();
+  for (let i=6;i>=0;i--) {
+    const d = new Date(now); d.setDate(d.getDate()-i);
+    labels7.push(d.toLocaleDateString("th-TH",{day:"numeric",month:"short"}));
+  }
 
-  const picks=[STATIONS[0],STATIONS[2],STATIONS[6],STATIONS[9]];
-  const colors=["#0284c7","#10b981","#f59e0b","#dc2626"];
-  if(_tc)_tc.destroy();
-  _tc=new Chart(document.getElementById("trendChart"),{
-    type:"line",
-    data:{labels:labels7,datasets:picks.map((s,i)=>{
-      const c=stationData[s.id]?.current??s.bank-2;
-      return{label:s.name,data:labels7.map(()=>+(c+(Math.random()-.5)*.5).toFixed(2)),
-             borderColor:colors[i],backgroundColor:colors[i]+"15",tension:.4,borderWidth:2,pointRadius:3,fill:false};
-    })},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:"bottom",labels:{font:{family:"Sarabun",size:10},boxWidth:10}}},
-      scales:{x:{ticks:{font:{family:"Sarabun",size:10}},grid:{display:false}},
-              y:{ticks:{font:{family:"Sarabun",size:10},callback:v=>v.toFixed(1)}}}}
+  const picks  = [STATIONS[0], STATIONS[2], STATIONS[6], STATIONS[9]];
+  const colors = ["#0284c7","#10b981","#f59e0b","#dc2626"];
+
+  if (_tc) _tc.destroy();
+  _tc = new Chart(document.getElementById("trendChart"), {
+    type: "line",
+    data: {
+      labels: labels7,
+      datasets: picks.map((s,i) => {
+        const c = stationData[s.id]?.current ?? s.bank-2;
+        return {
+          label: s.name,
+          data:  labels7.map(() => +(c+(Math.random()-.5)*.5).toFixed(2)),
+          borderColor: colors[i], backgroundColor: colors[i]+"15",
+          tension:.4, borderWidth:2, pointRadius:3, fill:false
+        };
+      })
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:"bottom", labels:{ font:{family:"Sarabun",size:10}, boxWidth:10 }} },
+      scales:{
+        x:{ ticks:{ font:{family:"Sarabun",size:10} }, grid:{display:false} },
+        y:{ ticks:{ font:{family:"Sarabun",size:10}, callback:v=>v.toFixed(1) } }
+      }
+    }
   });
 
-  const pctData=STATIONS.map(s=>{const lv=stationData[s.id]?.current??s.bank-2;return Math.min(Math.round((lv/s.bank)*100),108);});
-  const pctColors=STATIONS.map(s=>{const st=statusOf(s);return st==="crit"?"#dc2626":st==="warn"?"#f59e0b":"#0ea5e9";});
-  if(_pc)_pc.destroy();
-  _pc=new Chart(document.getElementById("pctChart"),{
-    type:"bar",
-    data:{labels:STATIONS.map(s=>s.name.length>8?s.name.slice(0,8)+"…":s.name),
-          datasets:[{label:"% ระดับน้ำ/ตลิ่ง",data:pctData,backgroundColor:pctColors,borderRadius:4}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{max:115,ticks:{callback:v=>v+"%",font:{family:"Sarabun",size:10}}},
-              y:{ticks:{font:{family:"Sarabun",size:10}},grid:{display:false}}}}
+  const pctData   = STATIONS.map(s => { const lv=stationData[s.id]?.current??s.bank-2; return Math.min(Math.round((lv/s.bank)*100),108); });
+  const pctColors = STATIONS.map(s => { const st=statusOf(s); return st==="crit"?"#dc2626":st==="warn"?"#f59e0b":"#0ea5e9"; });
+
+  if (_pc) _pc.destroy();
+  _pc = new Chart(document.getElementById("pctChart"), {
+    type: "bar",
+    data: {
+      labels: STATIONS.map(s => s.name.length>8 ? s.name.slice(0,8)+"…" : s.name),
+      datasets: [{ label:"% ระดับน้ำ/ตลิ่ง", data:pctData, backgroundColor:pctColors, borderRadius:4 }]
+    },
+    options: {
+      indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ max:115, ticks:{ callback:v=>v+"%", font:{family:"Sarabun",size:10} } },
+        y:{ ticks:{ font:{family:"Sarabun",size:10} }, grid:{display:false} }
+      }
+    }
   });
 }
 
-/* MAIN */
-async function loadData(from, to) {
-  if (API_URL) {
-    try {
-      let url = API_URL + "?action=paneang";
-      if (from) url += "&from=" + from;
-      if (to)   url += "&to="   + to;
- 
-      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();  // กัน browser cache
-      const res  = await fetch(url, { cache: "no-store" });
-      const data = await res.json();
- 
-      if (data.stations) data.stations.forEach(item => {
-        if (stationData[item.id]) {
-          if (item.current != null) {
-            stationData[item.id].current = parseFloat(item.current);
-            stationData[item.id]._isLive = true;
-          } else {
-            stationData[item.id]._isLive = false;
-          }
-        }
-      });
-    } catch(e) { console.warn("API unavailable, using demo data"); }
-  }
+/* ============================================================
+ * RENDER ALL
+ * ============================================================ */
+function renderAll() {
   renderSummary();
   renderGauges();
   renderScene();
+  renderFGCards();
   renderTable();
   renderCharts();
 }
- 
+
+/* ============================================================
+ * LOAD DATA FROM API
+ * ============================================================ */
+async function loadData() {
+  if (API_URL) {
+    /* โหลด PN (ลำน้ำพะเนียง) */
+    try {
+      const res  = await fetch(API_URL + "?action=paneang");
+      const data = await res.json();
+      if (data.stations) data.stations.forEach(item => {
+        if (stationData[item.id]) {
+          if (item.current != null) {
+            stationData[item.id].current  = parseFloat(item.current);
+            stationData[item.id]._isLive  = true;
+          } else {
+            stationData[item.id]._isLive  = false;
+          }
+        }
+      });
+    } catch(e) { console.warn("[PN API] unavailable, using demo"); }
+
+    /* โหลด FG (ประตูระบายน้ำ) */
+    try {
+      const res  = await fetch(API_URL + "?action=floodgate");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          const id = item.gate_id || item.id;
+          if (fgData[id] !== undefined) {
+            if (item.level != null) {
+              fgData[id].level   = parseFloat(item.level);
+              fgData[id]._isLive = true;
+            }
+            if (item.opening != null) fgData[id].opening = parseFloat(item.opening);
+            if (item.flow    != null) fgData[id].flow    = parseFloat(item.flow);
+          }
+        });
+      }
+    } catch(e) { console.warn("[FG API] unavailable, using demo"); }
+  }
+
+  renderAll();
+}
+
+/* ============================================================
+ * INIT
+ * ============================================================ */
 initDemo();
 loadData();
-setInterval(loadData, 5 * 60 * 1000);
- 
-/* DateRangePicker — init ครั้งเดียว ข้างนอก loadData */
-DateRangePicker.init({
-  container:   'main',
-  defaultDays: 7,
-  autoLoad:    false,
-  onChange: function({ from, to }) {
-    return loadData(from, to);
-  }
-});
+setInterval(loadData, 5 * 60 * 1000); /* refresh ทุก 5 นาที */
 </script>
 </body>
 </html>
