@@ -597,31 +597,21 @@ const FG_EMOJI = { normal:"🟢", warn:"🟡", crit:"🔴", nodata:"⚪" };
  *  - ผล: ไม่ว่า lv จะห่าง bank แค่ไหน แท่งก็แสดงสัดส่วนถูก
  *  - warn/crit line คำนวณบน range เดียวกัน
  * ============================================================ */
-const TUBE_MARGIN = 2.0; /* เมตร — พื้นที่ด้านล่างใต้ค่าต่ำสุด */
-
-function calcRange(lv, bank) {
-  /* min = ต่ำสุดที่แสดง, max = สูงสุดที่แสดง */
-  const safeLv = (lv !== null && lv !== undefined) ? lv : (bank - 2);
-  const minLv = Math.min(safeLv, bank) - TUBE_MARGIN;
-  const maxLv = bank + 0.5;
-  return { minLv, maxLv };
-}
+/* แท่ง = สัดส่วนค่าจริงเทียบตลิ่ง (0 → bank)
+ * bank แมปที่ 92% ของหลอด เหลือ 8% บนไว้ให้ค่าเกินตลิ่ง (วิกฤติ)
+ * เช่น 250/290 = 86% → แท่งสูง ~79% (เกินครึ่งชัดเจน) */
+const TUBE_BANK_RATIO = 0.92; /* bank อยู่ที่ 92% ของความสูงหลอด */
 
 function calcFill(lv, bank, tubeHeight=110) {
-  if (lv === null || lv === undefined) return 0;
-  const { minLv, maxLv } = calcRange(lv, bank);
-  const range = maxLv - minLv;
-  const pct   = Math.max(0, Math.min(1, (lv - minLv) / range));
-  return Math.round(pct * tubeHeight);
+  if (lv === null || lv === undefined || !bank) return 0;
+  const pct = (lv / bank) * TUBE_BANK_RATIO;
+  return Math.round(Math.max(0, Math.min(1, pct)) * tubeHeight);
 }
 
-/* warn/crit line ต้องใช้ range เดียวกับ lv ของสถานีนั้น */
 function calcThreshPx(thresh, lv, bank, tubeHeight=110) {
-  if (lv === null || lv === undefined) return 0;
-  const { minLv, maxLv } = calcRange(lv, bank);
-  const range = maxLv - minLv;
-  const pct   = Math.max(0, Math.min(1, (thresh - minLv) / range));
-  return Math.round(pct * tubeHeight);
+  if (!bank) return 0;
+  const pct = (thresh / bank) * TUBE_BANK_RATIO;
+  return Math.round(Math.max(0, Math.min(1, pct)) * tubeHeight);
 }
 
 /* ============================================================

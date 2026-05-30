@@ -563,20 +563,17 @@ function genDemo(s) {
 function initDemo() { STATIONS.forEach(s => { stationData[s.id] = genDemo(s); }); }
 
 /* ===== TUBE FILL — dynamic range ===== */
-const TUBE_MARGIN = 2.0;
-function calcRange(lv, bank){
-  const safeLv = (lv!==null && lv!==undefined) ? lv : (bank-2);
-  return { minLv: Math.min(safeLv, bank) - TUBE_MARGIN, maxLv: bank + 0.5 };
-}
+/* แท่ง = สัดส่วนค่าจริงเทียบตลิ่ง (0 → bank), bank อยู่ที่ 92% ของหลอด */
+const TUBE_BANK_RATIO = 0.92;
 function calcFill(lv, bank, tubeHeight){
-  if (lv===null || lv===undefined) return 0;
-  const {minLv,maxLv} = calcRange(lv,bank);
-  return Math.round(Math.max(0,Math.min(1,(lv-minLv)/(maxLv-minLv)))*tubeHeight);
+  if (lv===null || lv===undefined || !bank) return 0;
+  const pct = (lv / bank) * TUBE_BANK_RATIO;
+  return Math.round(Math.max(0,Math.min(1,pct))*tubeHeight);
 }
 function calcThreshPx(t, lv, bank, tubeHeight){
-  if (lv===null || lv===undefined) return 0;
-  const {minLv,maxLv} = calcRange(lv,bank);
-  return Math.round(Math.max(0,Math.min(1,(t-minLv)/(maxLv-minLv)))*tubeHeight);
+  if (!bank) return 0;
+  const pct = (t / bank) * TUBE_BANK_RATIO;
+  return Math.round(Math.max(0,Math.min(1,pct))*tubeHeight);
 }
 
 function statusOf(s) {
