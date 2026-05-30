@@ -239,6 +239,29 @@ tbody tr:hover { background: #f0fdf4; cursor: pointer; }
 .mini-bar.crit   { background: var(--crit); }
 
 /* Scene tooltip */
+
+/* ===== Amphoe filter bar ===== */
+.amphoe-filter-bar{display:flex;align-items:center;gap:8px;padding:0 0 16px;flex-wrap:wrap;}
+.amphoe-filter-bar .af-label{font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;}
+.af-btn{padding:5px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'Sarabun',sans-serif;}
+.af-btn:hover{border-color:var(--river);color:var(--river-deep,#0369a1);}
+.af-btn.active{background:var(--brand,#0c4a6e);border-color:var(--brand,#0c4a6e);color:#fff;}
+.af-btn .af-cnt{font-size:10px;opacity:.7;margin-left:3px;}
+.gc-tip{position:fixed;z-index:9999;pointer-events:none;background:#0f172a;color:#fff;border-radius:12px;padding:12px 14px;font-size:12px;min-width:200px;max-width:260px;box-shadow:0 10px 32px rgba(0,0,0,.32);opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;}
+.gc-tip.show{opacity:1;transform:translateY(0);}
+.gc-tip .tip-head{font-size:13px;font-weight:800;font-family:'Kanit',sans-serif;margin-bottom:2px;display:flex;align-items:center;gap:6px;}
+.gc-tip .tip-sub{font-size:10.5px;color:#94a3b8;margin-bottom:9px;}
+.gc-tip .tip-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11.5px;}
+.gc-tip .tip-row .k{color:#cbd5e1;}
+.gc-tip .tip-row .v{font-weight:700;font-family:'Kanit',sans-serif;}
+.gc-tip .tip-div{height:1px;background:rgba(255,255,255,.12);margin:7px 0;}
+.gc-tip .tip-th{display:flex;gap:6px;margin-top:7px;}
+.gc-tip .tip-th .th-item{flex:1;text-align:center;border-radius:7px;padding:5px 3px;font-size:9.5px;font-weight:700;}
+.gc-tip .tip-th .th-ok{background:rgba(22,163,74,.22);color:#86efac;}
+.gc-tip .tip-th .th-warn{background:rgba(245,158,11,.22);color:#fde68a;}
+.gc-tip .tip-th .th-crit{background:rgba(220,38,38,.22);color:#fca5a5;}
+.gc-tip .tip-th .th-item .thv{display:block;font-size:11px;margin-top:2px;}
+
 #sceneTip {
   display: none; position: absolute; background: #fff; border: 1px solid #a7f3d0;
   border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 600;
@@ -451,9 +474,11 @@ footer strong { color: #fff; }
 
   <!-- Gauge scroller -->
   <div class="stations-scroll-wrap">
-    <div class="stations-row" id="gaugesRow"></div>
+    <div class="amphoe-filter-bar" id="amphoeFilterBar"></div>
+    <div style="overflow-x:auto;"><div class="stations-row" id="gaugesRow"></div></div>
   </div>
 </div>
+<div class="gc-tip" id="gcTip"></div>
 
 <!-- Detail Panel -->
 <div class="detail-panel" id="detailPanel">
@@ -536,6 +561,23 @@ function genDemo(s) {
   return { current: cur, history: hist };
 }
 function initDemo() { STATIONS.forEach(s => { stationData[s.id] = genDemo(s); }); }
+
+/* ===== TUBE FILL — dynamic range ===== */
+const TUBE_MARGIN = 2.0;
+function calcRange(lv, bank){
+  const safeLv = (lv!==null && lv!==undefined) ? lv : (bank-2);
+  return { minLv: Math.min(safeLv, bank) - TUBE_MARGIN, maxLv: bank + 0.5 };
+}
+function calcFill(lv, bank, tubeHeight){
+  if (lv===null || lv===undefined) return 0;
+  const {minLv,maxLv} = calcRange(lv,bank);
+  return Math.round(Math.max(0,Math.min(1,(lv-minLv)/(maxLv-minLv)))*tubeHeight);
+}
+function calcThreshPx(t, lv, bank, tubeHeight){
+  if (lv===null || lv===undefined) return 0;
+  const {minLv,maxLv} = calcRange(lv,bank);
+  return Math.round(Math.max(0,Math.min(1,(t-minLv)/(maxLv-minLv)))*tubeHeight);
+}
 
 function statusOf(s) {
   const lv = stationData[s.id]?.current ?? s.bank - 2;
@@ -671,22 +713,36 @@ function renderScene() {
 }
 
 /* GAUGES */
+/* ===== AMPHOE FILTER ===== */
+let activeAmphoe = "ทั้งหมด";
+function getAmphoeList(){ const seen=[]; STATIONS.forEach(s=>{if(!seen.includes(s.amphoe))seen.push(s.amphoe);}); return seen; }
+function renderFilterBar(){
+  const bar=document.getElementById("amphoeFilterBar"); if(!bar) return;
+  let html=`<span class="af-label">กรองอำเภอ:</span>`;
+  html+=`<button class="af-btn ${activeAmphoe==="ทั้งหมด"?"active":""}" onclick="setAmphoeFilter('ทั้งหมด')">ทั้งหมด<span class="af-cnt">${STATIONS.length}</span></button>`;
+  getAmphoeList().forEach(am=>{
+    const cnt=STATIONS.filter(s=>s.amphoe===am).length;
+    html+=`<button class="af-btn ${activeAmphoe===am?"active":""}" onclick="setAmphoeFilter('${am}')">อ.${am}<span class="af-cnt">${cnt}</span></button>`;
+  });
+  bar.innerHTML=html;
+}
+function setAmphoeFilter(am){ activeAmphoe=am; renderFilterBar(); renderGauges(); }
+
+/* ===== GAUGE CARDS + tooltip ===== */
 function renderGauges() {
   const row = document.getElementById("gaugesRow");
   if (!row) return;
-  row.innerHTML = STATIONS.map(s => {
-    const lv   = stationData[s.id]?.current ?? s.bank - 2;
+  const list = activeAmphoe==="ทั้งหมด" ? STATIONS : STATIONS.filter(s=>s.amphoe===activeAmphoe);
+  row.innerHTML = list.map(s => {
+    const lv   = stationData[s.id]?.current ?? null;
     const st   = statusOf(s);
-    const diff = s.bank - lv;
-    const fillPct = Math.max(0, Math.min(100, (lv / s.bank) * 100));
-    const warnPct = Math.max(0, Math.min(100, (s.warn / s.bank) * 100));
-    const critPct = Math.max(0, Math.min(100, (s.crit / s.bank) * 100));
-    const fillPx  = Math.round(Math.min(fillPct * 1.1, 110));
-    const warnPx  = Math.round(Math.min(warnPct * 1.1, 110));
-    const critPx  = Math.round(Math.min(critPct * 1.1, 110));
-
+    const diff = lv !== null ? s.bank - lv : null;
+    const fillPx = calcFill(lv, s.bank, 110);
+    const warnPx = calcThreshPx(s.warn, lv, s.bank, 110);
+    const critPx = calcThreshPx(s.bank, lv, s.bank, 110);
+    const isLive = stationData[s.id]?._isLive;
     return `
-      <div class="gauge-card ${st}" onclick="openDetail('${s.id}')">
+      <div class="gauge-card ${st}" data-id="${s.id}" onclick="openDetail('${s.id}')">
         <div class="gc-no">${s.id}</div>
         <div class="gc-name">${s.name}</div>
         <div class="gc-loc">อ.${s.amphoe}</div>
@@ -698,22 +754,56 @@ function renderGauges() {
               <div class="gc-line crit-line" style="bottom:${critPx}px;"></div>
               <div class="gc-fill ${st}" style="height:${fillPx}px;"></div>
             </div>
-            <div class="gc-val-bbl">${lv.toFixed(2)} ม.</div>
+            <div class="gc-val-bbl">${lv!==null?lv.toFixed(2)+" ม.":"—"}</div>
           </div>
         </div>
         <div class="gc-stats">
-          <div class="gc-stat">
-            <div class="sv">${lv.toFixed(2)}</div>
-            <div class="sl">ม.รทก.</div>
-          </div>
-          <div class="gc-stat">
-            <div class="sv ${diff <= 0.5 ? "up" : "ok"}">${diff >= 0 ? "-"+diff.toFixed(2) : "+"+Math.abs(diff).toFixed(2)}</div>
-            <div class="sl">จากตลิ่ง</div>
-          </div>
+          <div class="gc-stat"><div class="sv">${lv!==null?lv.toFixed(2):"—"}</div><div class="sl">ม.รทก.</div></div>
+          <div class="gc-stat"><div class="sv ${diff!==null&&diff<=0.5?"up":"ok"}">${diff!==null?(diff>=0?"-"+diff.toFixed(2):"+"+Math.abs(diff).toFixed(2)):"—"}</div><div class="sl">จากตลิ่ง</div></div>
         </div>
         <div class="gc-badge ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>
+        <div style="font-size:9px;color:${isLive?"#15803d":"#92400e"};text-align:center;margin-top:4px;font-weight:700;">${isLive?"🟢 LIVE":"🟡 DEMO"}</div>
       </div>`;
   }).join("");
+  bindGaugeTooltips();
+}
+
+function bindGaugeTooltips() {
+  const tip = document.getElementById("gcTip");
+  if (!tip) return;
+  document.querySelectorAll("#gaugesRow .gauge-card").forEach(card => {
+    const s = STATIONS.find(x => x.id === card.dataset.id);
+    if (!s) return;
+    card.addEventListener("mouseenter", () => {
+      const lv = stationData[s.id]?.current ?? null;
+      const st = statusOf(s);
+      const diff = lv !== null ? s.bank - lv : null;
+      const isLive = stationData[s.id]?._isLive;
+      tip.innerHTML = `
+        <div class="tip-head">${ST_EMOJI[st]} ${s.name}</div>
+        <div class="tip-sub">📍 ${s.village || ""} · อ.${s.amphoe}</div>
+        <div class="tip-row"><span class="k">ระดับน้ำปัจจุบัน</span><span class="v">${lv!==null?lv.toFixed(2)+" ม.":"—"}</span></div>
+        <div class="tip-row"><span class="k">ต่ำกว่าตลิ่ง</span><span class="v" style="color:${diff!==null&&diff<=0.5?'#fca5a5':'#86efac'}">${diff!==null?diff.toFixed(2)+" ม.":"—"}</span></div>
+        <div class="tip-row"><span class="k">สถานะ</span><span class="v">${ST_LABEL[st]}</span></div>
+        <div class="tip-div"></div>
+        <div style="font-size:10px;color:#94a3b8;font-weight:600;">เกณฑ์การเตือน (ม.รทก.)</div>
+        <div class="tip-th">
+          <div class="th-item th-ok">ปกติ<span class="thv">&lt; ${s.warn.toFixed(1)}</span></div>
+          <div class="th-item th-warn">เฝ้าระวัง<span class="thv">${s.warn.toFixed(1)}–${s.bank.toFixed(1)}</span></div>
+          <div class="th-item th-crit">ตลิ่ง<span class="thv">&gt; ${s.bank.toFixed(1)}</span></div>
+        </div>
+        <div style="margin-top:8px;font-size:9.5px;color:${isLive?'#86efac':'#fbbf24'};font-weight:700;">${isLive?"🟢 ข้อมูล LIVE":"🟡 ข้อมูล DEMO"}</div>`;
+      tip.classList.add("show");
+    });
+    card.addEventListener("mousemove", e => {
+      const tw=tip.offsetWidth, th=tip.offsetHeight;
+      let x=e.clientX+16, y=e.clientY+16;
+      if(x+tw>window.innerWidth-10) x=e.clientX-tw-16;
+      if(y+th>window.innerHeight-10) y=e.clientY-th-16;
+      tip.style.left=x+"px"; tip.style.top=y+"px";
+    });
+    card.addEventListener("mouseleave", () => tip.classList.remove("show"));
+  });
 }
 
 /* DETAIL PANEL */
@@ -901,6 +991,7 @@ async function loadData(from, to) {
     } catch(e) { console.warn("API unavailable, using demo data"); }
   }
   renderSummary();
+  renderFilterBar();
   renderGauges();
   renderScene();
   renderTable();
