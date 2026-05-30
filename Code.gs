@@ -72,6 +72,13 @@ const HYDRO_MASTER = [
     threshold_normal_height:4.5, threshold_warn_height:5.2, threshold_crit_height:5.2 }
 ];
 
+// ===== FG ↔ PN mapping (ข้อมูลชุดเดียวกัน) =====
+// FG01=PN06, FG02=PN08, FG03=PN10
+const FG_PN_MAP = { "FG01":"PN06", "FG02":"PN08", "FG03":"PN10" };
+const PN_FG_MAP = { "PN06":"FG01", "PN08":"FG02", "PN10":"FG03" };
+
+
+
 // ===== PIN =====
 const PIN_PROPERTY_KEY   = "APP_PIN";           // legacy global PIN (เผื่อ reservoir.html, daily report)
 const ADMIN_PIN_KEY      = "ADMIN_PIN";         // master PIN สำหรับ Admin
@@ -670,12 +677,30 @@ function getRiverDashboard(riverKey) {
     if (key === "phuay")   return id.indexOf("PY") === 0 || river.indexOf("phuay") !== -1 || river.indexOf("พวย") !== -1;
     return true;
   });
-  const latest = getLatestWaterByStation();
+  const latestPN = getLatestWaterByStation();
+  // สำหรับ paneang — merge FG เข้า PN06/08/10
+  const latestFG = (key === "paneang") ? getLatestFloodgateByGate_() : {};
   let normal = 0, warn = 0, crit = 0;
   const merged = stations.map(st => {
-    const w = latest[st.station_id] || {};
-    const level = parseFloat(w.level);
-    const bank = parseFloat(st.bank_level);
+    const sid = String(st.station_id || "").toUpperCase();
+    const w    = latestPN[sid] || {};
+    let level  = parseFloat(w.level);
+    let flow   = w.flow || null;
+    let lastUpdate = w.date ? (w.date + " " + (w.time || "")) : null;
+    // ถ้าสถานีนี้เชื่อมกับ FG → เปรียบ timestamp เลือกค่าที่ใหม่กว่า
+    const fgId  = PN_FG_MAP[sid];
+    const fgRow = fgId ? latestFG[fgId] : null;
+    if (fgRow && fgRow.water_level !== null && fgRow.water_level !== undefined) {
+      const fgTs = parseDateTime_(fgRow.date, fgRow.time) || 0;
+      const pnTs = w.date ? (parseDateTime_(w.date, w.time) || 0) : 0;
+      if (fgTs >= pnTs) {
+        // FG ใหม่กว่าหรือเท่ากัน → ใช้ค่า FG
+        level      = parseFloat(fgRow.water_level);
+        flow       = fgRow.flow_rate || null;
+        lastUpdate = fgRow.date ? (fgRow.date + " " + (fgRow.time || "")) : lastUpdate;
+      }
+    }
+    const bank      = parseFloat(st.bank_level);
     const warnLevel = parseFloat(st.warn_level);
     let status = "ปกติ";
     if (!isNaN(level)) {
@@ -692,9 +717,10 @@ function getRiverDashboard(riverKey) {
       bank:  parseFloat(st.bank_level)  || 0,
       warn:  parseFloat(st.warn_level)  || 0,
       crit:  parseFloat(st.crit_level)  || parseFloat(st.bank_level) || 0,
-      flow: w.flow || null,
+      flow:  flow,
+      fg_id: fgId || null,
       status: status,
-      last_update: w.date ? (w.date + " " + (w.time || "")) : null
+      last_update: lastUpdate
     });
   });
   return {
@@ -793,6 +819,7 @@ function getDailyReport(targetDate) {
 // ===== WRITE =====
 
 function saveWaterLevel(p) {
+  const sid = String(p.station_id || "").toUpperCase();
   const sheet = ensureSheet_(SHEET_WATER, HEADERS_WATER);
   const headers = getHeaders(sheet);
   const data = sheet.getDataRange().getValues();
@@ -812,11 +839,19 @@ function saveWaterLevel(p) {
             sheet.getRange(i+1, col+1).setValue(p[h]);
           }
         });
+        // mirror PN → FG เมื่อ upsert ด้วย
+        const fgIdUps = PN_FG_MAP[sid];
+        const lvUps   = parseFloat(p.level);
+        if (fgIdUps && !isNaN(lvUps)) {
+          try { mirrorWaterToFloodgate_(fgIdUps, p, lvUps, sid); } catch(e) { Logger.log("FG mirror error: " + e); }
+        }
+        invalidateSummaryCache_();
         return {
           ok: true,
           updated: true,
-          message: "อัปเดตข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)",
+          message: "อัปเดตข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)" + (fgIdUps ? " (sync → " + fgIdUps + ")" : ""),
           station_id: p.station_id,
+          fg_mirrored: fgIdUps || null,
           recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
         };
       }
@@ -829,11 +864,21 @@ function saveWaterLevel(p) {
     return (v === undefined || v === null) ? "" : v;
   });
   sheet.appendRow(row);
+
+  // ── MIRROR PN → FG (ถ้า PN06/08/10) ──
+  const fgIdMirror = PN_FG_MAP[sid];
+  const lvNum = parseFloat(p.level);
+  if (fgIdMirror && !isNaN(lvNum)) {
+    try { mirrorWaterToFloodgate_(fgIdMirror, p, lvNum, sid); } catch(e) { Logger.log("FG mirror error: " + e); }
+  }
+
+  invalidateSummaryCache_();
   return {
     ok: true,
     updated: false,
-    message: "บันทึกข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " เรียบร้อย",
+    message: "บันทึกข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " เรียบร้อย" + (fgIdMirror ? " (sync → " + fgIdMirror + ")" : ""),
     station_id: p.station_id,
+    fg_mirrored: fgIdMirror || null,
     recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
   };
 }
@@ -997,8 +1042,14 @@ function saveFloodgate(p) {
             sheet.getRange(i+1, col+1).setValue(p[h]);
           }
         });
+        // mirror FG → PN เมื่อ upsert ด้วย
+        const pnIdUps = FG_PN_MAP[String(p.gate_id||"").toUpperCase()];
+        const fgLvUps = parseFloat(p.water_level);
+        if (pnIdUps && !isNaN(fgLvUps)) {
+          try { mirrorFloodgateToWater_(pnIdUps, p, fgLvUps); } catch(e) { Logger.log("PN mirror error: " + e); }
+        }
         invalidateSummaryCache_();
-        return { ok: true, updated: true, message: "อัปเดต ปตร. " + p.gate_id + " วันที่ " + dateStr + " เรียบร้อย (ทับค่าเดิม)" };
+        return { ok: true, updated: true, message: "อัปเดต ปตร. " + p.gate_id + " วันที่ " + dateStr + " เรียบร้อย (ทับค่าเดิม)" + (pnIdUps ? " (sync → " + pnIdUps + ")" : ""), pn_mirrored: pnIdUps || null };
       }
     }
   }
@@ -1006,8 +1057,16 @@ function saveFloodgate(p) {
   // ไม่มี → เพิ่มแถวใหม่
   const row = headers.map(function(h){ return (p[h] === undefined || p[h] === null) ? "" : p[h]; });
   sheet.appendRow(row);
+
+  // ── MIRROR FG → PN (ถ้า FG01/02/03) ──
+  const pnIdMirror = FG_PN_MAP[String(p.gate_id||"").toUpperCase()];
+  const fgLvNum = parseFloat(p.water_level);
+  if (pnIdMirror && !isNaN(fgLvNum)) {
+    try { mirrorFloodgateToWater_(pnIdMirror, p, fgLvNum); } catch(e) { Logger.log("PN mirror error: " + e); }
+  }
+
   invalidateSummaryCache_();
-  return { ok: true, updated: false, message: "บันทึก ปตร. " + p.gate_id + " เรียบร้อย" };
+  return { ok: true, updated: false, message: "บันทึก ปตร. " + p.gate_id + " เรียบร้อย" + (pnIdMirror ? " (sync → " + pnIdMirror + ")" : ""), pn_mirrored: pnIdMirror || null };
 }
 
 /* ── สถานีอุทกวิทยา ── */
@@ -1096,6 +1155,105 @@ function saveHydro(p) {
   sheet.appendRow(row);
   invalidateSummaryCache_();
   return { ok: true, updated: false, message: "บันทึกสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย" };
+}
+
+
+// ============================================================
+// FG ↔ PN MIRROR HELPERS (v4)
+// ============================================================
+
+/**
+ * getLatestFloodgateByGate_ — ดึง FG ล่าสุดจาก Sheet Floodgates
+ * (สำหรับ getRiverDashboard ใช้ merge ค่าเข้า PN)
+ */
+function getLatestFloodgateByGate_() {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const rows = sheetToObjects(sheet);
+  const latest = {};
+  rows.forEach(function(r, idx) {
+    const id = String(r.gate_id || "").trim().toUpperCase();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  return latest;
+}
+
+/**
+ * mirrorFloodgateToWater_ — FG บันทึก → mirror ไปยัง WaterLevel PN
+ * ใช้ upsert (ทับถ้า station_id + date ซ้ำ)
+ */
+function mirrorFloodgateToWater_(pnId, fgPayload, lvNum) {
+  const sheet   = ensureSheet_(SHEET_WATER, HEADERS_WATER);
+  const headers = getHeaders(sheet);
+  const data    = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("station_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(fgPayload.date || "").slice(0,10);
+
+  const pnRow = {
+    station_id: pnId,
+    date:       fgPayload.date || "",
+    time:       fgPayload.time || "",
+    level:      lvNum,
+    flow:       fgPayload.flow_rate || "",
+    recorder:   fgPayload.recorder || "",
+    remark:     "[mirror from " + fgPayload.gate_id + "] " + (fgPayload.remark || "")
+  };
+
+  if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]).trim() === pnId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
+        headers.forEach(function(h, col) {
+          if (pnRow[h] !== undefined && pnRow[h] !== null && pnRow[h] !== "")
+            sheet.getRange(i+1, col+1).setValue(pnRow[h]);
+        });
+        return;
+      }
+    }
+  }
+  sheet.appendRow(headers.map(function(h){ return pnRow[h] !== undefined ? pnRow[h] : ""; }));
+}
+
+/**
+ * mirrorWaterToFloodgate_ — PN บันทึก → mirror ไปยัง Floodgates FG
+ * ใช้ upsert (ทับถ้า gate_id + date ซ้ำ)
+ */
+function mirrorWaterToFloodgate_(fgId, pnPayload, lvNum, pnId) {
+  const sheet   = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const headers = getHeaders(sheet);
+  const data    = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("gate_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(pnPayload.date || "").slice(0,10);
+
+  const meta = FLOODGATE_MASTER.find(function(g){ return g.gate_id === fgId; }) || {};
+  const fgRow = Object.assign({}, meta, {
+    gate_id:     fgId,
+    date:        pnPayload.date || "",
+    time:        pnPayload.time || "",
+    water_level: lvNum,
+    flow_rate:   pnPayload.flow || "",
+    recorder:    pnPayload.recorder || "",
+    remark:      "[mirror from " + pnId + "] " + (pnPayload.remark || "")
+  });
+
+  if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]).trim() === fgId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
+        headers.forEach(function(h, col) {
+          if (fgRow[h] !== undefined && fgRow[h] !== null && fgRow[h] !== "")
+            sheet.getRange(i+1, col+1).setValue(fgRow[h]);
+        });
+        return;
+      }
+    }
+  }
+  sheet.appendRow(headers.map(function(h){ return fgRow[h] !== undefined ? fgRow[h] : ""; }));
 }
 
 /* ── helper: parse date+time string เป็น timestamp ── */
