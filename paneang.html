@@ -436,43 +436,56 @@ const API_URL = window.APP_CONFIG?.API_URL ||
 
 /* ============================================================
  * STATION DATA — PN01–PN10
- * bank = ระดับตลิ่ง (ม.รทก.)
- * warn = ระดับเฝ้าระวัง
+ * bank = ระดับตลิ่ง / วิกฤติ (ม.รทก.)
+ * warn = เริ่มเฝ้าระวัง
  * fg_id = ประตูระบายน้ำที่เชื่อมโยง (ถ้ามี)
+ *
+ * PN06/08/10 = ปตร. → ใช้เกณฑ์ FG เป็นหลัก
+ *   PN06 (FG01): ปกติ < 214, เฝ้าระวัง 214–214.5, วิกฤติ > 214.5
+ *   PN08 (FG02): ปกติ < 203, เฝ้าระวัง 203–203.5, วิกฤติ > 203.5
+ *   PN10 (FG03): ปกติ < 190, เฝ้าระวัง 190–191, วิกฤติ > 191
  * ============================================================ */
 const STATIONS = [
-  {id:"PN01",no:1,  name:"วังปลาป้อม",        village:"บ้านโคกเจริญ",    amphoe:"นาวัง",              bank:290.0,warn:289.5},
-  {id:"PN02",no:2,  name:"โคกกระทอ",           village:"บ้านโคกกระทอ",   amphoe:"นาวัง",              bank:266.0,warn:265.5},
-  {id:"PN03",no:3,  name:"วังสามหาบ",          village:"บ้านวังสามหาบ",  amphoe:"นาวัง",              bank:258.0,warn:257.5},
-  {id:"PN04",no:4,  name:"บ้านหนองด่าน",       village:"บ้านหนองด่าน",   amphoe:"นากลาง",             bank:249.0,warn:248.5},
-  {id:"PN05",no:5,  name:"บ้านฝั่งแดง",        village:"บ้านฝั่งแดง",   amphoe:"นากลาง",             bank:237.0,warn:236.5},
-  {id:"PN06",no:6,  name:"ปตร.หนองหว้าใหญ่",  village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู",bank:216.0,warn:215.5, fg_id:"FG01"},
-  {id:"PN07",no:7,  name:"วังหมื่น",           village:"บ้านวังหมื่น",   amphoe:"เมืองหนองบัวลำภู",  bank:210.0,warn:209.5},
-  {id:"PN08",no:8,  name:"ปตร.ปู่หลอด",        village:"บ้านโนนคูณ",     amphoe:"เมืองหนองบัวลำภู",  bank:203.0,warn:202.5, fg_id:"FG02"},
-  {id:"PN09",no:9,  name:"บ้านข้องโป้",        village:"บ้านข้องโป้",    amphoe:"เมืองหนองบัวลำภู",  bank:201.0,warn:200.5},
-  {id:"PN10",no:10, name:"ปตร.หัวนา",          village:"บ้านดอนหัน",     amphoe:"เมืองหนองบัวลำภู",  bank:191.0,warn:190.5, fg_id:"FG03"},
+  {id:"PN01",no:1,  name:"วังปลาป้อม",        village:"บ้านโคกเจริญ",     amphoe:"นาวัง",              bank:290.0, warn:289.5},
+  {id:"PN02",no:2,  name:"โคกกระทอ",           village:"บ้านโคกกระทอ",    amphoe:"นาวัง",              bank:266.0, warn:265.5},
+  {id:"PN03",no:3,  name:"วังสามหาบ",          village:"บ้านวังสามหาบ",   amphoe:"นาวัง",              bank:258.0, warn:257.5},
+  {id:"PN04",no:4,  name:"บ้านหนองด่าน",       village:"บ้านหนองด่าน",    amphoe:"นากลาง",             bank:249.0, warn:248.5},
+  {id:"PN05",no:5,  name:"บ้านฝั่งแดง",        village:"บ้านฝั่งแดง",    amphoe:"นากลาง",             bank:237.0, warn:236.5},
+  /* PN06 = ปตร.หนองหว้าใหญ่ (FG01): warn=214.0, bank(วิกฤติ)=214.5 */
+  {id:"PN06",no:6,  name:"ปตร.หนองหว้าใหญ่",  village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู", bank:214.5, warn:214.0, fg_id:"FG01"},
+  {id:"PN07",no:7,  name:"วังหมื่น",           village:"บ้านวังหมื่น",    amphoe:"เมืองหนองบัวลำภู",  bank:210.0, warn:209.5},
+  /* PN08 = ปตร.ปู่หลอด (FG02): warn=203.0, bank(วิกฤติ)=203.5 */
+  {id:"PN08",no:8,  name:"ปตร.ปู่หลอด",        village:"บ้านโนนคูณ",      amphoe:"เมืองหนองบัวลำภู",  bank:203.5, warn:203.0, fg_id:"FG02"},
+  {id:"PN09",no:9,  name:"บ้านข้องโป้",        village:"บ้านข้องโป้",     amphoe:"เมืองหนองบัวลำภู",  bank:201.0, warn:200.5},
+  /* PN10 = ปตร.หัวนา (FG03): warn=190.0, bank(วิกฤติ)=191.0 */
+  {id:"PN10",no:10, name:"ปตร.หัวนา",          village:"บ้านดอนหัน",      amphoe:"เมืองหนองบัวลำภู",  bank:191.0, warn:190.0, fg_id:"FG03"},
 ];
 
 /* ============================================================
  * FLOODGATE DATA — FG01–FG03
  * threshold_normal = ระดับน้ำปกติ (ต่ำกว่านี้ = ปกติ)
  * threshold_warn   = เริ่มเฝ้าระวัง
- * threshold_crit   = วิกฤติ (= bank ของ PN ที่เชื่อม)
- * pn_id            = สถานี PN ที่เชื่อมโยง — ใช้ข้อมูลระดับน้ำ ชุดเดียวกัน
+ * threshold_crit   = วิกฤติ
+ * pn_id            = สถานี PN ที่เชื่อมโยง — ข้อมูลชุดเดียวกัน
+ *
+ * เกณฑ์เดียวกับ input.html ประตูระบายน้ำ (ปตร.):
+ *   FG01: ปกติ < 214, เฝ้าระวัง 214–214.5, วิกฤติ > 214.5
+ *   FG02: ปกติ < 203, เฝ้าระวัง 203–203.5, วิกฤติ > 203.5
+ *   FG03: ปกติ < 190, เฝ้าระวัง 190–191, วิกฤติ > 191
  * ============================================================ */
 const FLOODGATES = [
   { id:"FG01", name:"ปตร.หนองหว้าใหญ่",
     village:"บ้านหนองหว้า", tambon:"โพธิ์ชัย", amphoe:"เมืองหนองบัวลำภู",
     pn_id:"PN06",
-    threshold_normal:214.0, threshold_warn:214.5, threshold_crit:216.0 },
+    threshold_normal:214.0, threshold_warn:214.5, threshold_crit:214.5 },
   { id:"FG02", name:"ปตร.ปู่หลอด",
     village:"บ้านโนนคูณ", tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
     pn_id:"PN08",
-    threshold_normal:203.0, threshold_warn:203.5, threshold_crit:205.0 },
+    threshold_normal:203.0, threshold_warn:203.5, threshold_crit:203.5 },
   { id:"FG03", name:"ปตร.หัวนา",
     village:"บ้านดอนหัน", tambon:"หัวนา", amphoe:"เมืองหนองบัวลำภู",
     pn_id:"PN10",
-    threshold_normal:190.0, threshold_warn:191.0, threshold_crit:192.0 },
+    threshold_normal:190.0, threshold_warn:191.0, threshold_crit:191.0 },
 ];
 
 /* ============================================================
@@ -514,6 +527,7 @@ function fgIsLive(fg)  { return stationData[fg.pn_id]?._isLive ?? false; }
 function statusOf(s) {
   const lv = stationData[s.id]?.current;
   if (lv === null || lv === undefined) return "normal";
+  /* PN06/08/10 = ปตร. → bank คือเกณฑ์วิกฤติ (> warn), warn คือเริ่มเฝ้าระวัง */
   if (lv >= s.bank) return "crit";
   if (lv >= s.warn) return "warn";
   return "normal";
@@ -522,8 +536,12 @@ function statusOf(s) {
 function fgStatusOf(fg) {
   const lv = fgLevel(fg);
   if (lv === null) return "nodata";
-  if (lv >= fg.threshold_crit) return "crit";
-  if (lv >= fg.threshold_warn) return "warn";
+  /* เกณฑ์จริงจาก input.html:
+     ปกติ < threshold_normal
+     เฝ้าระวัง: threshold_normal ≤ lv ≤ threshold_warn
+     วิกฤติ: lv > threshold_warn  (threshold_crit = threshold_warn ในชุดนี้) */
+  if (lv > fg.threshold_warn) return "crit";
+  if (lv >= fg.threshold_normal) return "warn";
   return "normal";
 }
 
@@ -699,7 +717,7 @@ function renderScene() {
       tip.innerHTML = `
         <div style="font-weight:800;margin-bottom:3px;">${s.name}</div>
         <div style="color:#64748b;font-size:10.5px;margin-bottom:5px;">อ.${s.amphoe}</div>
-        <div style="font-size:11px;">ระดับน้ำ: <strong>${lv!==null?lv.toFixed(2)+" ม.":"—"}</strong> · ตลิ่ง: ${s.bank.toFixed(2)}</div>
+        <div style="font-size:11px;">ระดับน้ำ: <strong>${lv!==null?lv.toFixed(2)+" ม.":"—"}</strong> · ${s.fg_id?"วิกฤติ > ":"ตลิ่ง: "}${s.bank.toFixed(2)}</div>
         ${fg&&fgLv!==null?`<div style="margin-top:4px;font-size:11px;color:#7c3aed;font-weight:600;">⚙ ${fg.id}: ${fgLv.toFixed(2)} ม. (ชุดเดียวกัน)</div>`:""}
         <div style="margin-top:4px;font-size:11px;">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>`;
     });
@@ -794,7 +812,8 @@ function renderFGCards() {
     /* linked PN */
     const pn  = STATIONS.find(x=>x.id===fg.pn_id);
     const pnLv = pn ? stationData[pn.id]?.current ?? null : null;
-    const pnDiff = pnLv!==null && pn ? (pn.bank - pnLv).toFixed(2) : null;
+    /* คำนวณจากเกณฑ์วิกฤติ FG (threshold_warn) ไม่ใช่ bank PN */
+    const pnDiff = pnLv!==null ? (fg.threshold_warn - pnLv).toFixed(2) : null;
 
     const lvText = lv!==null ? lv.toFixed(2) : "—";
     const now = new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"});
@@ -833,11 +852,11 @@ function renderFGCards() {
           <div class="fg-pn-link">
             <div class="ll">
               <strong>🌊 สถานี ${pn.id} (ข้อมูลชุดเดียวกัน)</strong>
-              ${pn.name} · ตลิ่ง ${pn.bank.toFixed(2)} ม.
+              ${pn.name} · วิกฤติ > ${fg.threshold_warn.toFixed(1)} ม.
             </div>
             <div class="lr">
               <div class="lv">${pnLv.toFixed(2)} ม.</div>
-              <div class="lsub">ต่ำกว่าตลิ่ง ${pnDiff} ม.</div>
+              <div class="lsub">${pnDiff!==null?(parseFloat(pnDiff)>=0?"ต่ำกว่าวิกฤติ "+pnDiff+" ม.":"เกินวิกฤติ "+Math.abs(parseFloat(pnDiff)).toFixed(2)+" ม."):"—"}</div>
             </div>
           </div>`:""}
         </div>
@@ -872,21 +891,26 @@ function openDetail(id) {
 
   const c = st==="crit"?"#dc2626":st==="warn"?"#f59e0b":"#0284c7";
 
+  /* PN06/08/10 เป็น ปตร. — label ต้องสอดคล้องกับเกณฑ์ FG */
+  const isFGStation = !!s.fg_id;
+  const bankLabel   = isFGStation ? "เกณฑ์วิกฤติ" : "ระดับตลิ่ง";
+  const diffLabel   = isFGStation ? "ต่ำกว่าวิกฤติ" : "ต่ำกว่าตลิ่ง";
+
   document.getElementById("dpInfo").innerHTML = `
     <div class="dp-info-item">
       <div class="label">ระดับน้ำปัจจุบัน</div>
       <div class="value" style="color:${c}">${lv!==null?lv.toFixed(2):"—"}<span class="unit">ม.รทก.</span></div>
     </div>
     <div class="dp-info-item">
-      <div class="label">ระดับตลิ่ง</div>
+      <div class="label">${bankLabel}</div>
       <div class="value">${s.bank.toFixed(2)}<span class="unit">ม.รทก.</span></div>
     </div>
     <div class="dp-info-item">
-      <div class="label">ต่ำกว่าตลิ่ง</div>
-      <div class="value" style="color:${diff!==null&&diff<=0.5?"#dc2626":"#16a34a"}">${diff!==null?diff.toFixed(2):"—"}<span class="unit">ม.</span></div>
+      <div class="label">${diffLabel}</div>
+      <div class="value" style="color:${diff!==null&&diff<=0?"#dc2626":diff!==null&&diff<=0.5?"#dc2626":"#16a34a"}">${diff!==null?Math.abs(diff).toFixed(2):"—"}<span class="unit">ม.</span></div>
     </div>
     <div class="dp-info-item">
-      <div class="label">ระดับเฝ้าระวัง</div>
+      <div class="label">เกณฑ์เฝ้าระวัง</div>
       <div class="value" style="color:#f59e0b">${s.warn.toFixed(2)}<span class="unit">ม.รทก.</span></div>
     </div>`;
 
@@ -896,7 +920,7 @@ function openDetail(id) {
     type:"line",
     data:{labels,datasets:[
       {label:"ระดับน้ำ",data:hist,borderColor:c,backgroundColor:c+"22",tension:.4,fill:true,pointRadius:4,pointBackgroundColor:c},
-      {label:"ตลิ่ง",     data:hist.map(()=>s.bank),borderColor:"#dc2626",borderDash:[5,3],borderWidth:1.5,pointRadius:0},
+      {label:isFGStation?"เกณฑ์วิกฤติ":"ตลิ่ง", data:hist.map(()=>s.bank),borderColor:"#dc2626",borderDash:[5,3],borderWidth:1.5,pointRadius:0},
       {label:"เฝ้าระวัง",data:hist.map(()=>s.warn),borderColor:"#f59e0b",borderDash:[4,3],borderWidth:1.5,pointRadius:0},
     ]},
     options:{responsive:true,maintainAspectRatio:false,
@@ -908,7 +932,7 @@ function openDetail(id) {
   document.getElementById("dpTrend").innerHTML = hist.slice(-6).map((v,i,arr)=>{
     const tl = i===arr.length-1?"ตอนนี้":`-${arr.length-1-i}h`;
     const w  = Math.round((v/maxH)*100);
-    const cc = v>=s.bank?"#dc2626":v>=s.warn?"#f59e0b":"#0284c7";
+    const cc = v>s.bank?"#dc2626":v>=s.warn?"#f59e0b":"#0284c7";
     return `<div class="dp-trend-item">
       <span class="ti-time">${tl}</span>
       <div class="ti-bar-wrap"><div class="ti-bar" style="width:${w}%;background:${cc};"></div></div>
@@ -969,7 +993,7 @@ function renderTable() {
         <span style="display:inline-block;margin-left:6px;padding:1px 7px;background:${isLive?"#dcfce7":"#fef3c7"};color:${isLive?"#15803d":"#92400e"};border-radius:4px;font-size:10px;font-weight:700;">${isLive?"🟢 LIVE":"🟡 DEMO"}</span>
       </td>
       <td>${s.village}<br><small style="color:var(--muted)">อ.${s.amphoe}</small></td>
-      <td style="text-align:right;font-family:monospace;">${s.bank.toFixed(2)}</td>
+      <td style="text-align:right;font-family:monospace;">${s.bank.toFixed(2)}${s.fg_id?'<br><small style="color:var(--fg,#7c3aed);font-size:9px;">วิกฤติ</small>':''}</td>
       <td style="text-align:right;font-family:monospace;color:#f59e0b;">${s.warn.toFixed(2)}</td>
       <td style="text-align:right;font-weight:800;color:var(--brand);font-family:monospace;">${lv!==null?lv.toFixed(2):"—"}</td>
       <td>
@@ -980,7 +1004,7 @@ function renderTable() {
             </div>`
           :"—"}
       </td>
-      <td style="text-align:right;font-weight:700;color:${diff!==null&&diff<=0.5?"#dc2626":diff!==null&&diff<=1.5?"#f59e0b":"#16a34a"};">${diff!==null?diff.toFixed(2):"—"}</td>
+      <td style="text-align:right;font-weight:700;color:${diff!==null&&diff<=0?"#dc2626":diff!==null&&diff<=0.5?"#dc2626":diff!==null&&diff<=1.5?"#f59e0b":"#16a34a"};">${diff!==null?diff.toFixed(2):"—"}</td>
       <td><span class="pill ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span></td>
       <td>${fgCell}</td>
     </tr>`;
