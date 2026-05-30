@@ -533,24 +533,40 @@ const FG_LABEL = { normal:"ปกติ", warn:"เฝ้าระวัง", cr
 const FG_EMOJI = { normal:"🟢", warn:"🟡", crit:"🔴", nodata:"⚪" };
 
 /* ============================================================
- * TUBE FILL CALCULATION — แก้ไขใหม่
- * ใช้ range จริง: min = bank - 5 ม., max = bank + 0.5 ม.
- * แท่งจะเคลื่อนไหวได้ทุกช่วงค่า
+ * TUBE FILL CALCULATION — Dynamic range per station
+ *
+ * หลักการ:
+ *  - แท่งแสดง range ±margin รอบค่าปัจจุบัน โดยมี bank เป็นจุดอ้างอิง
+ *  - min  = min(lv, bank) - MARGIN  (ให้มีพื้นที่ด้านล่างเสมอ)
+ *  - max  = bank + 0.5              (ตลิ่ง + นิดหน่อย)
+ *  - ผล: ไม่ว่า lv จะห่าง bank แค่ไหน แท่งก็แสดงสัดส่วนถูก
+ *  - warn/crit line คำนวณบน range เดียวกัน
  * ============================================================ */
+const TUBE_MARGIN = 2.0; /* เมตร — พื้นที่ด้านล่างใต้ค่าต่ำสุด */
+
+function calcRange(lv, bank) {
+  /* min = ต่ำสุดที่แสดง, max = สูงสุดที่แสดง */
+  const safeLv = (lv !== null && lv !== undefined) ? lv : (bank - 2);
+  const minLv = Math.min(safeLv, bank) - TUBE_MARGIN;
+  const maxLv = bank + 0.5;
+  return { minLv, maxLv };
+}
+
 function calcFill(lv, bank, tubeHeight=110) {
   if (lv === null || lv === undefined) return 0;
-  const minLv  = bank - 5.0;   /* ต่ำสุดที่แสดง */
-  const maxLv  = bank + 0.5;   /* สูงสุดที่แสดง (เหนือตลิ่งได้นิดหน่อย) */
-  const range  = maxLv - minLv;
-  const pct    = Math.max(0, Math.min(1, (lv - minLv) / range));
+  const { minLv, maxLv } = calcRange(lv, bank);
+  const range = maxLv - minLv;
+  const pct   = Math.max(0, Math.min(1, (lv - minLv) / range));
   return Math.round(pct * tubeHeight);
 }
 
-function calcWarnPx(warn, bank, tubeHeight=110) {
-  return calcFill(warn, bank, tubeHeight);
-}
-function calcCritPx(crit, bank, tubeHeight=110) {
-  return calcFill(crit, bank, tubeHeight);
+/* warn/crit line ต้องใช้ range เดียวกับ lv ของสถานีนั้น */
+function calcThreshPx(thresh, lv, bank, tubeHeight=110) {
+  if (lv === null || lv === undefined) return 0;
+  const { minLv, maxLv } = calcRange(lv, bank);
+  const range = maxLv - minLv;
+  const pct   = Math.max(0, Math.min(1, (thresh - minLv) / range));
+  return Math.round(pct * tubeHeight);
 }
 
 /* ============================================================
@@ -628,15 +644,14 @@ function renderScene() {
 
   STATIONS.forEach((s, i) => {
     const x     = Math.round(startX + i*step);
-    const lv    = stationData[s.id]?.current ?? s.bank - 2;
+    const lv    = stationData[s.id]?.current ?? null;
     const st    = statusOf(s);
-    const pc    = lv !== null
-      ? Math.max(0, Math.min(1, (lv - (s.bank-5)) / 5.5))
-      : 0;
-    const fillH = Math.round(staffH * pc);
+    /* ใช้ calcFill เดียวกัน — staffH แทน tubeHeight */
+    const fillH = lv !== null ? calcFill(lv, s.bank, staffH) : 0;
     const pinColor = st==="crit"?"#dc2626":st==="warn"?"#f59e0b":"#16a34a";
     const nm = s.name.length>8 ? s.name.slice(0,7)+"…" : s.name;
     const hasFG = !!s.fg_id;
+    const lvText = lv !== null ? lv.toFixed(2) : "—";
 
     const fgMark = hasFG
       ? `<rect x="${x-10}" y="${waterBotY+35}" width="20" height="12" rx="3" fill="#7c3aed" opacity=".9"/>
@@ -647,8 +662,8 @@ function renderScene() {
       <g class="sp" data-id="${s.id}" onclick="openDetail('${s.id}')" style="cursor:pointer;">
         <rect x="${x-3}" y="${waterTopY-6}" width="6" height="${staffH}"
           rx="3" fill="rgba(255,255,255,.25)" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
-        <rect x="${x-3}" y="${waterBotY+8-fillH}" width="6" height="${fillH}"
-          rx="3" fill="${pinColor}" opacity=".85"/>
+        ${fillH > 0 ? `<rect x="${x-3}" y="${waterBotY+8-fillH}" width="6" height="${fillH}"
+          rx="3" fill="${pinColor}" opacity=".85"/>` : ""}
         <circle cx="${x}" cy="${waterTopY-16}" r="10"
           fill="${pinColor}" stroke="white" stroke-width="2" filter="url(#glow)"/>
         <text x="${x}" y="${waterTopY-12}" text-anchor="middle"
@@ -656,7 +671,7 @@ function renderScene() {
         <rect x="${x-22}" y="${waterTopY-38}" width="44" height="15" rx="5"
           fill="${pinColor}" opacity=".9"/>
         <text x="${x}" y="${waterTopY-27}" text-anchor="middle"
-          font-size="8.5" font-weight="700" fill="white" font-family="Courier New">${lv!==null?lv.toFixed(2):"—"}</text>
+          font-size="8.5" font-weight="700" fill="white" font-family="Courier New">${lvText}</text>
         <rect x="${x-30}" y="${waterBotY+18}" width="60" height="15" rx="4"
           fill="rgba(255,255,255,.92)"/>
         <text x="${x}" y="${waterBotY+29}" text-anchor="middle"
@@ -709,10 +724,10 @@ function renderGauges() {
     const st   = statusOf(s);
     const diff = lv !== null ? s.bank - lv : null;
 
-    /* --- แก้ไข: คำนวณ fill จาก range จริง --- */
+    /* --- คำนวณ fill จาก dynamic range --- */
     const fillPx = calcFill(lv, s.bank, 110);
-    const warnPx = calcWarnPx(s.warn, s.bank, 110);
-    const critPx = calcCritPx(s.bank, s.bank, 110); /* ตลิ่ง = crit */
+    const warnPx = calcThreshPx(s.warn, lv, s.bank, 110);
+    const critPx = calcThreshPx(s.bank, lv, s.bank, 110); /* ตลิ่ง = max */
 
     /* FG badge */
     const fg    = s.fg_id ? FLOODGATES.find(f=>f.id===s.fg_id) : null;
