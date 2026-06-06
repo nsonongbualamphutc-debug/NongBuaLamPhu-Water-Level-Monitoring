@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#164e63">
+<meta name="description" content="แดชบอร์ดสถานการณ์อ่างเก็บน้ำ 15 แห่ง จังหวัดหนองบัวลำภู — โครงการชลประทานหนองบัวลำภู">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="อ่างเก็บน้ำ นภ.">
 <title>อ่างเก็บน้ำ | สถานการณ์น้ำ จ.หนองบัวลำภู</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,6 +16,29 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
 <link rel="stylesheet" href="theme.css">
+<script>
+/* PWA manifest แบบ inline (ไม่ต้องสร้างไฟล์แยก) */
+(function(){
+  const manifest = {
+    name:"อ่างเก็บน้ำ จ.หนองบัวลำภู",
+    short_name:"อ่างเก็บน้ำ นภ.",
+    description:"แดชบอร์ดสถานการณ์อ่างเก็บน้ำ 15 แห่ง จังหวัดหนองบัวลำภู",
+    start_url:"./reservoir.html",
+    display:"standalone",
+    background_color:"#f0fdfa",
+    theme_color:"#164e63",
+    icons:[{
+      src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#164e63"/><text x="96" y="130" font-size="110" text-anchor="middle">🏞️</text></svg>'),
+      sizes:"192x192", type:"image/svg+xml", purpose:"any maskable"
+    }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:"application/json"});
+  const link = document.createElement("link");
+  link.rel = "manifest";
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+})();
+</script>
 <style>
 :root {
   --bg: #f0fdfa; --card: #fff; --ink: #0f172a; --muted: #64748b;
@@ -19,8 +47,176 @@
   --warn: #f59e0b; --crit: #dc2626; --brand: #164e63;
   --shadow: 0 2px 12px rgba(6,78,59,.07);
 }
+/* ── DARK MODE ── */
+html[data-theme="dark"]{
+  --bg:#0b1220; --card:#131c2e; --ink:#e2e8f0; --muted:#94a3b8;
+  --line:#1e293b; --river:#22d3ee; --river-deep:#67e8f9;
+  --river-light:#164e63; --full:#38bdf8; --normal:#2dd4bf;
+  --warn:#fbbf24; --crit:#f87171; --brand:#67e8f9;
+  --shadow:0 2px 14px rgba(0,0,0,.4);
+}
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] .sc,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .table-panel,
+html[data-theme="dark"] .chart-panel,
+html[data-theme="dark"] .notice-panel,
+html[data-theme="dark"] .hydro-panel{background:var(--card);border-color:var(--line)}
+html[data-theme="dark"] th{background:#0f1a2e;color:var(--muted)}
+html[data-theme="dark"] td{border-color:var(--line)}
+html[data-theme="dark"] tbody tr:hover{background:#0f1a2e}
+html[data-theme="dark"] .leaflet-tile{filter:brightness(.85) contrast(1.05)}
+html[data-theme="dark"] .res-item{background:#0f1a2e}
+html[data-theme="dark"] .bm-menu,
+html[data-theme="dark"] .map-legend,
+html[data-theme="dark"] .map-choro-legend,
+html[data-theme="dark"] .bm-toggle,
+html[data-theme="dark"] .map-filter,
+html[data-theme="dark"] .map-fit-btn{background:rgba(19,28,46,.95);color:var(--ink)}
+/* ── DARK: แก้สีตัวหนังสือที่ถูกพื้นทับ ── */
+html[data-theme="dark"] .bm-name,
+html[data-theme="dark"] .ml-label,
+html[data-theme="dark"] .ml-title,
+html[data-theme="dark"] .mf-btn,
+html[data-theme="dark"] .bm-desc{color:var(--ink)!important}
+html[data-theme="dark"] .bm-opt:hover,
+html[data-theme="dark"] .mf-btn:hover,
+html[data-theme="dark"] .bm-toggle:hover,
+html[data-theme="dark"] .map-fit-btn:hover{background:#1e293b!important;color:var(--river-deep)!important}
+html[data-theme="dark"] .bm-swatch{border-color:#334155}
+html[data-theme="dark"] .res-item:hover{background:#1e293b}
+html[data-theme="dark"] .pct-bar-wrap{background:#334155}
+/* สีค่าตัวเลขในธีมมืด — ใช้โทนสว่างขึ้นให้อ่านออก */
+html[data-theme="dark"] .sc.full .sc-value,
+html[data-theme="dark"] .res-vol.full,
+html[data-theme="dark"] .res-pct.full{color:#60a5fa}
+html[data-theme="dark"] .sc.normal .sc-value,
+html[data-theme="dark"] .res-vol.normal,
+html[data-theme="dark"] .res-pct.normal{color:#5eead4}
+html[data-theme="dark"] .sc.warn .sc-value,
+html[data-theme="dark"] .res-vol.warn{color:#fbbf24}
+html[data-theme="dark"] .sc.crit .sc-value,
+html[data-theme="dark"] .res-vol.crit{color:#f87171}
+html[data-theme="dark"] .res-pct small.full{background:#1e3a5f;color:#93c5fd}
+html[data-theme="dark"] .tp-btn{color:var(--river-deep)}
+html[data-theme="dark"] .lt-btn{color:var(--muted)}
+html[data-theme="dark"] .lt-btn:hover{color:var(--river-deep)}
+/* Leaflet popup + tooltip ในธีมมืด */
+html[data-theme="dark"] .leaflet-popup-content-wrap,
+html[data-theme="dark"] .leaflet-popup-tip{background:#131c2e;color:var(--ink)}
+html[data-theme="dark"] .leaflet-tooltip{background:#131c2e;color:var(--ink);border-color:#334155}
+html[data-theme="dark"] .leaflet-tooltip-top:before{border-top-color:#131c2e}
+html[data-theme="dark"] .leaflet-tooltip-bottom:before{border-bottom-color:#131c2e}
+html[data-theme="dark"] .leaflet-tooltip-left:before{border-left-color:#131c2e}
+html[data-theme="dark"] .leaflet-tooltip-right:before{border-right-color:#131c2e}
+/* ── DARK: หัวข้อ + badge ที่คอนทราสต์ต่ำ ── */
+/* หัวข้อทุกอันใช้ฟ้าสว่างชัด */
+html[data-theme="dark"] .panel-head h2,
+html[data-theme="dark"] .scene-head h2,
+html[data-theme="dark"] .cp-head h3,
+html[data-theme="dark"] .tp-head h3,
+html[data-theme="dark"] .hp-head h2,
+html[data-theme="dark"] .pop-title,
+html[data-theme="dark"] .dp-info-item .value,
+html[data-theme="dark"] .gc-stat .sv{color:#7dd3fc}
+/* badge นับจำนวน (— จุด / 3 สถานี) — พื้นเข้ม ตัวสว่าง */
+html[data-theme="dark"] .hp-count{background:#0e2a3d;color:#7dd3fc}
+/* รหัส FG/HY — พื้นฟ้าเข้ม ตัวขาว */
+html[data-theme="dark"] .fg-id{background:#0369a1;color:#fff}
+/* badge เล็กฟ้าอ่อนทั่วไป (% เก็บกัก, sort) */
+html[data-theme="dark"] .lt-sort.active{background:#0e2a3d;color:#7dd3fc;border-color:#0369a1}
+html[data-theme="dark"] .lt-btn.active{color:#fff}
+/* sub-heading bar ก่อนหัวข้อ */
+html[data-theme="dark"] .panel-head h2::before,
+html[data-theme="dark"] .scene-head h2::before,
+html[data-theme="dark"] .cp-head h3::before,
+html[data-theme="dark"] .tp-head h3::before{background:#22d3ee}
+/* notice + section titles ที่เป็นเขียว/น้ำเงินเข้ม */
+html[data-theme="dark"] .notice-head h2{color:#6ee7b7}
+html[data-theme="dark"] .cl-title,
+html[data-theme="dark"] .ml-title,
+html[data-theme="dark"] .res-name{color:#e2e8f0}
+html[data-theme="dark"] .mf-btn{color:#cbd5e1}
+/* res-pct small badge (45% · 0.181) ทุกสถานะ — พื้นเข้ม ตัวสว่าง */
+html[data-theme="dark"] .res-pct small.normal{background:#0f3d3a;color:#5eead4}
+html[data-theme="dark"] .res-pct small.warn{background:#3d2e0a;color:#fcd34d}
+html[data-theme="dark"] .res-pct small.crit{background:#3d1518;color:#fca5a5}
+html[data-theme="dark"] .res-pct.warn{color:#fbbf24}
+html[data-theme="dark"] .res-pct.crit{color:#f87171}
+/* fg-flag (ปกติ/เฝ้าระวัง/วิกฤติ) ในการ์ด ปตร. */
+html[data-theme="dark"] .fg-flag.ok{background:#0f3d2a;color:#6ee7b7}
+/* sort badge เมื่อ active สถานะสี */
+html[data-theme="dark"] .lt-sort{color:#cbd5e1}
+/* type badge ในตาราง */
+.type-badge{font-size:11px;background:#f0fdfa;padding:2px 7px;border-radius:5px;color:var(--river-deep)}
+html[data-theme="dark"] .type-badge{background:#0f2a33;color:#7dd3fc}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+
+/* ── DATA STALE / ERROR BANNER ── */
+.data-banner{
+  max-width:1600px;margin:0 auto 0;padding:0 24px;
+  overflow:hidden;max-height:0;transition:max-height .3s ease,padding .3s ease;
+}
+.data-banner.show{max-height:120px;padding:12px 24px 0}
+.data-banner-inner{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;
+}
+.data-banner.demo .data-banner-inner{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.data-banner.stale .data-banner-inner{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.data-banner .db-icon{font-size:18px;flex-shrink:0}
+.data-banner .db-retry{
+  margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:8px;
+  padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;
+  font-family:'Sarabun',sans-serif;
+}
+.data-banner .db-retry:hover{background:rgba(0,0,0,.15)}
+
+/* ── HEADER ACTION BUTTONS ── */
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-icon-btn{
+  width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.12);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:background .2s;
+}
+.hdr-icon-btn:hover{background:rgba(255,255,255,.25)}
+.hdr-icon-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ── EXPORT TOOLBAR ── */
+.tp-actions{display:flex;align-items:center;gap:7px;margin-left:auto}
+.tp-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card);color:var(--river-deep);font-size:12px;font-weight:700;
+  cursor:pointer;font-family:'Sarabun',sans-serif;transition:all .2s;
+}
+.tp-btn:hover{background:var(--river-light);border-color:var(--river)}
+.tp-btn:focus-visible{outline:2px solid var(--river);outline-offset:2px}
+
+/* ── REFRESH SPIN ── */
+@keyframes spin360{to{transform:rotate(360deg)}}
+.spinning{animation:spin360 .8s linear infinite}
+
+/* ── A11Y: skip link + focus ── */
+.skip-link{
+  position:absolute;left:-999px;top:0;z-index:10000;
+  background:var(--brand);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;
+  font-size:13px;font-weight:700;
+}
+.skip-link:focus{left:0}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--river);outline-offset:2px;
+}
+@media print{
+  header,nav,.data-banner,.panel:first-of-type,.tp-actions,.hdr-actions,
+  .notice-panel,footer,.map-filter,.bm-ctrl,.map-legend{display:none!important}
+  body{background:#fff}
+  .table-panel{box-shadow:none;border:1px solid #ccc}
+  table{font-size:11px}
+}
 
 /* ── HEADER ── */
 /* header/nav/main — จาก theme.css */
@@ -475,6 +671,44 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
   font-size:12px!important;padding:5px 10px!important;border-radius:6px!important;
   box-shadow:0 4px 12px rgba(0,0,0,.25)!important;
 }
+/* ── RESERVOIR HOVER TOOLTIP — รายละเอียดเด่นชัดไม่ต้องคลิก ── */
+.res-tooltip{
+  background:transparent!important;border:none!important;box-shadow:none!important;
+  padding:0!important;
+}
+.res-tooltip .leaflet-tooltip-tip,
+.res-tooltip:before{display:none!important}
+.rtt{
+  width:212px;background:#fff;border-radius:14px;overflow:hidden;
+  box-shadow:0 8px 28px rgba(6,78,59,.28);border:1px solid var(--line);
+  font-family:'Sarabun',sans-serif;color:var(--ink);
+}
+html[data-theme="dark"] .rtt{background:#131c2e;border-color:#334155}
+.rtt-name{
+  font-family:'Kanit',sans-serif;font-weight:700;font-size:14px;color:#fff;
+  background:linear-gradient(135deg,#164e63,#0891b2);padding:9px 12px 4px;
+}
+.rtt-loc{font-size:10.5px;color:#cffafe;background:linear-gradient(135deg,#164e63,#0891b2);padding:0 12px 9px}
+.rtt-main{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-left:4px solid;margin:0;
+}
+.rtt-pct{font-family:'Kanit',sans-serif;font-weight:800;font-size:30px;line-height:1}
+.rtt-pct span{font-size:14px;margin-left:1px}
+.rtt-st{flex:1}
+.rtt-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-bottom:5px}
+.rtt-bar{height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+html[data-theme="dark"] .rtt-bar{background:#334155}
+.rtt-bar>div{height:100%;border-radius:4px;transition:width .6s}
+.rtt-rows{padding:4px 12px 8px}
+.rtt-rows>div{display:flex;justify-content:space-between;font-size:11.5px;padding:2.5px 0}
+.rtt-rows span{color:var(--muted)}
+.rtt-rows strong{font-family:'Kanit',sans-serif;font-weight:600}
+.rtt-foot{
+  font-size:10px;color:var(--muted);text-align:center;
+  padding:6px;background:var(--bg);border-top:1px dashed var(--line);
+}
+html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
 .leaflet-popup-content{font-family:'Sarabun',sans-serif;min-width:210px}
 .pop-title{font-weight:800;font-size:14px;color:var(--brand);margin-bottom:6px}
 .pop-pct-bar{
@@ -785,12 +1019,13 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
 
 <header class="app-header">
   <div class="hdr-inner">
     <div class="hdr-brand">
       <div class="hdr-logo">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 7c3-2 6-2 9 0s6 2 9 0"/><path d="M3 12c3-2 6-2 9 0s6 2 9 0"/>
           <path d="M3 17c3-2 6-2 9 0s6 2 9 0"/>
         </svg>
@@ -805,12 +1040,16 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
         <span class="dot" id="statusDot"></span>
         <span id="statusLabel">กำลังโหลด...</span>
       </div>
-      <div class="hdr-time" id="liveTime">--:--:--</div>
+      <div class="hdr-time" id="liveTime" aria-live="off">--:--:--</div>
+      <div class="hdr-actions">
+        <button class="hdr-icon-btn" id="btnRefresh" onclick="manualRefresh()" title="รีเฟรชข้อมูล" aria-label="รีเฟรชข้อมูล">🔄</button>
+        <button class="hdr-icon-btn" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
+      </div>
     </div>
   </div>
 </header>
 
-<nav class="app-nav">
+<nav class="app-nav" aria-label="เมนูหลัก">
   <div class="nav-inner">
     <a href="index.html">🏠 หน้าหลัก</a>
     <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
@@ -819,12 +1058,21 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
     <a href="mo.html">💧 ลำน้ำมอ</a>
     <a href="phuay.html">🌀 ลำน้ำพวย</a>
     <a href="rainfall.html">🌧️ ปริมาณฝน</a>
-    <a href="reservoir.html" class="active">🏞️ อ่างเก็บน้ำ</a>
+    <a href="reservoir.html" class="active" aria-current="page">🏞️ อ่างเก็บน้ำ</a>
     <a href="input.html">📝 บันทึกข้อมูล</a>
   </div>
 </nav>
 
-<main>
+<!-- Data status banner -->
+<div class="data-banner" id="dataBanner" role="alert" aria-live="polite">
+  <div class="data-banner-inner">
+    <span class="db-icon" id="dbIcon">⚠️</span>
+    <span id="dbText">—</span>
+    <button class="db-retry" onclick="manualRefresh()">ลองใหม่</button>
+  </div>
+</div>
+
+<main id="mainContent" tabindex="-1">
   <!-- Summary -->
   <div class="summary-row" id="summaryRow">
     <div class="sc info"><div class="sc-label">อ่างเก็บน้ำทั้งหมด</div><div class="sc-value">15</div><div class="sc-sub">โครงการชลประทานหนองบัวลำภู</div></div>
@@ -840,9 +1088,12 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
     <div class="panel">
       <div class="panel-head">
         <h2>แผนที่อ่างเก็บน้ำ 15 แห่ง</h2>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
             <input type="checkbox" id="chkChoro" style="accent-color:#0891b2"> แรเงาอำเภอ
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;">
+            <input type="checkbox" id="chkWater" checked style="accent-color:#0ea5e9"> 💧 เส้นทางน้ำ
           </label>
           <span style="font-size:11px;color:var(--muted)">พิกัดจริงจากโครงการชลประทาน</span>
         </div>
@@ -1020,7 +1271,11 @@ tbody tr:hover{background:#f0fdfa;cursor:pointer}
   <div class="table-panel">
     <div class="tp-head">
       <h3>ตารางข้อมูลอ่างเก็บน้ำทั้งหมด 15 แห่ง</h3>
-      <span id="tableTime">—</span>
+      <div class="tp-actions">
+        <span id="tableTime" style="font-size:11px;color:var(--muted);margin-right:4px">—</span>
+        <button class="tp-btn" onclick="exportCSV()" title="ดาวน์โหลดข้อมูลเป็นไฟล์ CSV" aria-label="ดาวน์โหลด CSV">📥 CSV</button>
+        <button class="tp-btn" onclick="window.print()" title="พิมพ์หรือบันทึกเป็น PDF" aria-label="พิมพ์ตาราง">🖨️ พิมพ์</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table>
@@ -1247,6 +1502,8 @@ let _baseLayers = {};
 let _activeBase = null;
 let _choroLayer = null;
 let _districtData = null;   // cached GeoJSON
+let _waterLayer = null;     // DWR water features (toggleable)
+let _waterLoaded = false;
 
 /* ── Proportional size (sqrt scale) ── */
 function markerSize(capacity) {
@@ -1454,6 +1711,11 @@ document.getElementById('chkChoro').addEventListener('change', function() {
   }
 });
 
+/* เปิด-ปิดเส้นทางน้ำ */
+document.getElementById('chkWater').addEventListener('change', function() {
+  toggleWaterLayer(this.checked);
+});
+
 /* ── Render markers ── */
 function renderMapMarkers() {
   Object.values(leafletMarkers).forEach(m => mapInst.removeLayer(m));
@@ -1461,12 +1723,43 @@ function renderMapMarkers() {
   RESERVOIRS.forEach(r => {
     const m = L.marker([r.lat, r.lon], {icon: markerIcon(r)});
     m.bindPopup(popupHTML(r), {maxWidth:260, className:''});
+    /* tooltip hover — โชว์รายละเอียดเด่นชัดไม่ต้องคลิก */
+    m.bindTooltip(tooltipHTML(r), {
+      direction:'top', offset:[0,-8], sticky:false,
+      opacity:1, className:'res-tooltip'
+    });
     m.on('click', () => openDetail(r.id));
     const st = statusOf(r);
     const vis = _activeFilter === 'all' || st === _activeFilter;
     if (vis) m.addTo(mapInst);
     leafletMarkers[r.id] = m;
   });
+}
+
+/* ── Tooltip ย่อ — เน้นข้อมูลสำคัญ อ่านปราดเดียวเข้าใจ ── */
+function tooltipHTML(r) {
+  const p   = pctOf(r);
+  const st  = statusOf(r);
+  const cur = (resData[r.id]?.current ?? r.capacity * 0.6).toFixed(2);
+  const col = ST_COLOR[st];
+  return `
+    <div class="rtt">
+      <div class="rtt-name">🏞️ ${r.name}</div>
+      <div class="rtt-loc">📍 ${r.village?('บ้าน'+r.village+' · '):''}อ.${r.amphoe}</div>
+      <div class="rtt-main" style="border-color:${col}">
+        <div class="rtt-pct" style="color:${col}">${p}<span>%</span></div>
+        <div class="rtt-st">
+          <span class="rtt-badge" style="background:${col}1f;color:${col}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span>
+          <div class="rtt-bar"><div style="width:${Math.min(p,100)}%;background:${col}"></div></div>
+        </div>
+      </div>
+      <div class="rtt-rows">
+        <div><span>ปริมาณน้ำ</span><strong style="color:${col}">${cur}</strong></div>
+        <div><span>ความจุ</span><strong>${r.capacity.toFixed(2)}</strong></div>
+        <div><span>ประเภท</span><strong>${r.type||'—'}</strong></div>
+      </div>
+      <div class="rtt-foot">คลิกเพื่อดูกราฟและรายละเอียด</div>
+    </div>`;
 }
 
 /* ── Init map ── */
@@ -1537,6 +1830,8 @@ async function loadMapData() {
 }
 
 async function loadDWRWater() {
+  /* เก็บทุก layer น้ำใน group เดียว เพื่อเปิด-ปิดได้ */
+  if (!_waterLayer) _waterLayer = L.layerGroup();
   try {
     const [pRes, lRes] = await Promise.all([
       fetch('nbp_water_points.geojson').then(r => r.ok ? r.json() : null),
@@ -1554,16 +1849,16 @@ async function loadDWRWater() {
           const weight  = isCanal ? 2.5 : lenKm > 10 ? 4 : lenKm > 3 ? 2.5 : 1.5;
           const color   = isCanal ? '#0891b2' : lenKm > 10 ? '#0284c7' : lenKm > 3 ? '#0ea5e9' : '#67e8f9';
           const coords  = f.geometry.coordinates.map(c => [c[1],c[0]]);
-          L.polyline(coords,{color:'#fff',weight:weight+3,opacity:.5,lineJoin:'round'}).addTo(mapInst);
+          L.polyline(coords,{color:'#fff',weight:weight+3,opacity:.5,lineJoin:'round'}).addTo(_waterLayer);
           L.polyline(coords,{color,weight,opacity:.9,lineJoin:'round'})
             .bindTooltip(nm ? `<strong>${nm}</strong><br>${isCanal?'คลอง':'ลำน้ำ'} · ${lenKm} กม.` : `ลำน้ำ · ${lenKm} กม.`,
               {sticky:true,direction:'top',className:'water-tooltip'})
-            .addTo(mapInst);
+            .addTo(_waterLayer);
         } else if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
           const isMan = cat === 'manmade_waterbody';
           L.geoJSON(f,{style:{color:isMan?'#0284c7':'#0369a1',weight:1.5,fillColor:isMan?'#38bdf8':'#0ea5e9',fillOpacity:.55}})
             .bindTooltip(nm || (isMan?'แหล่งน้ำมนุษย์สร้าง':'แหล่งน้ำธรรมชาติ'),{sticky:true,className:'water-tooltip'})
-            .addTo(mapInst);
+            .addTo(_waterLayer);
         }
       });
     }
@@ -1576,11 +1871,26 @@ async function loadDWRWater() {
           L.marker([lat,lon],{
             icon:L.divIcon({className:'',iconSize:[22,22],iconAnchor:[11,11],
               html:`<div style="width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;">⚙</div>`})
-          }).bindTooltip(`<strong>${p.name||'เขื่อน/ฝาย'}</strong>`,{sticky:true}).addTo(mapInst);
+          }).bindTooltip(`<strong>${p.name||'เขื่อน/ฝาย'}</strong>`,{sticky:true}).addTo(_waterLayer);
         }
       });
     }
+
+    /* แสดง layer น้ำตามสถานะ checkbox (default เปิด) */
+    const chk = document.getElementById('chkWater');
+    if (!chk || chk.checked) _waterLayer.addTo(mapInst);
+    _waterLoaded = true;
   } catch(e) { console.warn('[DWR] load fail',e); }
+}
+
+/* เปิด-ปิด layer เส้นทางน้ำ */
+function toggleWaterLayer(show) {
+  if (!_waterLayer) return;
+  if (show) {
+    _waterLayer.addTo(mapInst);
+  } else {
+    mapInst.removeLayer(_waterLayer);
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -1792,7 +2102,7 @@ function renderTable() {
       <td><strong style="color:var(--muted)">R${String(r.no).padStart(2,'0')}</strong></td>
       <td><strong>${r.name}</strong></td>
       <td>บ้าน${r.village}<br><small style="color:var(--muted)">ต.${r.tambon} · อ.${r.amphoe}</small></td>
-      <td><span style="font-size:11px;background:#f0fdfa;padding:2px 7px;border-radius:5px">${r.type}</span></td>
+      <td><span class="type-badge">${r.type}</span></td>
       <td style="text-align:right;font-weight:700;font-family:monospace">${r.capacity.toFixed(3)}</td>
       <td style="text-align:right;font-weight:800;font-family:monospace;color:${p<30?'#dc2626':p<40?'#f59e0b':'#0d9488'}">${cur}</td>
       <td>
@@ -1818,6 +2128,10 @@ function shortName(name) {
 }
 
 function renderCharts() {
+  /* สีปรับตามธีม (มืด/สว่าง) */
+  const _dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const _tickColor = _dark ? '#cbd5e1' : '#334155';
+  const _gridColor = _dark ? 'rgba(148,163,184,.15)' : '#f1f5f9';
   /* ── กราฟ % เก็บกัก — แนวนอน อ่านชื่อเต็มได้ ── */
   const sorted = [...RESERVOIRS].sort((a,b) => pctOf(b) - pctOf(a));
   const labels = sorted.map(r => shortName(r.name));
@@ -1841,8 +2155,8 @@ function renderCharts() {
         datalabels:false
       },
       scales:{
-        x:{max:110,ticks:{callback:v=>v+'%',font:{family:'Sarabun',size:10}},grid:{color:'#f1f5f9'}},
-        y:{ticks:{font:{family:'Sarabun',size:11,weight:'600'},color:'#334155',autoSkip:false},grid:{display:false}}
+        x:{max:110,ticks:{callback:v=>v+'%',font:{family:'Sarabun',size:10},color:_tickColor},grid:{color:_gridColor}},
+        y:{ticks:{font:{family:'Sarabun',size:11,weight:'600'},color:_tickColor,autoSkip:false},grid:{display:false}}
       },
       animation:{duration:700}
     },
@@ -1888,11 +2202,11 @@ function renderCharts() {
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{font:{family:'Sarabun',size:10},boxWidth:12}}},
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Sarabun',size:10},boxWidth:12,color:_tickColor}}},
       scales:{
-        x:{ticks:{font:{family:'Sarabun',size:9}},grid:{display:false}},
-        y:{ticks:{font:{family:'Sarabun',size:10},callback:v=>v+'M'},
-           title:{display:true,text:'ล้าน ลบ.ม.',font:{family:'Sarabun',size:10}}}
+        x:{ticks:{font:{family:'Sarabun',size:9},color:_tickColor},grid:{display:false}},
+        y:{ticks:{font:{family:'Sarabun',size:10},callback:v=>v+'M',color:_tickColor},grid:{color:_gridColor},
+           title:{display:true,text:'ล้าน ลบ.ม.',font:{family:'Sarabun',size:10},color:_tickColor}}
       }
     }
   });
@@ -1902,21 +2216,37 @@ function renderCharts() {
  *  API FETCH
  * ═══════════════════════════════════════════ */
 async function loadData() {
+  let gotData = false;
   if (API_URL) {
     try {
-      const res  = await fetch(API_URL + '?action=reservoir&_t=' + Date.now(), { cache: "no-store" });
+      /* timeout 12 วิ กัน fetch ค้างจนผู้ใช้ไม่รู้สถานะ */
+      const ctrl = new AbortController();
+      const tmo  = setTimeout(() => ctrl.abort(), 12000);
+      const res  = await fetch(API_URL + '?action=reservoir&_t=' + Date.now(), { cache: "no-store", signal: ctrl.signal });
+      clearTimeout(tmo);
       const data = await res.json();
       if (Array.isArray(data)) {
         data.forEach(item => {
           if (item.reservoir_id && item.current_volume !== undefined) {
             resData[item.reservoir_id] = {current: parseFloat(item.current_volume)};
+            if (item.date && (!_latestDataDate || String(item.date) > String(_latestDataDate))) {
+              _latestDataDate = item.date;
+            }
           }
         });
+        gotData = data.length > 0;
       }
     } catch(e) { console.warn('API unavailable, using demo data'); }
   }
+
+  _dataIsLive = gotData;
+  if (!gotData) {
+    showBanner('demo', 'ไม่สามารถเชื่อมต่อข้อมูลล่าสุดได้ — กำลังแสดง "ข้อมูลตัวอย่าง (DEMO)" ไม่ใช่สถานการณ์จริง');
+  } else {
+    checkStale();
+  }
+
   renderAll();
-  // โหลด ปตร. + อุทกวิทยา แยก (ไม่บล็อก reservoir)
   loadFloodgateAndHydro();
 }
 
@@ -1944,7 +2274,7 @@ async function loadFloodgateAndHydro(){
   renderFloodgates();
   renderHydros();
   renderHydroTable();
-  addFloodgateHydroMarkersToMap();
+  if (mapInst) { try { addFloodgateHydroMarkersToMap(); } catch(e){ console.warn('fg map skip:',e); } }
 }
 
 function statusClass(s){
@@ -2151,8 +2481,12 @@ function renderAll() {
   renderGauges();
   renderTable();
   renderCharts();
-  renderMapMarkers();
-  if (_districtData) { refreshChoroColors(); buildChoroLayer(_districtData); }
+  if (mapInst) {
+    try {
+      renderMapMarkers();
+      if (_districtData) { refreshChoroColors(); buildChoroLayer(_districtData); }
+    } catch(e){ console.warn('map render skip:', e); }
+  }
 }
 
 /* ── close basemap menu on outside click ── */
@@ -2164,10 +2498,117 @@ document.addEventListener('click', e => {
 });
 
 /* ═══════════════════════════════════════════
+ *  DARK MODE
+ * ═══════════════════════════════════════════ */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('btnTheme');
+  if (btn) btn.textContent = (t === 'dark') ? '☀️' : '🌙';
+  try { localStorage.setItem('nbl_theme', t); } catch(e){}
+  /* รีเฟรชสีกราฟให้เข้ากับธีม */
+  if (typeof renderCharts === 'function') { try { renderCharts(); } catch(e){} }
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(cur);
+}
+(function initTheme(){
+  /* เปิดมาเป็นธีมสว่างเสมอ — ใช้ธีมมืดเฉพาะเมื่อผู้ใช้กดสลับเองเท่านั้น
+     (ไม่ดึง prefers-color-scheme ของเครื่อง เพื่อความอ่านง่ายเป็นค่าตั้งต้น) */
+  let saved = null;
+  try { saved = localStorage.getItem('nbl_theme'); } catch(e){}
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+})();
+
+/* ═══════════════════════════════════════════
+ *  DATA STATUS BANNER + STALE DETECTION
+ * ═══════════════════════════════════════════ */
+let _dataIsLive = false;      // โหลดจาก API สำเร็จ?
+let _latestDataDate = null;   // วันที่ข้อมูลใหม่สุดในระบบ
+
+function showBanner(type, text){
+  const b = document.getElementById('dataBanner');
+  const icon = document.getElementById('dbIcon');
+  const txt  = document.getElementById('dbText');
+  if (!b) return;
+  b.className = 'data-banner show ' + type;
+  icon.textContent = type === 'stale' ? '🕐' : '⚠️';
+  txt.textContent = text;
+}
+function hideBanner(){
+  const b = document.getElementById('dataBanner');
+  if (b) b.className = 'data-banner';
+}
+
+/* ตรวจว่าข้อมูลเก่าเกินไปไหม (เกิน 2 วัน = เตือน) */
+function checkStale(){
+  if (!_dataIsLive) return; // demo อยู่แล้ว banner เตือนอื่น
+  if (!_latestDataDate) return;
+  const latest = new Date(_latestDataDate);
+  if (isNaN(latest)) return;
+  const days = Math.floor((Date.now() - latest.getTime()) / 86400000);
+  if (days >= 2){
+    showBanner('stale', `ข้อมูลล่าสุดในระบบเป็นของ ${latest.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})} (${days} วันที่แล้ว) — อาจไม่ใช่สถานการณ์ปัจจุบัน`);
+  } else {
+    hideBanner();
+  }
+}
+
+/* ═══════════════════════════════════════════
+ *  MANUAL REFRESH
+ * ═══════════════════════════════════════════ */
+let _refreshing = false;
+async function manualRefresh(){
+  if (_refreshing) return;
+  _refreshing = true;
+  const btn = document.getElementById('btnRefresh');
+  if (btn) btn.classList.add('spinning');
+  try {
+    await loadData();
+  } finally {
+    setTimeout(() => { if (btn) btn.classList.remove('spinning'); _refreshing = false; }, 600);
+  }
+}
+
+/* ═══════════════════════════════════════════
+ *  EXPORT CSV
+ * ═══════════════════════════════════════════ */
+function exportCSV(){
+  const headers = ['ลำดับ','รหัส','ชื่อโครงการ','หมู่บ้าน','ตำบล','อำเภอ','ประเภท',
+    'ความจุ(ล้านลบ.ม.)','ปริมาณน้ำปัจจุบัน(ล้านลบ.ม.)','%เก็บกัก',
+    'พื้นที่ได้ประโยชน์(ไร่)','สร้างเสร็จ','สถานะ'];
+  const rows = RESERVOIRS.map(r => {
+    const cur = (resData[r.id]?.current ?? r.capacity * 0.6);
+    const p   = pctOf(r);
+    const st  = statusOf(r);
+    const stLabel = st === 'crit' ? 'วิกฤติ' : st === 'warn' ? 'น้ำน้อย' : st === 'full' ? 'สูง/เต็ม' : 'ปกติ';
+    return [
+      r.no, 'R'+String(r.no).padStart(2,'0'), r.name, r.village||'', r.tambon||'', r.amphoe||'',
+      r.type||'', r.capacity.toFixed(3), cur.toFixed(3), p,
+      (r.benefit||r.irrig||0), (r.built||''), stLabel
+    ];
+  });
+  /* BOM + escape comma/quote */
+  const esc = v => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(esc).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toLocaleDateString('th-TH').replace(/\//g,'-');
+  a.href = url;
+  a.download = `อ่างเก็บน้ำ_หนองบัวลำภู_${today}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ═══════════════════════════════════════════
  *  INIT
  * ═══════════════════════════════════════════ */
 initDemoData();
-initMap();
+try { initMap(); } catch(e){ console.warn('Map init failed (Leaflet?):', e); }
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 </script>
