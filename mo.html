@@ -275,9 +275,152 @@ footer strong { color: #fff; }
 ::-webkit-scrollbar { width: 8px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f0fdf4; }
 ::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 4px; }
+
+/* ═══════════════════════════════════════════
+ *  RESPONSIVE — มือถือ & แท็บเล็ต
+ * ═══════════════════════════════════════════ */
+@media(max-width:768px){
+  .hdr-inner{padding:12px 16px;gap:10px}
+  .hdr-logo{width:42px;height:42px}
+  .hdr-title{font-size:16px}
+  .hdr-sub{font-size:9.5px;letter-spacing:.2px}
+  .hdr-right{gap:8px}
+  .hdr-badge{padding:5px 10px;font-size:11px}
+  .hdr-time{font-size:11px}
+  .nav-inner{padding:0 12px;gap:0}
+  .nav-inner a{padding:11px 12px;font-size:12.5px;white-space:nowrap}
+  main{padding:16px 12px}
+  /* summary: 2 คอลัมน์บนมือถือ ใช้พื้นที่ดีขึ้น */
+  .summary-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
+  .summary-row>div{padding:13px 14px}
+  .scene-head{padding:12px 16px;flex-wrap:wrap;gap:6px}
+  .scene-head h2{font-size:14px}
+  .scene-meta{font-size:11px}
+  .stations-scroll-wrap{padding:14px 12px}
+  .charts-row{gap:14px;margin-bottom:18px}
+  /* ตาราง: เลื่อนแนวนอนได้ ไม่ล้น */
+  .table-wrap,.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12px}
+  th,td{padding:8px 10px;white-space:nowrap}
+  /* การ์ด ปตร. เต็มกว้าง */
+  .fg-cards-row{padding:14px 12px;gap:12px}
+  .fg-card{min-width:240px}
+  /* amphoe filter bar เลื่อนได้ */
+  .amphoe-filter-bar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .af-btn{white-space:nowrap;flex-shrink:0}
+}
+@media(max-width:480px){
+  .hdr-inner{flex-direction:column;align-items:flex-start}
+  .hdr-right{width:100%;justify-content:space-between}
+  .hdr-title{font-size:15px}
+  /* summary 1 คอลัมน์เฉพาะจอเล็กมาก */
+  .summary-row{grid-template-columns:1fr 1fr;gap:8px}
+  .summary-row .sc-value{font-size:22px}
+  main{padding:12px 10px}
+  .scene-head h2{font-size:13px}
+  .gauge-card{min-width:150px}
+  .fg-card{min-width:210px}
+}
+/* อุปกรณ์สัมผัส — ปุ่มกดง่าย ไม่มี hover ค้าง */
+@media(hover:none){
+  .gauge-card:hover{transform:none}
+  .af-btn,.nav-inner a{min-height:40px;display:flex;align-items:center}
+  .fg-card:hover{transform:none}
+}
+
+
+/* ═══════════════════════════════════════════
+ *  DARK MODE
+ * ═══════════════════════════════════════════ */
+html[data-theme="dark"]{
+  --bg:#0b1220; --card:#131c2e; --ink:#e2e8f0; --muted:#94a3b8; --line:#1e293b;
+  --river-light:#164e63; --brand:#7dd3fc; --shadow:0 2px 14px rgba(0,0,0,.4);
+}
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] .sc,
+html[data-theme="dark"] .scene-wrap,
+html[data-theme="dark"] .chart-panel,
+html[data-theme="dark"] .table-panel,
+html[data-theme="dark"] .fg-section,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .gauge-card,
+html[data-theme="dark"] .fg-card,
+html[data-theme="dark"] .detail-panel,
+html[data-theme="dark"] .chart-card{background:var(--card);border-color:var(--line)}
+html[data-theme="dark"] .scene-head,
+html[data-theme="dark"] .stations-scroll-wrap,
+html[data-theme="dark"] .chart-head,
+html[data-theme="dark"] .tp-head,
+html[data-theme="dark"] .cp-head{background:transparent;border-color:var(--line)}
+html[data-theme="dark"] th{background:#0f1a2e;color:var(--muted)}
+html[data-theme="dark"] td{border-color:var(--line)}
+html[data-theme="dark"] tbody tr:hover{background:#0f1a2e}
+html[data-theme="dark"] .gc-tube{background:#1e293b}
+html[data-theme="dark"] .gc-stat{background:#0f1a2e}
+html[data-theme="dark"] .gc-name,
+html[data-theme="dark"] .scene-head h2,
+html[data-theme="dark"] .panel-head h2,
+html[data-theme="dark"] .cp-head h3,
+html[data-theme="dark"] .tp-head h3,
+html[data-theme="dark"] .fg-section-title,
+html[data-theme="dark"] .gc-stat .sv{color:#7dd3fc}
+html[data-theme="dark"] .gc-val-bbl{background:#0369a1}
+html[data-theme="dark"] .af-btn{background:#131c2e;color:var(--muted);border-color:var(--line)}
+html[data-theme="dark"] .af-btn.active{background:#0369a1;border-color:#0369a1;color:#fff}
+html[data-theme="dark"] .gc-tip{background:#0f1a2e;border:1px solid #334155}
+html[data-theme="dark"] .fg-card-foot,
+html[data-theme="dark"] .gc-foot{border-color:var(--line)}
+html[data-theme="dark"] .data-banner.demo .data-banner-inner{background:#3d2e0a;color:#fcd34d;border-color:#92750a}
+html[data-theme="dark"] .data-banner.stale .data-banner-inner{background:#3d1518;color:#fca5a5;border-color:#7f1d1d}
+
+/* ── DATA BANNER ── */
+.data-banner{max-width:1600px;margin:0 auto;padding:0 24px;overflow:hidden;max-height:0;transition:max-height .3s,padding .3s}
+.data-banner.show{max-height:120px;padding:12px 24px 0}
+.data-banner-inner{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600}
+.data-banner.demo .data-banner-inner{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.data-banner.stale .data-banner-inner{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.data-banner .db-icon{font-size:18px;flex-shrink:0}
+.data-banner .db-retry{margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;font-family:'Sarabun',sans-serif}
+.data-banner .db-retry:hover{background:rgba(0,0,0,.15)}
+
+/* ── HEADER ACTION BUTTONS ── */
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .2s}
+.hdr-icon-btn:hover{background:rgba(255,255,255,.25)}
+.hdr-icon-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@keyframes spin360{to{transform:rotate(360deg)}}
+.spinning{animation:spin360 .8s linear infinite}
+
+/* ── EXPORT TOOLBAR ── */
+.tp-actions{display:flex;align-items:center;gap:7px}
+.tp-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--river-deep);font-size:12px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all .2s}
+.tp-btn:hover{background:var(--river-light);border-color:var(--river)}
+.tp-btn:focus-visible{outline:2px solid var(--river);outline-offset:2px}
+html[data-theme="dark"] .tp-btn{color:#7dd3fc}
+
+/* ── A11Y ── */
+.skip-link{position:absolute;left:-999px;top:0;z-index:10000;background:var(--brand);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;font-size:13px;font-weight:700}
+.skip-link:focus{left:0}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--river);outline-offset:2px}
+@media print{
+  .app-header,.app-nav,.data-banner,.scene-wrap,.tp-actions,.hdr-actions,.amphoe-filter-bar,footer{display:none!important}
+  body{background:#fff}
+  .table-panel,.chart-panel{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+}
+
 </style>
+<script>
+(function(){
+  const m={name:"ลำน้ำมอ จ.หนองบัวลำภู",short_name:"มอ",start_url:"./mo.html",display:"standalone",background_color:"#f0faf4",theme_color:"#047857",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#047857"/><text x="96" y="130" font-size="100" text-anchor="middle">💧</text></svg>'),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
+  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(l);
+})();
+</script>
+<meta name="theme-color" content="#047857">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="มอ">
 </head>
 <body>
+<a href="#mainContent" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
 
 <header class="app-header">
   <div class="hdr-inner">
@@ -299,6 +442,11 @@ footer strong { color: #fff; }
         <span id="statusLabel">กำลังโหลด...</span>
       </div>
       <div class="hdr-time" id="liveTime">--:--:--</div>
+    
+      <div class="hdr-actions">
+        <button class="hdr-icon-btn" id="btnRefresh" onclick="manualRefresh()" title="รีเฟรชข้อมูล" aria-label="รีเฟรชข้อมูล">🔄</button>
+        <button class="hdr-icon-btn" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
+      </div>
     </div>
   </div>
 </header>
@@ -309,7 +457,7 @@ footer strong { color: #fff; }
     <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
     <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
     <a href="mong.html">🌿 ลำน้ำโมง</a>
-    <a href="mo.html" class="active">🌊 ลำน้ำมอ</a>
+    <a href="mo.html" class="active" aria-current="page">🌊 ลำน้ำมอ</a>
     <a href="phuay.html">🌊 ลำน้ำพวย</a>
     <a href="rainfall.html">🌧️ ปริมาณฝน</a>
     <a href="reservoir.html">🏞️ อ่างเก็บน้ำ</a>
@@ -317,7 +465,15 @@ footer strong { color: #fff; }
   </div>
 </nav>
 
-<main>
+<!-- Data status banner -->
+<div class="data-banner" id="dataBanner" role="alert" aria-live="polite">
+  <div class="data-banner-inner">
+    <span class="db-icon" id="dbIcon">⚠️</span>
+    <span id="dbText">—</span>
+    <button class="db-retry" onclick="manualRefresh()">ลองใหม่</button>
+  </div>
+</div>
+<main id="mainContent" tabindex="-1">
 
 <!-- Summary -->
 <div class="summary-row">
@@ -513,7 +669,7 @@ footer strong { color: #fff; }
 
 <!-- Table -->
 <div class="table-panel">
-  <div class="tp-head"><h3>ตารางสถานีตรวจวัดทั้งหมด — ลำน้ำมอ</h3></div>
+  <div class="tp-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3>ตารางสถานีตรวจวัดทั้งหมด — ลำน้ำมอ</h3><div class="tp-actions"><button class="tp-btn" onclick="exportCSV()" aria-label="ดาวน์โหลด CSV">📥 CSV</button><button class="tp-btn" onclick="window.print()" aria-label="พิมพ์">🖨️ พิมพ์</button></div></div>
   <div style="overflow-x:auto;">
     <table>
       <thead>
@@ -965,28 +1121,30 @@ function renderCharts() {
 
 /* MAIN */
 async function loadData(from, to) {
+  let gotData=false;
   if (API_URL) {
     try {
       let url = API_URL + "?action=mo";
       if (from) url += "&from=" + from;
       if (to)   url += "&to="   + to;
- 
-      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();  // กัน browser cache
-      const res  = await fetch(url, { cache: "no-store" });
+      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();
+      const ctrl=new AbortController();const tmo=setTimeout(()=>ctrl.abort(),12000);
+      const res  = await fetch(url, { cache: "no-store", signal:ctrl.signal });
+      clearTimeout(tmo);
       const data = await res.json();
- 
-      if (data.stations) data.stations.forEach(item => {
+      if (data.stations){ data.stations.forEach(item => {
         if (stationData[item.id]) {
           if (item.current != null) {
             stationData[item.id].current = parseFloat(item.current);
             stationData[item.id]._isLive = true;
-          } else {
-            stationData[item.id]._isLive = false;
-          }
+          } else { stationData[item.id]._isLive = false; }
         }
-      });
+      }); gotData = data.stations.length>0; }
     } catch(e) { console.warn("API unavailable, using demo data"); }
   }
+  _dataIsLive=gotData;
+  if(!gotData) showBanner('demo','ไม่สามารถเชื่อมต่อข้อมูลล่าสุดได้ — กำลังแสดง "ข้อมูลตัวอย่าง (DEMO)" ไม่ใช่สถานการณ์จริง');
+  else hideBanner();
   renderSummary();
   renderFilterBar();
   renderGauges();
@@ -995,6 +1153,54 @@ async function loadData(from, to) {
   renderCharts();
 }
  
+
+/* ═══════════════════════════════════════════
+ *  DARK MODE / REFRESH / BANNER / EXPORT
+ * ═══════════════════════════════════════════ */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const b=document.getElementById('btnTheme'); if(b) b.textContent=(t==='dark')?'☀️':'🌙';
+  try{localStorage.setItem('nbl_theme',t);}catch(e){}
+  if(typeof renderCharts==='function'){try{renderCharts();}catch(e){}}
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+(function(){let s=null;try{s=localStorage.getItem('nbl_theme');}catch(e){}applyTheme(s==='dark'?'dark':'light');})();
+
+let _dataIsLive=false;
+function showBanner(type,text){
+  const b=document.getElementById('dataBanner');if(!b)return;
+  b.className='data-banner show '+type;
+  document.getElementById('dbIcon').textContent=type==='stale'?'🕐':'⚠️';
+  document.getElementById('dbText').textContent=text;
+}
+function hideBanner(){const b=document.getElementById('dataBanner');if(b)b.className='data-banner';}
+
+let _refreshing=false;
+async function manualRefresh(){
+  if(_refreshing)return;_refreshing=true;
+  const b=document.getElementById('btnRefresh');if(b)b.classList.add('spinning');
+  try{await loadData();}finally{setTimeout(()=>{if(b)b.classList.remove('spinning');_refreshing=false;},600);}
+}
+
+function exportCSV(){
+  const headers=['ลำดับ','รหัส','สถานี','หมู่บ้าน','อำเภอ','ระดับน้ำ(ม.รทก.)','ตลิ่ง(ม.รทก.)','เฝ้าระวัง(ม.รทก.)','สถานะ'];
+  const rows=STATIONS.map((s,i)=>{
+    const lv=stationData[s.id]?.current ?? null;
+    const st=statusOf(s);
+    const stL=st==='crit'?'วิกฤติ':st==='warn'?'เฝ้าระวัง':'ปกติ';
+    return [i+1,s.id,s.name,s.village||'',s.amphoe||'',lv!==null?lv.toFixed(2):'-',s.bank,s.warn,stL];
+  });
+  const esc=v=>{const x=String(v??'');return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+  const csv='\uFEFF'+[headers,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');
+  a.href=url;a.download='ลำน้ำมอ_หนองบัวลำภู_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 initDemo();
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
