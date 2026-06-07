@@ -771,6 +771,23 @@
   .trend-pill.up{background:#fee2e2;color:#b91c1c;}
   .trend-pill.down{background:#dcfce7;color:#166534;}
   .trend-pill.flat{background:#f1f5f9;color:#475569;}
+  /* ── Refresh countdown + spin ── */
+  .refresh-countdown{font-size:11px;font-weight:700;color:var(--muted);font-family:'Courier New',monospace;min-width:34px;text-align:center;letter-spacing:.5px;}
+  [data-theme="dark"] .refresh-countdown{color:#94a3b8;}
+  @keyframes spin360{to{transform:rotate(360deg)}}
+  .spinning{animation:spin360 .8s linear infinite}
+  /* ── Offline / connection banner ── */
+  .conn-banner{max-width:1400px;margin:0 auto;padding:0 20px;overflow:hidden;max-height:0;transition:max-height .3s,padding .3s;}
+  .conn-banner.show{max-height:120px;padding:10px 20px 0;}
+  .conn-banner-inner{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+  [data-theme="dark"] .conn-banner-inner{background:#3d2e0a;color:#fcd34d;border-color:#92750a;}
+  .conn-banner .cb-icon{font-size:18px;flex-shrink:0;}
+  .conn-banner .cb-retry{margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;font-family:inherit;}
+  .conn-banner .cb-retry:hover{background:rgba(0,0,0,.15);}
+  /* ── A11y skip link ── */
+  .skip-link{position:absolute;left:-999px;top:0;z-index:10000;background:var(--brand);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;font-size:13px;font-weight:700;}
+  .skip-link:focus{left:0;}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
 
   /* Sparkline mini-chart */
   .summary-card .spark{
@@ -1360,10 +1377,63 @@
   }
   .leaflet-control-layers-expanded {padding:10px 14px!important;}
   .leaflet-control-layers label {margin:3px 0!important;display:flex!important;align-items:center;gap:6px;}
+  /* ═══════════════════════════════════════════
+   *  RESPONSIVE — มือถือ & แท็บเล็ต (เพิ่มเติม)
+   * ═══════════════════════════════════════════ */
+  /* แท็บเล็ต */
+  @media(max-width:1024px){
+    .grid-summary{grid-template-columns:repeat(3,1fr);}
+  }
+  @media(max-width:768px){
+    .grid-summary{grid-template-columns:repeat(2,1fr);gap:12px;}
+    /* alert banner → stack แนวตั้ง ไม่ให้ตัวหนังสือล้น */
+    .alert-banner{flex-wrap:wrap;padding:13px 14px;gap:10px;}
+    .alert-content{flex:1 1 100%;order:2;}
+    .alert-icon{order:1;width:40px;height:40px;}
+    .alert-actions{flex:1 1 100%;order:3;flex-wrap:wrap;}
+    .alert-actions .alert-btn{flex:1;text-align:center;}
+    .alert-desc{-webkit-line-clamp:3;}
+    .conn-banner-inner{flex-wrap:wrap;}
+    .conn-banner .cb-retry{margin-left:0;}
+  }
+  /* มือถือ */
+  @media(max-width:560px){
+    .grid-summary{grid-template-columns:1fr 1fr;gap:10px;}
+    .summary-card{padding:14px 12px;}
+    .summary-card .value{font-size:26px;}
+    .alert-title{font-size:14px;}
+    .alert-banner{padding:12px;}
+    .alert-icon{width:38px;height:38px;}
+    /* AI summary อ่านง่ายขึ้น */
+    .header-tools{flex-wrap:wrap;justify-content:flex-end;}
+    .refresh-countdown{display:none;} /* ซ่อน countdown บนจอเล็กมาก ประหยัดที่ */
+  }
+  /* มือถือเล็กมาก */
+  @media(max-width:380px){
+    .grid-summary{grid-template-columns:1fr;}
+    .summary-card .value{font-size:28px;}
+  }
+  /* อุปกรณ์สัมผัส */
+  @media(hover:none){
+    .summary-card:hover{transform:none;}
+    .header-btn,.alert-btn,nav a{min-height:40px;}
+  }
 </style>
+<script>
+/* PWA manifest inline */
+(function(){
+  const m={name:"สถานการณ์น้ำ จ.หนองบัวลำภู",short_name:"น้ำ นภ.",description:"ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์",start_url:"./index.html",display:"standalone",background_color:"#0b1220",theme_color:"#0c4a6e",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#0c4a6e"/><text x="96" y="132" font-size="104" text-anchor="middle">💧</text></svg>'),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
+  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(l);
+})();
+</script>
+<meta name="theme-color" content="#0c4a6e">
+<meta name="description" content="ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์ — สำนักงานสถิติจังหวัดหนองบัวลำภู">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="น้ำ นภ.">
 </head>
 <body>
-
+<a href="#mainContent" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
 <header>
   <div class="header-inner">
     <div class="brand">
@@ -1396,6 +1466,10 @@
         </div>
       </div>
       <div class="header-tools">
+        <button class="header-btn" id="btnRefresh" onclick="manualRefresh()" title="รีเฟรชข้อมูล" aria-label="รีเฟรชข้อมูล">
+          <svg id="refreshIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <span class="refresh-countdown" id="refreshCountdown" title="อัปเดตอัตโนมัติครั้งถัดไป">5:00</span>
         <button class="header-btn" onclick="toggleTheme()" title="โหมดมืด/สว่าง" aria-label="Theme">
           <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -1435,7 +1509,7 @@
   </div>
 </nav>
 
-<main>
+<main id="mainContent" tabindex="-1">
 
   <!-- AI Summary Box (สเตป 6) -->
   <div class="ai-summary" id="aiSummaryBox">
@@ -1480,6 +1554,15 @@
       <button class="alert-btn" onclick="document.getElementById('mapPanel')?.scrollIntoView({behavior:'smooth'})">ดูแผนที่</button>
       <button class="alert-btn" onclick="toggleTimeline()" id="btnTimelineToggle">📜 Timeline</button>
       <button class="alert-close" onclick="dismissAlert()" title="ซ่อน">×</button>
+    </div>
+  </div>
+
+  <!-- Connection banner (เตือนเมื่อ API ล่ม → DEMO) -->
+  <div class="conn-banner" id="connBanner" role="alert" aria-live="polite">
+    <div class="conn-banner-inner">
+      <span class="cb-icon">⚠️</span>
+      <span id="connText">ไม่สามารถเชื่อมต่อข้อมูลล่าสุดได้ — กำลังแสดง "ข้อมูลตัวอย่าง (DEMO)" ไม่ใช่สถานการณ์จริง</span>
+      <button class="cb-retry" onclick="manualRefresh()">ลองใหม่</button>
     </div>
   </div>
 
@@ -2377,9 +2460,12 @@ function updateSituation(stations, rain){
 /* ====== FETCH DATA ====== */
 async function loadData(){
   let stations = DEMO_STATIONS, rain = DEMO_RAIN;
+  let gotData = false;
   if(API_URL){
     try{
-      const res = await fetch(API_URL+"?action=summary");
+      const ctrl=new AbortController();const tmo=setTimeout(()=>ctrl.abort(),12000);
+      const res = await fetch(API_URL+"?action=summary", {signal:ctrl.signal});
+      clearTimeout(tmo);
       const data = await res.json();
       if(data.stations && data.stations.length){
         // Merge backend data กับ DEMO_STATIONS — รักษาค่า demo ถ้า backend ยังไม่มีข้อมูล (current = null)
@@ -2406,12 +2492,36 @@ async function loadData(){
             _lastUpdate: bs.last_update || null
           });
         });
+        gotData = true;
       }
       if(data.rain && data.rain.length) rain = data.rain;
     }catch(e){console.warn("API failed, using demo data",e);}
   }
+  // เตือนเมื่อเชื่อมต่อไม่ได้ → กำลังใช้ข้อมูล DEMO
+  const cb = document.getElementById("connBanner");
+  if(cb){ cb.className = gotData ? "conn-banner" : "conn-banner show"; }
+  resetRefreshCountdown();
   render(stations, rain);
 }
+
+/* ── Manual refresh + countdown ── */
+let _refreshing=false, _nextRefreshAt=Date.now()+5*60*1000;
+async function manualRefresh(){
+  if(_refreshing) return;
+  _refreshing=true;
+  const ic=document.getElementById("refreshIcon");
+  if(ic) ic.classList.add("spinning");
+  try{ await loadData(); }
+  finally{ setTimeout(()=>{ if(ic)ic.classList.remove("spinning"); _refreshing=false; },600); }
+}
+function resetRefreshCountdown(){ _nextRefreshAt = Date.now()+5*60*1000; }
+function tickRefreshCountdown(){
+  const el=document.getElementById("refreshCountdown"); if(!el) return;
+  let s=Math.max(0,Math.round((_nextRefreshAt-Date.now())/1000));
+  const m=Math.floor(s/60); s=s%60;
+  el.textContent = m+":"+String(s).padStart(2,"0");
+}
+setInterval(tickRefreshCountdown, 1000); tickRefreshCountdown();
 
 /* ====== RENDER ====== */
 function render(stations, rain){
