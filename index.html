@@ -1378,6 +1378,36 @@
   .leaflet-control-layers-expanded {padding:10px 14px!important;}
   .leaflet-control-layers label {margin:3px 0!important;display:flex!important;align-items:center;gap:6px;}
   /* ═══════════════════════════════════════════
+   *  CLIMATE TREND PANEL
+   * ═══════════════════════════════════════════ */
+  .climate-panel{margin-bottom:20px;}
+  .climate-controls{display:flex;gap:8px;}
+  .climate-select{padding:6px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+  [data-theme="dark"] .climate-select{background:#0f172a;border-color:#334155;color:#e2e8f0;}
+  .climate-body{padding:16px 18px 18px;}
+  .climate-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .ct-tab{padding:7px 16px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);color:var(--muted);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+  .ct-tab:hover{border-color:#fbbf24;color:#b45309;}
+  .ct-tab.active{background:#fbbf24;border-color:#fbbf24;color:#3d2e0a;}
+  [data-theme="dark"] .ct-tab{background:#0f172a;border-color:#334155;color:#94a3b8;}
+  [data-theme="dark"] .ct-tab.active{background:#fbbf24;color:#3d2e0a;border-color:#fbbf24;}
+  .climate-chart-wrap{position:relative;height:340px;margin-bottom:18px;}
+  .climate-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13px;background:var(--card);z-index:5;}
+  .climate-loading.hidden{display:none;}
+  .climate-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;}
+  .cs-title{font-size:13px;font-weight:700;color:var(--brand);margin-bottom:8px;}
+  .cs-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .cs-table th{text-align:left;padding:7px 10px;background:transparent;color:var(--muted);font-weight:600;border-bottom:1.5px solid var(--line);font-size:11.5px;}
+  .cs-table th:not(:first-child){text-align:right;}
+  .cs-table td{padding:7px 10px;border-bottom:1px solid var(--line);}
+  .cs-table td:not(:first-child){text-align:right;font-family:'Kanit',sans-serif;font-weight:600;}
+  .cs-table tr:last-child td{border-bottom:none;}
+  .cs-ico{margin-right:6px;}
+  .climate-source{font-size:11px;color:var(--muted);text-align:right;margin-top:6px;}
+  [data-theme="dark"] .cs-title{color:#bae6fd;}
+  @media(max-width:768px){.climate-stats{grid-template-columns:1fr;}.climate-chart-wrap{height:280px;}}
+
+  /* ═══════════════════════════════════════════
    *  RESPONSIVE — มือถือ & แท็บเล็ต (เพิ่มเติม)
    * ═══════════════════════════════════════════ */
   /* แท็บเล็ต */
@@ -1681,6 +1711,49 @@
       <div class="forecast-chart-wrap">
         <canvas id="forecastChart"></canvas>
       </div>
+    </div>
+  </div>
+
+  <!-- Climate Trend (แนวโน้มสภาพอากาศ) -->
+  <div class="panel climate-panel">
+    <div class="panel-head">
+      <h2>📈 แนวโน้มสภาพอากาศ</h2>
+      <div class="climate-controls">
+        <select id="climateYear" class="climate-select" aria-label="เลือกปี"></select>
+        <select id="climateMonth" class="climate-select" aria-label="เลือกเดือน"></select>
+      </div>
+    </div>
+    <div class="climate-body">
+      <div class="climate-tabs" id="climateTabs" role="tablist">
+        <button class="ct-tab active" data-metric="temp" role="tab">🌡️ อุณหภูมิ</button>
+        <button class="ct-tab" data-metric="rain" role="tab">💧 ปริมาณฝน</button>
+        <button class="ct-tab" data-metric="humid" role="tab">💦 ความชื้น</button>
+        <button class="ct-tab" data-metric="wind" role="tab">💨 ลม</button>
+      </div>
+      <div class="climate-chart-wrap">
+        <div class="climate-loading" id="climateLoading">
+          <div class="spinner"></div><span>กำลังโหลดข้อมูลภูมิอากาศ...</span>
+        </div>
+        <canvas id="climateChart"></canvas>
+      </div>
+      <!-- ตารางสรุปสถิติ -->
+      <div class="climate-stats">
+        <div class="cs-block">
+          <h3 class="cs-title">ข้อมูลสภาพอากาศ</h3>
+          <table class="cs-table" id="climateExtremes">
+            <thead><tr><th>รายการ</th><th>เดือนจนถึงปัจจุบัน</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cs-block">
+          <h3 class="cs-title">สรุปรายวัน (เดือนจนถึงปัจจุบัน)</h3>
+          <table class="cs-table" id="climateSummary">
+            <thead><tr><th>รายการ</th><th>สูงสุด</th><th>เฉลี่ย</th><th>ต่ำสุด</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="climate-source">ข้อมูลย้อนหลัง + พยากรณ์ 30 วัน · <span style="opacity:.6">© Open-Meteo</span></div>
     </div>
   </div>
 
@@ -2223,6 +2296,7 @@ function applyTheme(theme){
     icon.outerHTML = (theme === "dark" ? ICON_SUN : ICON_MOON).replace("<svg ", '<svg id="themeIcon" ');
   }
   localStorage.setItem("dashboard-theme", theme);
+  try{ if(typeof renderClimateChart==="function" && window._climateData){ renderClimateChart(); } }catch(e){}
 }
 
 function toggleTheme(){
@@ -4069,6 +4143,359 @@ loadForecast();
 setInterval(loadData, 5*60*1000);
 // อัปเดตพยากรณ์ทุก 30 นาที
 setInterval(loadForecast, 30*60*1000);
+
+/* ═══════════════════════════════════════════
+ *  CLIMATE TREND — แนวโน้มสภาพอากาศ (Open-Meteo)
+ *  archive API (อดีต) + forecast API (อนาคต 16 วัน) + climate normals
+ * ═══════════════════════════════════════════ */
+let climateChart = null;
+let _climateMetric = "temp";
+window._climateData = null;          // เก็บข้อมูลดิบ (ใช้ window เลี่ยง TDZ ตอน applyTheme เรียกตอนต้นไฟล์)
+const TH_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+function initClimateControls(){
+  const now = new Date();
+  const ySel = document.getElementById("climateYear");
+  const mSel = document.getElementById("climateMonth");
+  if(!ySel || !mSel) return;
+  const curY = now.getFullYear();
+  // ตัวเลือกเปรียบเทียบ: 12 เดือนที่ผ่านมา (rolling)
+  const rOpt = document.createElement("option");
+  rOpt.value = "rolling"; rOpt.textContent = "12 เดือนที่ผ่านมา";
+  ySel.appendChild(rOpt);
+  // ปี: ย้อนหลัง 6 ปี (แสดงเป็น พ.ศ.)
+  for(let y = curY; y >= curY-6; y--){
+    const opt = document.createElement("option");
+    opt.value = y; opt.textContent = (y+543);
+    ySel.appendChild(opt);
+  }
+  // เดือน: ทุกเดือน (all) + รายเดือน
+  const allOpt = document.createElement("option");
+  allOpt.value = "all"; allOpt.textContent = "ทุกเดือน";
+  mSel.appendChild(allOpt);
+  TH_MONTHS.forEach((mn,i)=>{
+    const opt = document.createElement("option");
+    opt.value = i; opt.textContent = mn;
+    mSel.appendChild(opt);
+  });
+  ySel.value = curY;
+  mSel.value = now.getMonth();
+
+  // ถ้าเลือก "12 เดือนที่ผ่านมา" → ปิด dropdown เดือน (ไม่เกี่ยว)
+  function syncMonthState(){
+    if(ySel.value === "rolling"){ mSel.disabled = true; mSel.style.opacity = ".5"; }
+    else { mSel.disabled = false; mSel.style.opacity = "1"; }
+  }
+  ySel.addEventListener("change", ()=>{ syncMonthState(); loadClimate(); });
+  mSel.addEventListener("change", loadClimate);
+  syncMonthState();
+
+  document.querySelectorAll(".ct-tab").forEach(t=>{
+    t.addEventListener("click", ()=>{
+      document.querySelectorAll(".ct-tab").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      _climateMetric = t.dataset.metric;
+      renderClimateChart();
+    });
+  });
+}
+
+async function loadClimate(){
+  const yVal = document.getElementById("climateYear").value;
+  const mVal = document.getElementById("climateMonth").value;
+  const loading = document.getElementById("climateLoading");
+  if(loading){ loading.classList.remove("hidden"); loading.innerHTML='<div class="spinner"></div><span>กำลังโหลดข้อมูลภูมิอากาศ...</span>'; }
+
+  const fmt = d => d.toISOString().slice(0,10);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const daily = "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_mean";
+  const tz = "&timezone=Asia/Bangkok";
+
+  // กำหนดช่วงเวลา + โหมด
+  let first, last, mode;
+  if(yVal === "rolling"){
+    mode = "monthly";                        // 12 เดือนล่าสุด → aggregate รายเดือน
+    last  = new Date(today.getFullYear(), today.getMonth()+1, 0);
+    first = new Date(today.getFullYear(), today.getMonth()-11, 1);
+  } else if(mVal === "all"){
+    mode = "monthly";                        // ทั้งปี → aggregate รายเดือน
+    const year = parseInt(yVal);
+    first = new Date(year,0,1);
+    last  = new Date(year,11,31);
+  } else {
+    mode = "daily";                          // เดือนเดียว → รายวัน
+    const year = parseInt(yVal), month = parseInt(mVal);
+    first = new Date(year,month,1);
+    last  = new Date(year,month+1,0);
+  }
+
+  try{
+    const reqs = [];
+    if(first <= today){
+      const archEnd = last < today ? last : new Date(today.getTime()-86400000);
+      reqs.push(fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${FORECAST_LOC.lat}&longitude=${FORECAST_LOC.lon}&start_date=${fmt(first)}&end_date=${fmt(archEnd)}&daily=${daily}${tz}`).then(r=>r.json()).then(d=>({type:"hist",d})));
+    }
+    if(last >= today){
+      const fStart = first > today ? first : today;
+      const fcEnd = new Date(today.getTime()+15*86400000);
+      const realEnd = last < fcEnd ? last : fcEnd;
+      reqs.push(fetch(`https://api.open-meteo.com/v1/forecast?latitude=${FORECAST_LOC.lat}&longitude=${FORECAST_LOC.lon}&start_date=${fmt(fStart)}&end_date=${fmt(realEnd)}&daily=${daily}${tz}`).then(r=>r.json()).then(d=>({type:"fc",d})));
+    }
+    const results = await Promise.all(reqs);
+
+    // รวมข้อมูลรายวันทั้งหมดก่อน
+    const allDays = {};
+    results.forEach(({type,d})=>{
+      if(!d.daily || !d.daily.time) return;
+      d.daily.time.forEach((t,i)=>{
+        allDays[t] = {
+          date:t,
+          tmax:d.daily.temperature_2m_max?.[i] ?? null,
+          tmin:d.daily.temperature_2m_min?.[i] ?? null,
+          rain:d.daily.precipitation_sum?.[i] ?? null,
+          wind:d.daily.wind_speed_10m_max?.[i] ?? null,
+          humid:d.daily.relative_humidity_2m_mean?.[i] ?? null,
+          isFc:(type==="fc" && new Date(t) >= today)
+        };
+      });
+    });
+
+    if(mode === "daily"){
+      const year=first.getFullYear(), month=first.getMonth();
+      const byDate={}; const dim=last.getDate();
+      for(let dd=1; dd<=dim; dd++){
+        const key=fmt(new Date(year,month,dd));
+        byDate[key]=allDays[key] || {date:key, tmax:null,tmin:null,rain:null,wind:null,humid:null,isFc:false};
+        byDate[key].day=dd;
+      }
+      window._climateData={mode:"daily", year, month, days:Object.values(byDate), todayKey:fmt(today)};
+    } else {
+      // aggregate รายเดือน
+      const buckets={};
+      Object.values(allDays).forEach(d=>{
+        const dt=new Date(d.date); const key=dt.getFullYear()+"-"+dt.getMonth();
+        if(!buckets[key]) buckets[key]={year:dt.getFullYear(),month:dt.getMonth(),tmax:[],tmin:[],rain:[],wind:[],humid:[],isFc:false};
+        if(d.tmax!=null)buckets[key].tmax.push(d.tmax);
+        if(d.tmin!=null)buckets[key].tmin.push(d.tmin);
+        if(d.rain!=null)buckets[key].rain.push(d.rain);
+        if(d.wind!=null)buckets[key].wind.push(d.wind);
+        if(d.humid!=null)buckets[key].humid.push(d.humid);
+        if(d.isFc)buckets[key].isFc=true;
+      });
+      const months=Object.values(buckets).sort((a,b)=> (a.year-b.year)||(a.month-b.month)).map(bk=>({
+        year:bk.year, month:bk.month, label:TH_MONTHS[bk.month].slice(0,3)+(yVal==="rolling"?" "+String((bk.year+543)).slice(-2):""),
+        tmax:avg(bk.tmax), tmin:avg(bk.tmin),
+        rain:bk.rain.reduce((a,b)=>a+b,0),         // ฝน = ผลรวมทั้งเดือน
+        wind:avg(bk.wind), humid:avg(bk.humid), isFc:bk.isFc
+      }));
+      window._climateData={mode:"monthly", months, rolling:(yVal==="rolling"), year:(yVal==="rolling"?null:parseInt(yVal))};
+    }
+
+    renderClimateChart();
+    renderClimateStats();
+  }catch(e){
+    console.warn("[Climate] error", e);
+    if(loading){ loading.classList.remove("hidden"); loading.innerHTML='<span style="color:#dc2626">⚠️ โหลดข้อมูลภูมิอากาศไม่ได้ — ลองใหม่ภายหลัง</span>'; }
+    return;
+  }
+  if(loading) loading.classList.add("hidden");
+}
+
+function renderClimateChart(){
+  if(!window._climateData) return;
+  const cd = window._climateData;
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  const tick = dark ? "#cbd5e1" : "#475569";
+  const grid = dark ? "rgba(148,163,184,.12)" : "rgba(0,0,0,.06)";
+
+  const isMonthly = cd.mode === "monthly";
+  const rows = isMonthly ? cd.months : cd.days;       // แต่ละจุดบนแกน X
+  const labels = isMonthly ? rows.map(r=>r.label) : rows.map(r=>r.day);
+  const todayIdx = isMonthly ? -1 : rows.findIndex(d=>d.date===cd.todayKey);
+  const periodLabel = isMonthly ? "เฉลี่ยช่วงนี้" : "เฉลี่ยเดือนนี้";
+  const unitWord = isMonthly ? "รายเดือน" : "รายวัน";
+
+  // เส้นแบ่งวันนี้ (เฉพาะ daily)
+  const todayLine = {
+    id:"todayLine",
+    afterDraw(chart){
+      if(todayIdx<0) return;
+      const x = chart.scales.x.getPixelForValue(todayIdx);
+      const {top,bottom} = chart.chartArea;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = dark?"#94a3b8":"#64748b";
+      ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = dark?"#1e293b":"#334155";
+      const lbl="วันนี้"; ctx.font="600 11px Sarabun";
+      const w=ctx.measureText(lbl).width+12;
+      ctx.fillRect(x-w/2, top-2, w, 18);
+      ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(lbl, x, top+7);
+      ctx.restore();
+    }
+  };
+
+  // helper: แยกค่า hist กับ fc (จุดเชื่อมต่อ: fc รวมจุดสุดท้ายของ hist)
+  const histArr = (key)=> rows.map(r=> r.isFc?null:r[key]);
+  const fcArr   = (key,i0)=> rows.map((r,i)=>{
+    if(r.isFc) return r[key];
+    // จุดสุดท้ายก่อน fc ให้ต่อเส้น
+    const next = rows[i+1];
+    return (next && next.isFc) ? r[key] : null;
+  });
+
+  let datasets=[], yTitle="";
+
+  if(_climateMetric==="temp"){
+    yTitle="°C";
+    const avgMax = avg(rows.map(r=>r.tmax));
+    const avgMin = avg(rows.map(r=>r.tmin));
+    datasets=[
+      {label:"สูง"+unitWord, data:histArr("tmax"), borderColor:"#dc2626", backgroundColor:"rgba(220,38,38,.12)", fill:'+1', tension:.4, pointRadius:isMonthly?3:0, borderWidth:2, spanGaps:false},
+      {label:"ต่ำ"+unitWord, data:histArr("tmin"), borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.10)", fill:'origin', tension:.4, pointRadius:isMonthly?3:0, borderWidth:2, spanGaps:false},
+      {label:"พยากรณ์ สูง", data:fcArr("tmax"), borderColor:"#dc2626", borderDash:[5,4], tension:.4, pointRadius:0, borderWidth:2, spanGaps:true, fill:false},
+      {label:"พยากรณ์ ต่ำ", data:fcArr("tmin"), borderColor:"#2563eb", borderDash:[5,4], tension:.4, pointRadius:0, borderWidth:2, spanGaps:true, fill:false},
+      {label:"เฉลี่ยสูง ("+periodLabel+")", data:rows.map(()=>avgMax), borderColor:"rgba(220,38,38,.55)", borderDash:[2,3], pointRadius:0, borderWidth:1.5, fill:false},
+      {label:"เฉลี่ยต่ำ ("+periodLabel+")", data:rows.map(()=>avgMin), borderColor:"rgba(37,99,235,.55)", borderDash:[2,3], pointRadius:0, borderWidth:1.5, fill:false},
+    ];
+  } else if(_climateMetric==="rain"){
+    yTitle=isMonthly?"มม./เดือน":"มม.";
+    datasets=[{
+      label:"ปริมาณฝน"+unitWord, data:rows.map(r=>r.rain),
+      backgroundColor:rows.map(r=> r.isFc?"rgba(14,165,233,.45)":"rgba(2,132,199,.8)"),
+      borderRadius:4, type:"bar"
+    }];
+  } else if(_climateMetric==="humid"){
+    yTitle="%";
+    datasets=[
+      {label:"ความชื้นเฉลี่ย", data:histArr("humid"), borderColor:"#0891b2", backgroundColor:"rgba(8,145,178,.15)", fill:'origin', tension:.4, pointRadius:isMonthly?3:0, borderWidth:2},
+      {label:"พยากรณ์", data:fcArr("humid"), borderColor:"#0891b2", borderDash:[5,4], tension:.4, pointRadius:0, borderWidth:2, spanGaps:true, fill:false},
+    ];
+  } else { // wind
+    yTitle="กม./ชม.";
+    datasets=[
+      {label:"ลมสูงสุด"+unitWord, data:histArr("wind"), borderColor:"#7c3aed", backgroundColor:"rgba(124,58,237,.13)", fill:'origin', tension:.4, pointRadius:isMonthly?3:0, borderWidth:2},
+      {label:"พยากรณ์", data:fcArr("wind"), borderColor:"#7c3aed", borderDash:[5,4], tension:.4, pointRadius:0, borderWidth:2, spanGaps:true, fill:false},
+    ];
+  }
+
+  if(climateChart) climateChart.destroy();
+  climateChart = new Chart(document.getElementById("climateChart"), {
+    type: _climateMetric==="rain"?"bar":"line",
+    data:{labels, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:"index", intersect:false},
+      plugins:{
+        legend:{position:"bottom", labels:{font:{family:"Sarabun",size:11}, color:tick, boxWidth:14, padding:10, usePointStyle:true}},
+        tooltip:{
+          callbacks:{
+            title:(items)=>{
+              const r = rows[items[0].dataIndex];
+              if(isMonthly) return TH_MONTHS[r.month]+" "+(r.year+543) + (r.isFc?" (พยากรณ์)":"");
+              return `${r.day} ${TH_MONTHS[cd.month]} ${cd.year+543}` + (r.isFc?" (พยากรณ์)":"");
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{family:"Sarabun",size:10}, color:tick, maxRotation:isMonthly?0:0, autoSkip:true, maxTicksLimit:isMonthly?12:16}, grid:{display:false}},
+        y:{ticks:{font:{family:"Sarabun",size:10}, color:tick, callback:v=>v+(_climateMetric==="temp"?"°":"")}, grid:{color:grid}, title:{display:true,text:yTitle,font:{family:"Sarabun",size:11},color:tick}}
+      }
+    },
+    plugins: (_climateMetric!=="rain" && !isMonthly) ? [todayLine] : []
+  });
+}
+
+function avg(arr){ const v=arr.filter(x=>x!=null); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; }
+function maxOf(arr){ const v=arr.filter(x=>x!=null); return v.length? Math.max(...v) : null; }
+function minOf(arr){ const v=arr.filter(x=>x!=null); return v.length? Math.min(...v) : null; }
+function fmtNum(v,dec=0){ return v==null? "—" : v.toFixed(dec); }
+
+function renderClimateStats(){
+  if(!window._climateData) return;
+  const cd = window._climateData;
+  const exTbody = document.querySelector("#climateExtremes tbody");
+  const smTbody = document.querySelector("#climateSummary tbody");
+  const exHead  = document.querySelector("#climateExtremes thead th:last-child");
+
+  if(cd.mode === "monthly"){
+    // เปรียบเทียบรายเดือน
+    const rows = cd.months.filter(m=>!m.isFc); // ใช้เฉพาะข้อมูลจริงสำหรับสถิติ
+    const pick = (key,mode)=>{
+      let best=null;
+      rows.forEach(m=>{ if(m[key]==null) return;
+        if(!best || (mode==="max"? m[key]>best[key] : m[key]<best[key])) best=m; });
+      return best;
+    };
+    const hot=pick("tmax","max"), cold=pick("tmin","min"), wet=pick("rain","max"), windy=pick("wind","max");
+    const ml = m => m? TH_MONTHS[m.month]+" "+(m.year+543) : "—";
+    if(exHead) exHead.textContent = "เดือนที่เด่นที่สุด";
+    exTbody.innerHTML = `
+      <tr><td><span class="cs-ico">🌡️</span>เดือนร้อนที่สุด</td><td>${ml(hot)}${hot?` · ${fmtNum(hot.tmax)}°`:""}</td></tr>
+      <tr><td><span class="cs-ico">❄️</span>เดือนเย็นที่สุด</td><td>${ml(cold)}${cold?` · ${fmtNum(cold.tmin)}°`:""}</td></tr>
+      <tr><td><span class="cs-ico">💧</span>เดือนฝนมากที่สุด</td><td>${ml(wet)}${wet?` · ${fmtNum(wet.rain,1)} มม.`:""}</td></tr>
+      <tr><td><span class="cs-ico">💨</span>เดือนลมแรงที่สุด</td><td>${ml(windy)}${windy?` · ${fmtNum(windy.wind,1)} กม./ชม.`:""}</td></tr>`;
+    const row=(label,key,dec,isSum)=>{
+      const a=rows.map(m=>m[key]);
+      const total = isSum ? a.filter(x=>x!=null).reduce((x,y)=>x+y,0) : null;
+      return `<tr><td>${label}</td><td>${fmtNum(maxOf(a),dec)}</td><td>${isSum?fmtNum(total,dec):fmtNum(avg(a),dec)}</td><td>${fmtNum(minOf(a),dec)}</td></tr>`;
+    };
+    // หัวตารางสรุป: เปลี่ยน "เฉลี่ย" เป็นบริบทรายเดือน
+    document.querySelector("#climateSummary thead").innerHTML =
+      "<tr><th>รายการ (รายเดือน)</th><th>สูงสุด</th><th>เฉลี่ย/รวม</th><th>ต่ำสุด</th></tr>";
+    smTbody.innerHTML =
+      row("อุณหภูมิสูง (°C)","tmax",0,false) +
+      row("อุณหภูมิต่ำ (°C)","tmin",0,false) +
+      row("ปริมาณฝนรวม (มม.)","rain",1,true) +
+      row("ลม (กม./ชม.)","wind",1,false) +
+      row("ความชื้น (%)","humid",0,false);
+    return;
+  }
+
+  // โหมดรายวัน (เดือนเดียว)
+  const days = cd.days.filter(d=> new Date(d.date) <= new Date());
+  const findDay = (key, mode)=>{
+    let best=null;
+    days.forEach(d=>{ if(d[key]==null) return;
+      if(!best || (mode==="max"? d[key]>best[key] : d[key]<best[key])) best=d; });
+    return best;
+  };
+  const hot  = findDay("tmax","max");
+  const cold = findDay("tmin","min");
+  const wet  = findDay("rain","max");
+  const windy= findDay("wind","max");
+  const mn = TH_MONTHS[cd.month];
+  const dlabel = d => d? `${d.day} ${mn}` : "—";
+  if(exHead) exHead.textContent = "เดือนจนถึงปัจจุบัน";
+
+  exTbody.innerHTML = `
+    <tr><td><span class="cs-ico">🌡️</span>วันที่ร้อนที่สุด</td><td>${dlabel(hot)}${hot?` · ${fmtNum(hot.tmax)}°`:""}</td></tr>
+    <tr><td><span class="cs-ico">❄️</span>วันที่หนาวที่สุด</td><td>${dlabel(cold)}${cold?` · ${fmtNum(cold.tmin)}°`:""}</td></tr>
+    <tr><td><span class="cs-ico">💧</span>วันที่ฝนมากที่สุด</td><td>${dlabel(wet)}${wet?` · ${fmtNum(wet.rain,1)} มม.`:""}</td></tr>
+    <tr><td><span class="cs-ico">💨</span>วันที่ลมแรงที่สุด</td><td>${dlabel(windy)}${windy?` · ${fmtNum(windy.wind,1)} กม./ชม.`:""}</td></tr>`;
+
+  document.querySelector("#climateSummary thead").innerHTML =
+    "<tr><th>รายการ</th><th>สูงสุด</th><th>เฉลี่ย</th><th>ต่ำสุด</th></tr>";
+  const row=(label,key,dec)=>{
+    const a=days.map(d=>d[key]);
+    return `<tr><td>${label}</td><td>${fmtNum(maxOf(a),dec)}</td><td>${fmtNum(avg(a),dec)}</td><td>${fmtNum(minOf(a),dec)}</td></tr>`;
+  };
+  smTbody.innerHTML =
+    row("อุณหภูมิสูง (°C)","tmax",0) +
+    row("อุณหภูมิต่ำ (°C)","tmin",0) +
+    row("ปริมาณฝน (มม.)","rain",1) +
+    row("ลม (กม./ชม.)","wind",1) +
+    row("ความชื้น (%)","humid",0);
+}
+
+// init climate เมื่อโหลดหน้า
+initClimateControls();
+loadClimate();
+
 </script>
 </body>
 </html>
