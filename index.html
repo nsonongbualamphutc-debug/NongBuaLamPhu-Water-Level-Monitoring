@@ -1225,11 +1225,43 @@
     display:inline-block;font-size:11px;
     transition:transform .3s;
   }
-  .forecast-chart-wrap{
-    height:200px;margin-top:8px;
-    padding-top:14px;
-    border-top:1px solid var(--line);
-  }
+  .forecast-chart-wrap{height:200px;margin-top:8px;padding-top:14px;border-top:1px solid var(--line);}
+  /* ── WX METRIC CARDS (รู้สึกเหมือน/UV/คุณภาพอากาศ) ── */
+  .wx-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+  .wx-card{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(135deg,var(--card),var(--card));position:relative;overflow:hidden;}
+  .wx-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--wx-accent,#0891b2);}
+  .wx-ico{font-size:26px;flex-shrink:0;}
+  .wx-info{flex:1;min-width:0;}
+  .wx-label{font-size:11.5px;color:var(--muted);font-weight:600;}
+  .wx-value{font-family:'Kanit',sans-serif;font-size:21px;font-weight:700;line-height:1.15;color:var(--ink);}
+  .wx-sub{font-size:11px;color:var(--muted);}
+  .wx-card.lv-good{--wx-accent:#16a34a;} .wx-card.lv-good .wx-value{color:#16a34a;}
+  .wx-card.lv-mod{--wx-accent:#f59e0b;}  .wx-card.lv-mod .wx-value{color:#d97706;}
+  .wx-card.lv-high{--wx-accent:#ea580c;} .wx-card.lv-high .wx-value{color:#ea580c;}
+  .wx-card.lv-vhigh{--wx-accent:#dc2626;}.wx-card.lv-vhigh .wx-value{color:#dc2626;}
+  .wx-card.lv-extreme{--wx-accent:#7c3aed;}.wx-card.lv-extreme .wx-value{color:#7c3aed;}
+  [data-theme="dark"] .wx-card.lv-good .wx-value{color:#4ade80;}
+  [data-theme="dark"] .wx-card.lv-mod .wx-value{color:#fbbf24;}
+  [data-theme="dark"] .wx-card.lv-high .wx-value{color:#fb923c;}
+  [data-theme="dark"] .wx-card.lv-vhigh .wx-value{color:#f87171;}
+  [data-theme="dark"] .wx-card.lv-extreme .wx-value{color:#a78bfa;}
+  @media(max-width:680px){.wx-metrics{grid-template-columns:1fr;}}
+  /* ── HOURLY SECTION (รายชั่วโมง) ── */
+  .hourly-section{margin-top:14px;padding-top:16px;border-top:1px solid var(--line);}
+  .hourly-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .hourly-head h3{font-size:14px;font-weight:700;color:var(--brand);}
+  .hourly-sun{font-size:12px;color:var(--muted);display:flex;gap:14px;}
+  .hourly-sun span{display:inline-flex;align-items:center;gap:4px;}
+  .hourly-chart-wrap{position:relative;height:220px;}
+  .hourly-rainrow{display:flex;gap:2px;margin-top:6px;padding:0 2px;}
+  .hr-cell{flex:1;text-align:center;font-size:9.5px;color:var(--muted);padding:5px 1px;border-radius:6px;background:rgba(14,165,233,.07);}
+  .hr-cell.wet{background:rgba(14,165,233,.18);color:#0369a1;font-weight:700;}
+  .hr-cell.dry{opacity:.5;}
+  [data-theme="dark"] .hr-cell{background:rgba(56,189,248,.08);}
+  [data-theme="dark"] .hr-cell.wet{background:rgba(56,189,248,.2);color:#7dd3fc;}
+  /* การ์ดวันที่เลือกได้ */
+  .fc-card{cursor:pointer;}
+  .fc-card.selected{outline:2.5px solid var(--brand);outline-offset:1px;}
   /* FOOTER */
   footer{background:#0f172a;color:#94a3b8;padding:28px 24px;margin-top:30px;text-align:center;font-size:13px;}
   footer strong{color:#fff;}
@@ -1405,6 +1437,22 @@
   .cs-ico{margin-right:6px;}
   .climate-source{font-size:11px;color:var(--muted);text-align:right;margin-top:6px;}
   [data-theme="dark"] .cs-title{color:#bae6fd;}
+  /* compare checkbox + csv button + insight */
+  .climate-cmp{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;padding:5px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);}
+  .climate-cmp input{accent-color:#fbbf24;cursor:pointer;}
+  [data-theme="dark"] .climate-cmp{background:#0f172a;border-color:#334155;}
+  .climate-csv{padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-size:14px;line-height:1;}
+  .climate-csv:hover{background:var(--river-light,#cffafe);border-color:var(--river,#0891b2);}
+  [data-theme="dark"] .climate-csv{background:#0f172a;border-color:#334155;color:#e2e8f0;}
+  .climate-insight{margin:4px 0 14px;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.6;display:flex;align-items:flex-start;gap:10px;}
+  .climate-insight .ci-ico{font-size:20px;flex-shrink:0;}
+  .climate-insight.normal{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+  .climate-insight.watch{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+  .climate-insight.high{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+  [data-theme="dark"] .climate-insight.normal{background:#0f3d2a;color:#86efac;border-color:#14532d;}
+  [data-theme="dark"] .climate-insight.watch{background:#3d2e0a;color:#fcd34d;border-color:#713f12;}
+  [data-theme="dark"] .climate-insight.high{background:#3d1518;color:#fca5a5;border-color:#7f1d1d;}
+  .climate-insight a{color:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
   @media(max-width:768px){.climate-stats{grid-template-columns:1fr;}.climate-chart-wrap{height:280px;}}
 
   /* ═══════════════════════════════════════════
@@ -1702,14 +1750,35 @@
       </span>
     </div>
     <div class="forecast-body">
+      <!-- การ์ดสภาพอากาศวันนี้: รู้สึกเหมือน / UV / คุณภาพอากาศ -->
+      <div class="wx-metrics" id="wxMetrics">
+        <div class="wx-card" id="wxFeels">
+          <div class="wx-ico">🌡️</div>
+          <div class="wx-info"><div class="wx-label">รู้สึกเหมือน</div><div class="wx-value" id="wxFeelsVal">—</div><div class="wx-sub" id="wxFeelsSub">เทียบอุณหภูมิจริง</div></div>
+        </div>
+        <div class="wx-card" id="wxUV">
+          <div class="wx-ico">☀️</div>
+          <div class="wx-info"><div class="wx-label">ดัชนี UV วันนี้</div><div class="wx-value" id="wxUVVal">—</div><div class="wx-sub" id="wxUVSub">—</div></div>
+        </div>
+        <div class="wx-card" id="wxAQI">
+          <div class="wx-ico">💨</div>
+          <div class="wx-info"><div class="wx-label">คุณภาพอากาศ</div><div class="wx-value" id="wxAQIVal">—</div><div class="wx-sub" id="wxAQISub">PM2.5 —</div></div>
+        </div>
+      </div>
       <div class="forecast-cards" id="forecastCards">
         <div class="forecast-loading">
           <div class="spinner"></div>
           <span>กำลังดึงข้อมูลพยากรณ์อากาศ...</span>
         </div>
       </div>
-      <div class="forecast-chart-wrap">
-        <canvas id="forecastChart"></canvas>
+      <!-- กราฟรายชั่วโมง (เลือกวันจากการ์ดด้านบน) -->
+      <div class="hourly-section" id="hourlySection" style="display:none;">
+        <div class="hourly-head">
+          <h3 id="hourlyTitle">รายชั่วโมง · วันนี้</h3>
+          <div class="hourly-sun" id="hourlySun"></div>
+        </div>
+        <div class="hourly-chart-wrap"><canvas id="hourlyChart"></canvas></div>
+        <div class="hourly-rainrow" id="hourlyRainRow"></div>
       </div>
     </div>
   </div>
@@ -1719,8 +1788,12 @@
     <div class="panel-head">
       <h2>📈 แนวโน้มสภาพอากาศ</h2>
       <div class="climate-controls">
+        <label class="climate-cmp" id="climateCmpWrap" title="ซ้อนเส้นปีก่อนเพื่อเปรียบเทียบ">
+          <input type="checkbox" id="climateCompare"> <span>เทียบปีก่อน</span>
+        </label>
         <select id="climateYear" class="climate-select" aria-label="เลือกปี"></select>
         <select id="climateMonth" class="climate-select" aria-label="เลือกเดือน"></select>
+        <button class="climate-csv" id="climateCsvBtn" onclick="exportClimateCSV()" title="ดาวน์โหลดข้อมูลภูมิอากาศเป็น CSV" aria-label="ดาวน์โหลด CSV">📥</button>
       </div>
     </div>
     <div class="climate-body">
@@ -1736,6 +1809,8 @@
         </div>
         <canvas id="climateChart"></canvas>
       </div>
+      <!-- Insight: ฝนสะสม → ระดับน้ำ (โผล่เฉพาะ tab ฝน) -->
+      <div class="climate-insight" id="climateInsight" style="display:none;"></div>
       <!-- ตารางสรุปสถิติ -->
       <div class="climate-stats">
         <div class="cs-block">
@@ -2021,7 +2096,7 @@
  *  เปลี่ยน API_URL เป็น Google Apps Script Web App URL ของคุณ
  *  ถ้ายังไม่มีจะใช้ข้อมูลตัวอย่าง (DEMO_DATA)
  * ================================================================= */
-  const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
+  const API_URL = window.APP_CONFIG?.API_URL || ""; // ตั้งค่าใน config.js
 
 /* ====== DEMO DATA (จะถูกใช้เมื่อยังไม่ได้ตั้งค่า API_URL) ====== */
 const DEMO_STATIONS = [
@@ -2297,6 +2372,7 @@ function applyTheme(theme){
   }
   localStorage.setItem("dashboard-theme", theme);
   try{ if(typeof renderClimateChart==="function" && window._climateData){ renderClimateChart(); } }catch(e){}
+  try{ if(typeof renderHourly==="function" && window._forecastData && window._forecastData.hourly){ renderHourly(window._forecastData, window._hourlyDayIdx||0); } }catch(e){}
 }
 
 function toggleTheme(){
@@ -3900,14 +3976,20 @@ async function loadForecast(){
     `latitude=${FORECAST_LOC.lat}&longitude=${FORECAST_LOC.lon}` +
     `&daily=weather_code,temperature_2m_max,temperature_2m_min,` +
     `precipitation_sum,precipitation_probability_max,` +
-    `wind_speed_10m_max,wind_direction_10m_dominant` +
+    `wind_speed_10m_max,wind_direction_10m_dominant,sunrise,sunset,uv_index_max` +
+    `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,precipitation` +
+    `&current=temperature_2m,apparent_temperature` +
     `&timezone=Asia/Bangkok&forecast_days=7`;
 
   try{
     const res = await fetch(url);
     const data = await res.json();
     if(!data.daily) throw new Error("No daily data");
+    window._forecastData = data;
     renderForecast(data.daily);
+    if(data.hourly){ renderHourly(data, 0); }   // เริ่มที่วันนี้
+    renderWxMetrics(data);                        // การ์ด รู้สึกเหมือน/UV
+    loadAirQuality();                             // คุณภาพอากาศ (API แยก)
 
     // Pre-load station forecasts ในเบื้องหลัง (เผื่อกดเปิด heatmap)
     if(cachedStations && cachedStations.length && Object.keys(stationForecasts).length === 0){
@@ -3921,6 +4003,64 @@ async function loadForecast(){
       '<div class="forecast-loading" style="color:#dc2626;">⚠️ ไม่สามารถโหลดพยากรณ์ได้ — ลองรีเฟรชหน้า</div>';
   }
 }
+
+// ── การ์ด: รู้สึกเหมือน + ดัชนี UV ──
+function renderWxMetrics(data){
+  const feelsEl=document.getElementById("wxFeelsVal"), feelsSub=document.getElementById("wxFeelsSub");
+  let feels=null, real=null;
+  if(data.current){ feels=data.current.apparent_temperature; real=data.current.temperature_2m; }
+  else if(data.hourly){
+    const nowH=new Date().toISOString().slice(0,13);
+    const i=data.hourly.time.findIndex(t=>t.slice(0,13)===nowH);
+    if(i>=0){ feels=data.hourly.apparent_temperature?.[i]; real=data.hourly.temperature_2m?.[i]; }
+  }
+  if(feels!=null && feelsEl){
+    feelsEl.textContent=Math.round(feels)+"°C";
+    const diff=Math.round(feels-(real??feels));
+    if(feelsSub) feelsSub.textContent = diff>0 ? `ร้อนกว่าจริง ${diff}°` : diff<0 ? `เย็นกว่าจริง ${-diff}°` : "ใกล้เคียงจริง";
+    const card=document.getElementById("wxFeels");
+    if(card){ card.className="wx-card "+(feels>=41?"lv-vhigh":feels>=35?"lv-high":feels>=30?"lv-mod":"lv-good"); }
+  }
+  const uvEl=document.getElementById("wxUVVal"), uvSub=document.getElementById("wxUVSub");
+  const uv=data.daily?.uv_index_max?.[0];
+  if(uv!=null && uvEl){
+    uvEl.textContent=Math.round(uv);
+    let lvl,txt,cls;
+    if(uv<3){lvl="ต่ำ";cls="lv-good";txt="ปลอดภัย";}
+    else if(uv<6){lvl="ปานกลาง";cls="lv-mod";txt="ควรทาครีมกันแดด";}
+    else if(uv<8){lvl="สูง";cls="lv-high";txt="หลีกเลี่ยงแดดเที่ยง";}
+    else if(uv<11){lvl="สูงมาก";cls="lv-vhigh";txt="ป้องกันแดดเต็มที่";}
+    else {lvl="อันตราย";cls="lv-extreme";txt="งดอยู่กลางแดด";}
+    if(uvSub) uvSub.textContent=lvl+" · "+txt;
+    const card=document.getElementById("wxUV"); if(card) card.className="wx-card "+cls;
+  }
+}
+
+// ── คุณภาพอากาศ PM2.5/AQI (Open-Meteo Air Quality API แยก) ──
+async function loadAirQuality(){
+  try{
+    const url=`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${FORECAST_LOC.lat}&longitude=${FORECAST_LOC.lon}&current=pm2_5,us_aqi&timezone=Asia/Bangkok`;
+    const d=await fetch(url).then(r=>r.json());
+    const pm=d.current?.pm2_5, aqi=d.current?.us_aqi;
+    const valEl=document.getElementById("wxAQIVal"), subEl=document.getElementById("wxAQISub"), card=document.getElementById("wxAQI");
+    if(aqi==null || !valEl) return;
+    let lvl,cls;
+    if(aqi<=50){lvl="ดี";cls="lv-good";}
+    else if(aqi<=100){lvl="ปานกลาง";cls="lv-mod";}
+    else if(aqi<=150){lvl="เริ่มมีผลต่อสุขภาพ";cls="lv-high";}
+    else if(aqi<=200){lvl="มีผลต่อสุขภาพ";cls="lv-vhigh";}
+    else {lvl="อันตราย";cls="lv-extreme";}
+    valEl.textContent="AQI "+Math.round(aqi)+" · "+lvl;
+    if(subEl) subEl.textContent="PM2.5 "+(pm!=null?Math.round(pm):"—")+" µg/m³";
+    if(card) card.className="wx-card "+cls;
+  }catch(e){
+    console.warn("[AirQuality] error",e);
+    const subEl=document.getElementById("wxAQISub"); if(subEl) subEl.textContent="ไม่มีข้อมูล";
+  }
+}
+window._forecastData = null;
+let _hourlyChart = null;
+window._hourlyDayIdx = 0;
 
 // แปลง WMO weather code → ไอคอน + ข้อความ
 // อ้างอิง: https://open-meteo.com/en/docs (ส่วน Weather variable documentation)
@@ -3981,7 +4121,7 @@ function renderForecast(daily){
     const cls = (isToday ? "today " : "") + (heavyRain ? "heavy-rain" : "");
 
     html += `
-      <div class="fc-card ${cls}" title="${wInfo.text}">
+      <div class="fc-card ${cls}" title="${wInfo.text}" data-dayidx="${i}" onclick="selectForecastDay(${i})">
         ${heavyRain ? '<div class="fc-badge">⚠️ ฝนหนัก</div>' : ''}
         <div class="fc-day">${isToday ? "วันนี้" : dayName}</div>
         <div class="fc-date">${dayNum} ${monthShort}</div>
@@ -4008,8 +4148,116 @@ function renderForecast(daily){
   const updTime = new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"});
   setText("forecastUpdate", "อัปเดต " + updTime);
 
-  // วาด combined chart (อุณหภูมิ + ฝน)
-  drawForecastChart(daily);
+  // เลือกวันแรก (วันนี้) แสดงกราฟรายชั่วโมง
+  selectForecastDay(window._hourlyDayIdx || 0);
+}
+
+// เลือกวันจากการ์ด → วาดกราฟรายชั่วโมงของวันนั้น
+function selectForecastDay(idx){
+  window._hourlyDayIdx = idx;
+  document.querySelectorAll(".fc-card").forEach(c=>{
+    c.classList.toggle("selected", parseInt(c.dataset.dayidx)===idx);
+  });
+  if(window._forecastData && window._forecastData.hourly) renderHourly(window._forecastData, idx);
+}
+
+// วาดกราฟรายชั่วโมง 24 ชม. ของวันที่เลือก (แบบภาพ 2)
+function renderHourly(data, dayIdx){
+  const sec = document.getElementById("hourlySection");
+  const ctx = document.getElementById("hourlyChart");
+  if(!sec || !ctx || typeof Chart==="undefined" || !data.hourly) return;
+  sec.style.display = "block";
+
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  const tickC = dark ? "#cbd5e1" : "#475569";
+
+  // หาวันที่เป้าหมายจาก daily.time[dayIdx]
+  const dayStr = data.daily.time[dayIdx];           // YYYY-MM-DD
+  const H = data.hourly;
+  const idxs = [];
+  H.time.forEach((t,i)=>{ if(t.slice(0,10)===dayStr) idxs.push(i); });
+  if(!idxs.length){ sec.style.display="none"; return; }
+
+  const temps = idxs.map(i=> Math.round(H.temperature_2m[i]));
+  const codes = idxs.map(i=> H.weather_code[i]);
+  const probs = idxs.map(i=> H.precipitation_probability?.[i] ?? 0);
+  const hours = idxs.map(i=> new Date(H.time[i]).getHours());
+  const labels = hours.map(h=> String(h).padStart(2,"0")+":00");
+
+  // หัวข้อ + พระอาทิตย์ขึ้น/ตก
+  const dName = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสฯ","ศุกร์","เสาร์"][new Date(dayStr).getDay()];
+  const today = new Date().toISOString().slice(0,10);
+  setText("hourlyTitle", "รายชั่วโมง · " + (dayStr===today?"วันนี้":dName+" "+new Date(dayStr).getDate()+" "+new Date(dayStr).toLocaleDateString("th-TH",{month:"short"})));
+  const sr = data.daily.sunrise?.[dayIdx], ss = data.daily.sunset?.[dayIdx];
+  const hm = s => s? s.slice(11,16) : "—";
+  const sunEl = document.getElementById("hourlySun");
+  if(sunEl) sunEl.innerHTML = `<span>🌅 ขึ้น ${hm(sr)}</span><span>🌇 ตก ${hm(ss)}</span>`;
+
+  // ไอคอนสภาพอากาศบนจุด (วาดด้วย plugin)
+  const iconPlugin = {
+    id:"hourlyIcons",
+    afterDatasetsDraw(chart){
+      const {ctx} = chart; const meta = chart.getDatasetMeta(0);
+      ctx.save(); ctx.font="13px serif"; ctx.textAlign="center";
+      meta.data.forEach((pt,i)=>{
+        if(i%2!==0) return; // ทุก 2 ชม. กันแน่น
+        const wi = weatherCodeInfo(codes[i]);
+        ctx.fillText(wi.icon, pt.x, pt.y-22);
+        ctx.fillStyle = tickC; ctx.font="600 11px Sarabun";
+        ctx.fillText(temps[i]+"°", pt.x, pt.y-10);
+        ctx.font="13px serif";
+      });
+      ctx.restore();
+    }
+  };
+
+  // gradient area
+  const g = ctx.getContext("2d").createLinearGradient(0,0,0,220);
+  g.addColorStop(0,"rgba(239,68,68,.35)");
+  g.addColorStop(.5,"rgba(245,158,11,.18)");
+  g.addColorStop(1,"rgba(56,189,248,.05)");
+
+  if(_hourlyChart) _hourlyChart.destroy();
+  _hourlyChart = new Chart(ctx, {
+    type:"line",
+    data:{labels, datasets:[{
+      data:temps, borderColor:"#f59e0b", borderWidth:2.5,
+      backgroundColor:g, fill:true, tension:.4,
+      pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:"#f59e0b"
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:30}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:(it)=> labels[it[0].dataIndex],
+            label:(it)=>{
+              const i=it.dataIndex;
+              return [` ${temps[i]}°C · ${weatherCodeInfo(codes[i]).text}`, ` โอกาสฝน ${probs[i]}%`];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{family:"Sarabun",size:10}, color:tickC, maxRotation:0, autoSkip:true, maxTicksLimit:12}},
+        y:{grid:{color:dark?"rgba(148,163,184,.12)":"#f1f5f9"}, ticks:{font:{family:"Sarabun",size:10}, color:tickC, callback:v=>v+"°"}}
+      }
+    },
+    plugins:[iconPlugin]
+  });
+
+  // แถบโอกาสฝนรายชั่วโมง
+  const rr = document.getElementById("hourlyRainRow");
+  if(rr){
+    rr.innerHTML = idxs.map((_,k)=>{
+      if(k%2!==0) return "";  // ทุก 2 ชม. ให้ตรงกับไอคอน
+      const p = probs[k];
+      const cls = p>=60?"wet":p<10?"dry":"";
+      return `<div class="hr-cell ${cls}">${labels[k].slice(0,2)}<br>💧${p}%</div>`;
+    }).join("");
+  }
 }
 
 function drawForecastChart(daily){
@@ -4183,12 +4431,20 @@ function initClimateControls(){
 
   // ถ้าเลือก "12 เดือนที่ผ่านมา" → ปิด dropdown เดือน (ไม่เกี่ยว)
   function syncMonthState(){
+    const cmpWrap = document.getElementById("climateCmpWrap");
     if(ySel.value === "rolling"){ mSel.disabled = true; mSel.style.opacity = ".5"; }
     else { mSel.disabled = false; mSel.style.opacity = "1"; }
+    // เทียบปีก่อน ใช้ได้เฉพาะโหมดเดือนเดียว (rolling/ทุกเดือน เทียบไม่ได้)
+    const monthly = (ySel.value==="rolling" || mSel.value==="all");
+    if(cmpWrap){ cmpWrap.style.opacity = monthly?".4":"1"; cmpWrap.style.pointerEvents = monthly?"none":"auto"; }
   }
   ySel.addEventListener("change", ()=>{ syncMonthState(); loadClimate(); });
-  mSel.addEventListener("change", loadClimate);
+  mSel.addEventListener("change", ()=>{ syncMonthState(); loadClimate(); });
   syncMonthState();
+
+  // checkbox เทียบปีก่อน
+  const cmp = document.getElementById("climateCompare");
+  if(cmp) cmp.addEventListener("change", loadClimate);
 
   document.querySelectorAll(".ct-tab").forEach(t=>{
     t.addEventListener("click", ()=>{
@@ -4196,8 +4452,28 @@ function initClimateControls(){
       t.classList.add("active");
       _climateMetric = t.dataset.metric;
       renderClimateChart();
+      renderRainInsight();
     });
   });
+}
+
+// ดึงข้อมูลรายวันช่วงหนึ่ง (archive อย่างเดียว — ใช้กับปีก่อน)
+async function fetchClimateRange(first, last){
+  const fmt = d => d.toISOString().slice(0,10);
+  const daily = "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_mean";
+  const today = new Date(); today.setHours(0,0,0,0);
+  const archEnd = last < today ? last : new Date(today.getTime()-86400000);
+  if(first > archEnd) return {};
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${FORECAST_LOC.lat}&longitude=${FORECAST_LOC.lon}&start_date=${fmt(first)}&end_date=${fmt(archEnd)}&daily=${daily}&timezone=Asia/Bangkok`;
+  const d = await fetch(url).then(r=>r.json());
+  const out={};
+  if(d.daily && d.daily.time){
+    d.daily.time.forEach((t,i)=>{
+      out[t]={date:t, tmax:d.daily.temperature_2m_max?.[i]??null, tmin:d.daily.temperature_2m_min?.[i]??null,
+        rain:d.daily.precipitation_sum?.[i]??null, wind:d.daily.wind_speed_10m_max?.[i]??null, humid:d.daily.relative_humidity_2m_mean?.[i]??null};
+    });
+  }
+  return out;
 }
 
 async function loadClimate(){
@@ -4268,7 +4544,21 @@ async function loadClimate(){
         byDate[key]=allDays[key] || {date:key, tmax:null,tmin:null,rain:null,wind:null,humid:null,isFc:false};
         byDate[key].day=dd;
       }
-      window._climateData={mode:"daily", year, month, days:Object.values(byDate), todayKey:fmt(today)};
+      const days = Object.values(byDate);
+
+      // เทียบปีก่อน — ดึงเดือนเดียวกันของปีก่อนหน้า map เข้าตามวันที่
+      const cmpOn = document.getElementById("climateCompare")?.checked;
+      let cmpByDay = null;
+      if(cmpOn){
+        try{
+          const pf=new Date(year-1,month,1), pl=new Date(year-1,month+1,0);
+          const prev=await fetchClimateRange(pf,pl);
+          cmpByDay={};
+          Object.values(prev).forEach(d=>{ cmpByDay[new Date(d.date).getDate()]=d; });
+          days.forEach(d=>{ const c=cmpByDay[d.day]; d.cmp = c||null; });
+        }catch(e){ console.warn("[Climate] compare fetch fail",e); }
+      }
+      window._climateData={mode:"daily", year, month, days, todayKey:fmt(today), compare:!!cmpOn, cmpYear:year-1};
     } else {
       // aggregate รายเดือน
       const buckets={};
@@ -4293,6 +4583,7 @@ async function loadClimate(){
 
     renderClimateChart();
     renderClimateStats();
+    renderRainInsight();
   }catch(e){
     console.warn("[Climate] error", e);
     if(loading){ loading.classList.remove("hidden"); loading.innerHTML='<span style="color:#dc2626">⚠️ โหลดข้อมูลภูมิอากาศไม่ได้ — ลองใหม่ภายหลัง</span>'; }
@@ -4380,6 +4671,26 @@ function renderClimateChart(){
       {label:"ลมสูงสุด"+unitWord, data:histArr("wind"), borderColor:"#7c3aed", backgroundColor:"rgba(124,58,237,.13)", fill:'origin', tension:.4, pointRadius:isMonthly?3:0, borderWidth:2},
       {label:"พยากรณ์", data:fcArr("wind"), borderColor:"#7c3aed", borderDash:[5,4], tension:.4, pointRadius:0, borderWidth:2, spanGaps:true, fill:false},
     ];
+  }
+
+  // เส้นเทียบปีก่อน (เฉพาะโหมดเดือนเดียว + เปิด compare)
+  if(cd.compare && !isMonthly && cd.cmpYear){
+    const key = _climateMetric==="temp" ? "tmax"
+              : _climateMetric==="rain" ? "rain"
+              : _climateMetric==="humid" ? "humid" : "wind";
+    const cmpData = rows.map(r=> r.cmp ? r.cmp[key] : null);
+    const cmpColor = "#9333ea";
+    if(_climateMetric==="rain"){
+      // ฝน: เทียบเป็นเส้น overlay บนแท่ง
+      datasets.push({type:"line", label:`ปีก่อน (${cd.cmpYear+543})`, data:cmpData, borderColor:cmpColor, borderDash:[6,3], borderWidth:2, pointRadius:0, tension:.3, fill:false});
+    } else {
+      datasets.push({label:`ปีก่อน (${cd.cmpYear+543})`, data:cmpData, borderColor:cmpColor, borderDash:[6,3], borderWidth:2, pointRadius:0, tension:.4, fill:false, spanGaps:true});
+      // ถ้าเป็น temp เพิ่มเส้นต่ำของปีก่อนด้วย
+      if(_climateMetric==="temp"){
+        const cmpMin = rows.map(r=> r.cmp ? r.cmp.tmin : null);
+        datasets.push({label:`ปีก่อน ต่ำ (${cd.cmpYear+543})`, data:cmpMin, borderColor:"#c084fc", borderDash:[6,3], borderWidth:1.5, pointRadius:0, tension:.4, fill:false, spanGaps:true});
+      }
+    }
   }
 
   if(climateChart) climateChart.destroy();
@@ -4490,6 +4801,74 @@ function renderClimateStats(){
     row("ปริมาณฝน (มม.)","rain",1) +
     row("ลม (กม./ชม.)","wind",1) +
     row("ความชื้น (%)","humid",0);
+}
+
+// ── Insight: ฝนสะสม → ระดับน้ำ (เชื่อมเข้าภารกิจน้ำ) ──
+function renderRainInsight(){
+  const box = document.getElementById("climateInsight");
+  if(!box || !window._climateData) return;
+  if(_climateMetric !== "rain"){ box.style.display="none"; return; }
+
+  const cd = window._climateData;
+  // ฝนสะสมของช่วงที่เลือก
+  let total=0;
+  if(cd.mode==="monthly"){ cd.months.forEach(m=>{ if(!m.isFc && m.rain!=null) total+=m.rain; }); }
+  else { cd.days.forEach(d=>{ if(!d.isFc && d.rain!=null) total+=d.rain; }); }
+
+  // นับสถานีที่ใกล้ตลิ่ง (จาก cachedStations ที่หน้าโหลดมาแล้ว)
+  let watch=0, crit=0, names=[];
+  if(typeof cachedStations!=="undefined" && cachedStations && cachedStations.length){
+    cachedStations.forEach(s=>{
+      const lv=s.current, bank=s.bank;
+      if(lv==null||!bank) return;
+      const diff=bank-lv;
+      if(lv>=bank){ crit++; names.push(s.name); }
+      else if(diff<=0.5){ watch++; names.push(s.name); }
+    });
+  }
+
+  // เกณฑ์ฝนสะสม (อ้างอิงคร่าว — ปรับได้): >250mm/เดือน = ฝนมาก
+  let level, icon, msg;
+  const periodWord = cd.mode==="monthly" ? "ช่วงนี้" : "เดือนนี้";
+  if(total >= 250 || crit > 0){
+    level="high"; icon="🌊";
+    msg = `<strong>ฝนสะสม${periodWord} ${total.toFixed(0)} มม.</strong> — ปริมาณค่อนข้างสูง เสี่ยงน้ำหลาก`;
+    if(crit>0) msg += ` · มี <strong>${crit} สถานี</strong>น้ำถึง/เกินตลิ่งแล้ว`;
+    msg += ` <a onclick="document.getElementById('mapPanel')?.scrollIntoView({behavior:'smooth'})">ดูแผนที่สถานี →</a>`;
+  } else if(total >= 100 || watch > 0){
+    level="watch"; icon="⚠️";
+    msg = `<strong>ฝนสะสม${periodWord} ${total.toFixed(0)} มม.</strong> — ระดับปานกลาง ควรเฝ้าระวัง`;
+    if(watch>0) msg += ` · <strong>${watch} สถานี</strong>ระดับน้ำใกล้ตลิ่ง`;
+    msg += ` <a onclick="document.getElementById('mapPanel')?.scrollIntoView({behavior:'smooth'})">ดูแผนที่สถานี →</a>`;
+  } else {
+    level="normal"; icon="✅";
+    msg = `<strong>ฝนสะสม${periodWord} ${total.toFixed(0)} มม.</strong> — ปริมาณน้อย สถานการณ์น้ำปกติ ไม่มีสถานีใกล้ตลิ่ง`;
+  }
+  box.className = "climate-insight "+level;
+  box.innerHTML = `<span class="ci-ico">${icon}</span><div>${msg}</div>`;
+  box.style.display = "flex";
+}
+
+// ── Export CSV ของ climate ──
+function exportClimateCSV(){
+  const cd = window._climateData;
+  if(!cd){ return; }
+  let headers, rows;
+  if(cd.mode==="monthly"){
+    headers=["ปี(พ.ศ.)","เดือน","อุณหภูมิสูงเฉลี่ย(°C)","อุณหภูมิต่ำเฉลี่ย(°C)","ฝนรวม(มม.)","ลมเฉลี่ย(กม./ชม.)","ความชื้นเฉลี่ย(%)","ประเภท"];
+    rows=cd.months.map(m=>[m.year+543, TH_MONTHS[m.month], fmtNum(m.tmax,1), fmtNum(m.tmin,1), fmtNum(m.rain,1), fmtNum(m.wind,1), fmtNum(m.humid,0), m.isFc?"พยากรณ์":"จริง"]);
+  } else {
+    headers=["วันที่","อุณหภูมิสูง(°C)","อุณหภูมิต่ำ(°C)","ฝน(มม.)","ลมสูงสุด(กม./ชม.)","ความชื้น(%)","ประเภท"];
+    rows=cd.days.map(d=>[d.date, fmtNum(d.tmax,1), fmtNum(d.tmin,1), fmtNum(d.rain,1), fmtNum(d.wind,1), fmtNum(d.humid,0), d.isFc?"พยากรณ์":"จริง"]);
+  }
+  const esc=v=>{const x=String(v??"");return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
+  const csv="\uFEFF"+[headers,...rows].map(r=>r.map(esc).join(",")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  const a=document.createElement("a");
+  const tag = cd.mode==="monthly" ? (cd.rolling?"12เดือนล่าสุด":"ปี"+((cd.year||0)+543)) : TH_MONTHS[cd.month]+(cd.year+543);
+  a.href=url; a.download=`ภูมิอากาศ_หนองบัวลำภู_${tag}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 // init climate เมื่อโหลดหน้า
