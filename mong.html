@@ -1216,5 +1216,13 @@ DateRangePicker.init({
   }
 });
 </script>
+<script>
+/* PWA: ลงทะเบียน Service Worker — เปิด offline ได้ + โหลดเร็วขึ้น */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
 </body>
 </html>

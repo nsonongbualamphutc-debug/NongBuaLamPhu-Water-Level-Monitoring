@@ -189,14 +189,17 @@ function doGet(e) {
       const payload = {};
       Object.keys(params).forEach(function(k) { if (k !== 'callback') payload[k] = params[k]; });
 
-      switch (action) {
-        case "savewater":      data = saveWaterLevel(payload);  break;
-        case "saverain":       data = saveRainfall(payload);    break;
-        case "savereservoir":  data = saveReservoir(payload);   break;
-        case "savedailyreport":data = saveDailyReport(payload); break;
-        case "savefloodgate":  data = saveFloodgate(payload);   break;
-        case "savehydro":      data = saveHydro(payload);       break;
-      }
+      /* ครอบด้วย ScriptLock — กันบันทึกชนกันจนเกิดแถวซ้ำ */
+      data = withWriteLock_(function() {
+        switch (action) {
+          case "savewater":      return saveWaterLevel(payload);
+          case "saverain":       return saveRainfall(payload);
+          case "savereservoir":  return saveReservoir(payload);
+          case "savedailyreport":return saveDailyReport(payload);
+          case "savefloodgate":  return saveFloodgate(payload);
+          case "savehydro":      return saveHydro(payload);
+        }
+      });
 
       /* Flush cache เมื่อมีข้อมูลใหม่ */
       invalidateSummaryCache_();
@@ -411,19 +414,23 @@ function doPost(e) {
 
   let result;
   try {
-    switch (action) {
-      case "savewater":      result = saveWaterLevel(payload);  break;
-      case "saverain":       result = saveRainfall(payload);    break;
-      case "savereservoir":  result = saveReservoir(payload);   break;
-      case "savedailyreport":result = saveDailyReport(payload); break;
-      case "savefloodgate":  result = saveFloodgate(payload);   break;
-      case "savehydro":      result = saveHydro(payload);       break;
-      case "summary":        result = getSummaryWithCache_();   break;
-      case "reservoir":      result = getReservoirs();          break;
-      case "floodgate":      result = getFloodgates();          break;
-      case "hydro":          result = getHydroStations();       break;
-      default:               result = { ok: false, error: "unknown action: " + action };
-    }
+    const runAction = function() {
+      switch (action) {
+        case "savewater":      return saveWaterLevel(payload);
+        case "saverain":       return saveRainfall(payload);
+        case "savereservoir":  return saveReservoir(payload);
+        case "savedailyreport":return saveDailyReport(payload);
+        case "savefloodgate":  return saveFloodgate(payload);
+        case "savehydro":      return saveHydro(payload);
+        case "summary":        return getSummaryWithCache_();
+        case "reservoir":      return getReservoirs();
+        case "floodgate":      return getFloodgates();
+        case "hydro":          return getHydroStations();
+        default:               return { ok: false, error: "unknown action: " + action };
+      }
+    };
+    /* write actions ครอบด้วย ScriptLock — กันบันทึกชนกัน */
+    result = (WRITE_ACTIONS.indexOf(action) !== -1) ? withWriteLock_(runAction) : runAction();
     /* Flush cache เมื่อมีการบันทึกข้อมูล */
     if (WRITE_ACTIONS.indexOf(action) !== -1 && result && result.ok) {
       invalidateSummaryCache_();
@@ -549,6 +556,46 @@ function clearCache() {
   } catch (e) {
     Logger.log("❌ Cache clear error: " + e.toString());
   }
+}
+
+/* ══════════════════════════════════════════════════
+ *  WRITE SAFETY HELPERS (v5)
+ *  1. withWriteLock_  — กันบันทึกชนกัน (race condition → แถวซ้ำ)
+ *  2. mergeRowOnce_   — upsert เขียนทั้งแถวครั้งเดียว (เร็วกว่า setValue ทีละเซลล์)
+ * ══════════════════════════════════════════════════ */
+
+/**
+ * ครอบงานเขียนทั้งหมดด้วย ScriptLock
+ * ถ้ามี 2 คนกดบันทึกพร้อมกัน คนที่สองจะรอคิว (สูงสุด 20 วิ)
+ * → การสแกนหาแถวซ้ำ + appendRow เป็น atomic ไม่เกิดแถวซ้ำอีก
+ */
+function withWriteLock_(fn) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+  } catch (e) {
+    return { ok: false, code: "LOCK_TIMEOUT",
+             error: "ระบบกำลังบันทึกข้อมูลรายการอื่นอยู่ กรุณาลองใหม่อีกครั้งใน 1 นาที" };
+  }
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * อัปเดตแถวเดิมแบบเขียนครั้งเดียวด้วย setValues
+ * - field ใน patch ที่มีค่า (ไม่ว่าง) → ทับค่าเดิม
+ * - field ที่ไม่ได้ส่งมา/ว่าง → คงค่าเดิมไว้
+ * แทนการวน setValue ทีละเซลล์ (ช้า + เสี่ยง timeout เมื่อชีตโต)
+ */
+function mergeRowOnce_(sheet, rowNumber, headers, existingRow, patch) {
+  const merged = headers.map(function(h, col) {
+    const v = patch[h];
+    return (v !== undefined && v !== null && v !== "") ? v : existingRow[col];
+  });
+  sheet.getRange(rowNumber, 1, 1, headers.length).setValues([merged]);
 }
 
 /**
@@ -833,12 +880,8 @@ function saveWaterLevel(p) {
       const sameId   = String(data[i][idIdx]).trim() === String(p.station_id).trim();
       const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
       if (sameId && sameDate) {
-        // เขียนทับทุก field ที่ส่งมา
-        headers.forEach((h, col) => {
-          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
-            sheet.getRange(i+1, col+1).setValue(p[h]);
-          }
-        });
+        // เขียนทับทุก field ที่ส่งมา (เขียนทั้งแถวครั้งเดียว)
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
         // mirror PN → FG เมื่อ upsert ด้วย
         const fgIdUps = PN_FG_MAP[sid];
         const lvUps   = parseFloat(p.level);
@@ -897,11 +940,7 @@ function saveRainfall(p) {
       const sameAm   = String(data[i][amIdx]).trim() === String(p.amphoe).trim();
       const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
       if (sameAm && sameDate) {
-        headers.forEach((h, col) => {
-          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
-            sheet.getRange(i+1, col+1).setValue(p[h]);
-          }
-        });
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
         return {
           ok: true, updated: true,
           message: "อัปเดตข้อมูลฝน " + (p.amphoe||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)",
@@ -938,9 +977,12 @@ function saveReservoir(p) {
     const sameName= nmIdx>=0&&payload.reservoir_name&&String(data[i][nmIdx]).trim()===String(payload.reservoir_name).trim();
     const sameDate= dateIdx>=0&&String(data[i][dateIdx]).slice(0,10)===dateStr;
     if((sameId||sameName)&&sameDate){
-      if(curIdx>=0) sheet.getRange(i+1,curIdx+1).setValue(payload.current_volume);
-      if(updIdx>=0) sheet.getRange(i+1,updIdx+1).setValue(new Date());
-      headers.forEach((h,col)=>{if(["current_volume","current","updated_at","date"].indexOf(h)!==-1)return;if(payload[h]!==undefined&&payload[h]!==null&&payload[h]!=="")sheet.getRange(i+1,col+1).setValue(payload[h]);});
+      /* เขียนทั้งแถวครั้งเดียว: current_volume + updated_at + field อื่นที่ส่งมา (คง date เดิม) */
+      const patch = Object.assign({}, payload);
+      delete patch.date;
+      patch.updated_at = new Date();
+      if (curIdx >= 0) patch[headers[curIdx]] = payload.current_volume;
+      mergeRowOnce_(sheet, i+1, headers, data[i], patch);
       return {ok:true,message:"อัปเดต "+(payload.reservoir_name||payload.reservoir_id)+" วันที่ "+dateStr};
     }
   }
@@ -1037,11 +1079,7 @@ function saveFloodgate(p) {
       const sameId = String(data[i][idIdx]).trim() === String(p.gate_id).trim();
       const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
       if (sameId && sameDate) {
-        headers.forEach(function(h, col) {
-          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
-            sheet.getRange(i+1, col+1).setValue(p[h]);
-          }
-        });
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
         // mirror FG → PN เมื่อ upsert ด้วย
         const pnIdUps = FG_PN_MAP[String(p.gate_id||"").toUpperCase()];
         const fgLvUps = parseFloat(p.water_level);
@@ -1141,11 +1179,7 @@ function saveHydro(p) {
       const sameId = String(data[i][idIdx]).trim() === String(p.station_code).trim();
       const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
       if (sameId && sameDate) {
-        headers.forEach(function(h, col){
-          if (p[h] !== undefined && p[h] !== null && p[h] !== "") {
-            sheet.getRange(i+1, col+1).setValue(p[h]);
-          }
-        });
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
         invalidateSummaryCache_();
         return { ok: true, updated: true, message: "อัปเดตสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย (ทับค่าเดิม)" };
       }
@@ -1207,10 +1241,7 @@ function mirrorFloodgateToWater_(pnId, fgPayload, lvNum) {
   if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idIdx]).trim() === pnId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
-        headers.forEach(function(h, col) {
-          if (pnRow[h] !== undefined && pnRow[h] !== null && pnRow[h] !== "")
-            sheet.getRange(i+1, col+1).setValue(pnRow[h]);
-        });
+        mergeRowOnce_(sheet, i+1, headers, data[i], pnRow);
         return;
       }
     }
@@ -1245,10 +1276,7 @@ function mirrorWaterToFloodgate_(fgId, pnPayload, lvNum, pnId) {
   if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][idIdx]).trim() === fgId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
-        headers.forEach(function(h, col) {
-          if (fgRow[h] !== undefined && fgRow[h] !== null && fgRow[h] !== "")
-            sheet.getRange(i+1, col+1).setValue(fgRow[h]);
-        });
+        mergeRowOnce_(sheet, i+1, headers, data[i], fgRow);
         return;
       }
     }

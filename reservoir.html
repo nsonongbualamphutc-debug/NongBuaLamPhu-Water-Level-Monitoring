@@ -2612,5 +2612,13 @@ try { initMap(); } catch(e){ console.warn('Map init failed (Leaflet?):', e); }
 loadData();
 setInterval(loadData, 5 * 60 * 1000);
 </script>
+<script>
+/* PWA: ลงทะเบียน Service Worker — เปิด offline ได้ + โหลดเร็วขึ้น */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
 </body>
 </html>

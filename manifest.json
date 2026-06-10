@@ -1,43 +1,25 @@
 {
-  "name": "สถานการณ์น้ำหนองบัวลำภู",
-  "short_name": "น้ำหนองบัวฯ",
-  "description": "ระบบติดตามสถานการณ์น้ำและสภาพอากาศ จังหวัดหนองบัวลำภู — แจ้งเตือนเรียลไทม์",
-  "start_url": "daily_briefing.html",
+  "name": "สถานการณ์น้ำ จ.หนองบัวลำภู",
+  "short_name": "น้ำ นภ.",
+  "description": "ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์ — สำนักงานสถิติจังหวัดหนองบัวลำภู",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
-  "theme_color": "#05070f",
-  "background_color": "#05070f",
+  "background_color": "#0b1220",
+  "theme_color": "#0c4a6e",
   "lang": "th",
-  "categories": ["weather", "utilities", "government"],
   "icons": [
     {
-      "src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f30a.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f30a.svg",
-      "sizes": "any",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22192%22%20height%3D%22192%22%3E%3Crect%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%2236%22%20fill%3D%22%230c4a6e%22%2F%3E%3Ctext%20x%3D%2296%22%20y%3D%22132%22%20font-size%3D%22104%22%20text-anchor%3D%22middle%22%3E%F0%9F%92%A7%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "หน้าหลัก Dashboard",
-      "url": "index.html",
-      "icons": [{"src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f3e0.png", "sizes": "72x72"}]
+      "purpose": "any maskable"
     },
     {
-      "name": "บันทึกข้อมูล",
-      "url": "input.html",
-      "icons": [{"src": "https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/72x72/1f4dd.png", "sizes": "72x72"}]
-    },
-    {
-      "name": "ลำน้ำพะเนียง",
-      "url": "paneang.html"
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22512%22%20height%3D%22512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%2296%22%20fill%3D%22%230c4a6e%22%2F%3E%3Ctext%20x%3D%22256%22%20y%3D%22352%22%20font-size%3D%22278%22%20text-anchor%3D%22middle%22%3E%F0%9F%92%A7%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

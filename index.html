@@ -1497,13 +1497,7 @@
     .header-btn,.alert-btn,nav a{min-height:40px;}
   }
 </style>
-<script>
-/* PWA manifest inline */
-(function(){
-  const m={name:"สถานการณ์น้ำ จ.หนองบัวลำภู",short_name:"น้ำ นภ.",description:"ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์",start_url:"./index.html",display:"standalone",background_color:"#0b1220",theme_color:"#0c4a6e",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#0c4a6e"/><text x="96" y="132" font-size="104" text-anchor="middle">💧</text></svg>'),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
-  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(l);
-})();
-</script>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0c4a6e">
 <meta name="description" content="ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์ — สำนักงานสถิติจังหวัดหนองบัวลำภู">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -4875,6 +4869,14 @@ function exportClimateCSV(){
 initClimateControls();
 loadClimate();
 
+</script>
+<script>
+/* PWA: ลงทะเบียน Service Worker — เปิด offline ได้ + โหลดเร็วขึ้น */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
