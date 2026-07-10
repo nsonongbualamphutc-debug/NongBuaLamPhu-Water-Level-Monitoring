@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สถานการณ์น้ำจังหวัดหนองบัวลำภู | สำนักงานสถิติจังหวัดหนองบัวลำภู</title>
-<link rel="stylesheet" href="verdict.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1498,10 +1497,13 @@
     .header-btn,.alert-btn,nav a{min-height:40px;}
   }
 </style>
-<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="manifest" href="manifest.json">
+<script>
+/* PWA manifest inline */
+(function(){
+  const m={name:"สถานการณ์น้ำ จ.หนองบัวลำภู",short_name:"น้ำ นภ.",description:"ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์",start_url:"./index.html",display:"standalone",background_color:"#0b1220",theme_color:"#0c4a6e",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#0c4a6e"/><text x="96" y="132" font-size="104" text-anchor="middle">💧</text></svg>'),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
+  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(l);
+})();
+</script>
 <meta name="theme-color" content="#0c4a6e">
 <meta name="description" content="ศูนย์ติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู แบบเรียลไทม์ — สำนักงานสถิติจังหวัดหนองบัวลำภู">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1514,7 +1516,10 @@
   <div class="header-inner">
     <div class="brand">
       <div class="logo">
-        <img src="logo-nbp.png" alt="ตราสัญลักษณ์จังหวัดหนองบัวลำภู" width="38" height="38" style="width:78%;height:78%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v6"/>
+          <path d="M12 8c-3 4-6 7-6 11a6 6 0 0 0 12 0c0-4-3-7-6-11z"/>
+        </svg>
       </div>
       <div>
         <h1>สถานการณ์น้ำจังหวัดหนองบัวลำภู</h1>
@@ -1581,10 +1586,6 @@
     <a href="input.html">📝 บันทึกข้อมูล</a>
   </div>
 </nav>
-
-<!-- ═══ PATCH v2: Verdict — ลบ div นี้ + link/script verdict.* เพื่อถอด patch ═══ -->
-<div id="verdictZone" data-vd="index"></div>
-
 
 <main id="mainContent" tabindex="-1">
 
@@ -2104,11 +2105,11 @@ const DEMO_STATIONS = [
   {id:"PN03",river:"ลำน้ำพะเนียง",no:3,name:"วังสามหาบ",village:"บ้านวังสามหาบ",amphoe:"นาวัง",lat:17.3099,lon:102.10789,bank:258.0,warn:257.5,crit:258.0,current:255.80},
   {id:"PN04",river:"ลำน้ำพะเนียง",no:4,name:"บ้านหนองด่าน",village:"บ้านหนองด่าน",amphoe:"นากลาง",lat:17.27936,lon:102.16552,bank:249.0,warn:248.5,crit:249.0,current:247.40},
   {id:"PN05",river:"ลำน้ำพะเนียง",no:5,name:"บ้านฝั่งแดง",village:"บ้านฝั่งแดง",amphoe:"นากลาง",lat:17.2673,lon:102.22728,bank:237.0,warn:236.5,crit:237.0,current:236.70},
-  {id:"PN06",river:"ลำน้ำพะเนียง",no:6,name:"ปตร.หนองหว้าใหญ่",village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู",lat:17.179810,lon:102.386170,bank:216.0,warn:215.5,crit:216.0,current:214.30},
+  {id:"PN06",river:"ลำน้ำพะเนียง",no:6,name:"ปตร.หนองหว้าใหญ่",village:"บ้านหนองหว้าใหญ่",amphoe:"เมืองหนองบัวลำภู",lat:17.179810,lon:102.386170,bank:214.5,warn:214.0,crit:214.5,current:214.14},
   {id:"PN07",river:"ลำน้ำพะเนียง",no:7,name:"วังหมื่น",village:"บ้านวังหมื่น",amphoe:"เมืองหนองบัวลำภู",lat:17.18317,lon:102.43244,bank:210.0,warn:209.5,crit:210.0,current:208.10},
-  {id:"PN08",river:"ลำน้ำพะเนียง",no:8,name:"ปตร.ปู่หลอด",village:"บ้านโนนคูณ",amphoe:"เมืองหนองบัวลำภู",lat:17.11487,lon:102.45435,bank:203.0,warn:202.5,crit:203.0,current:200.70},
+  {id:"PN08",river:"ลำน้ำพะเนียง",no:8,name:"ปตร.ปู่หลอด",village:"บ้านโนนคูณ",amphoe:"เมืองหนองบัวลำภู",lat:17.11487,lon:102.45435,bank:203.4,warn:202.9,crit:203.4,current:198.30},
   {id:"PN09",river:"ลำน้ำพะเนียง",no:9,name:"บ้านข้องโป้",village:"บ้านข้องโป้",amphoe:"เมืองหนองบัวลำภู",lat:17.08217,lon:102.45068,bank:201.0,warn:200.5,crit:201.0,current:199.20},
-  {id:"PN10",river:"ลำน้ำพะเนียง",no:10,name:"ปตร.หัวนา",village:"บ้านดอนหัน",amphoe:"เมืองหนองบัวลำภู",lat:17.00067,lon:102.424,bank:191.0,warn:190.5,crit:191.0,current:189.40},
+  {id:"PN10",river:"ลำน้ำพะเนียง",no:10,name:"ปตร.หัวนา",village:"บ้านดอนหัน",amphoe:"เมืองหนองบัวลำภู",lat:17.00067,lon:102.424,bank:192.2,warn:191.2,crit:192.2,current:189.67},
   {id:"MG01",river:"ลำน้ำโมง",no:1,name:"คลองบุญทัน",village:"บ้านบุญทัน",amphoe:"สุวรรณคูหา",lat:17.54512,lon:102.16832,bank:231.0,warn:230.5,crit:231.0,current:229.10},
   {id:"MG02",river:"ลำน้ำโมง",no:2,name:"บ้านโคก",village:"บ้านโคก",amphoe:"สุวรรณคูหา",lat:17.54952,lon:102.20425,bank:218.0,warn:217.5,crit:218.0,current:216.40},
   {id:"MG03",river:"ลำน้ำโมง",no:3,name:"บ้านนาตาแหลว",village:"บ้านโคก",amphoe:"สุวรรณคูหา",lat:17.57567,lon:102.27326,bank:202.0,warn:201.5,crit:202.0,current:200.10},
@@ -4875,14 +4876,5 @@ initClimateControls();
 loadClimate();
 
 </script>
-<script>
-/* PWA: ลงทะเบียน Service Worker — เปิด offline ได้ + โหลดเร็วขึ้น */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function(){
-    navigator.serviceWorker.register("./sw.js").catch(function(){});
-  });
-}
-</script>
-<script src="verdict.js"></script>
 </body>
 </html>
