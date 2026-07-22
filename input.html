@@ -20,12 +20,55 @@
 <link rel="stylesheet" href="theme.css">
 <style>
 :root{
-  --bg:#f4f7fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;
-  --brand:#0c4a6e;--brand-deep:#0c1e3d;--brand2:#0284c7;--accent:#38bdf8;
-  --info:#0ea5e9;--ok:#10b981;--warn:#f59e0b;--crit:#dc2626;
-  --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.08);
-  --shadow-lg:0 4px 12px rgba(15,23,42,.06),0 24px 48px rgba(15,23,42,.12);
+  --bg:#eef2f7;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e4eaf2;
+  --navy:#0a1e3c;--navy2:#12305c;--gold:#c9a24b;
+  --brand:#0a1e3c;--brand-deep:#0a1e3c;--brand2:#0e7490;--accent:#38bdf8;
+  --info:#0ea5e9;--ok:#16a34a;--warn:#f59e0b;--crit:#dc2626;
+  --shadow:0 6px 20px rgba(15,40,80,.08);
+  --shadow-lg:0 10px 30px rgba(15,40,80,.12);
+  --disp:'Kanit',sans-serif;--font:'Sarabun',sans-serif;
 }
+/* ===== APP-SHELL (design system กลาง) ===== */
+.app{display:grid;grid-template-columns:252px 1fr;transition:grid-template-columns .25s;min-height:100vh}
+.app.collapsed{grid-template-columns:78px 1fr}
+.side{position:sticky;top:0;height:100vh;align-self:start;overflow:hidden;background:linear-gradient(185deg,#0a1e3c,#0b2547 55%,#0a1e3c);color:#fff;display:flex;flex-direction:column;z-index:100}
+.side::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),transparent)}
+.side .brand{display:flex;align-items:center;gap:13px;padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.side .brand .seal{width:48px;height:48px;flex:0 0 48px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+.side .brand .bt{overflow:hidden}
+.side .brand .kick{font-family:var(--disp);font-size:9px;font-weight:600;letter-spacing:2px;color:var(--gold);white-space:nowrap}
+.side .brand .ttl{font-family:var(--disp);font-weight:700;font-size:16px;line-height:1.1;white-space:nowrap;background:linear-gradient(90deg,#fff,#bcd4f0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.side .brand .en{font-size:9px;opacity:.55;letter-spacing:1.5px;white-space:nowrap;margin-top:2px}
+.side .menu{flex:1;overflow-y:auto;padding:8px 10px;background:transparent;border:0;position:static}.side .menu::-webkit-scrollbar{width:0}
+.side .menu a{display:flex;align-items:center;gap:13px;padding:10px 12px;border-radius:11px;color:#c3cfe0;text-decoration:none;margin-bottom:2px;transition:.15s;position:relative;border:0}
+.side .menu a:hover{background:rgba(255,255,255,.07);color:#fff}
+.side .menu a.active{background:linear-gradient(100deg,rgba(56,189,248,.22),rgba(56,189,248,.05));color:#fff}
+.side .menu a.active::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:4px;height:22px;border-radius:0 4px 4px 0;background:var(--gold)}
+.side .menu .ic{width:21px;height:21px;flex:0 0 21px}.side .menu .ic svg{width:21px;height:21px}
+.side .menu .lbl{white-space:nowrap;overflow:hidden;line-height:1.1}
+.side .menu .lbl b{font-family:var(--disp);font-weight:500;font-size:13.5px;display:block}
+.side .menu .lbl i{font-style:normal;font-size:9.5px;opacity:.5}
+.side .side-foot{padding:11px 15px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:#8fa2bd;line-height:1.5}
+.side .side-foot b{font-family:var(--disp);color:#dbe6f5;font-weight:500;font-size:11.5px;display:block;margin-bottom:3px}
+.side .side-foot .cp{margin-top:5px;opacity:.75}
+.app.collapsed .side .brand .bt,.app.collapsed .side .menu .lbl,.app.collapsed .side .side-foot{opacity:0;width:0;height:0;pointer-events:none}
+.main-col{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:40;height:56px;flex:0 0 56px;display:flex;align-items:center;gap:14px;padding:0 20px;background:#fff;color:var(--ink);overflow:visible;border-bottom:1px solid var(--line)}
+.topbar::before{content:none;display:none}
+.topbar .burger{width:38px;height:38px;border:1px solid var(--line);background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy)}
+.topbar .burger svg{width:20px;height:20px}
+.topbar .tt{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--navy)}
+.topbar .tt i{font-style:normal;font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+.topbar .tr{margin-left:auto;display:flex;gap:9px}
+.btn-admin{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:12.5px;background:linear-gradient(135deg,#c9a24b,#a9822f);color:#fff;border:0;padding:8px 15px;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(201,162,75,.3)}
+.scrim{display:none}
+@media(max-width:900px){
+ .app{grid-template-columns:1fr}
+ .side{position:fixed;left:0;top:0;bottom:0;width:252px;height:100vh;transform:translateX(-100%);transition:transform .25s;z-index:300}
+ .app.navopen .side{transform:none}
+ .app.navopen .scrim{display:block;position:fixed;inset:0;background:rgba(6,15,30,.45);z-index:250}
+}
+@media print{.side,.topbar{display:none!important}.app,.app.collapsed{grid-template-columns:1fr}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.55;}
 
@@ -254,33 +297,19 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 </head>
 <body>
 
-<header class="app-header">
-  <div class="header-inner">
-    <div class="brand">
-      <div class="logo"><img src="logo-nbp.png" alt="ตราสัญลักษณ์จังหวัดหนองบัวลำภู" width="32" height="32" style="width:78%;height:78%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))"></div>
-      <div>
-        <h1>บันทึกข้อมูลสถานการณ์น้ำ</h1>
-        <div class="sub">จังหวัดหนองบัวลำภู • ระบบ PIN รายสถานี</div>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button class="btn-icon admin" onclick="openAdmin()">🔐 Admin</button>
-    </div>
-  </div>
-</header>
-
-<nav class="app-nav">
-  <div class="nav-inner">
-    <a href="index.html">🏠 หน้าหลัก</a>
-    <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
-    <a href="mong.html">🌿 ลำน้ำโมง</a>
-    <a href="mo.html">💧 ลำน้ำมอ</a>
-    <a href="phuay.html">🌀 ลำน้ำพวย</a>
-    <a href="rainfall.html">🌧️ ปริมาณฝน</a>
-    <a href="reservoir.html">🏞️ อ่างเก็บน้ำ</a>
-    <a href="input.html" class="active">📝 บันทึกข้อมูล</a>
-  </div>
-</nav>
+<div class="app" id="app">
+<div class="scrim" onclick="document.getElementById('app').classList.remove('navopen')"></div>
+<aside class="side">
+  <div class="brand"><img class="seal" src="logo-nbp.png" alt="ตราสัญลักษณ์จังหวัดหนองบัวลำภู"><div class="bt"><div class="kick">Water Command</div><div class="ttl">สถานการณ์น้ำจังหวัด</div><div class="en">NONG BUA LAM PHU</div></div></div>
+  <nav class="menu"><a href="index.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></span><span class="lbl"><b>ภาพรวมสถานการณ์</b><i>Executive Summary</i></span></a><a href="daily_briefing.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span><span class="lbl"><b>รายงานประจำวัน</b><i>Daily Briefing</i></span></a><a href="paneang.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพะเนียง</b><i>Phaneang</i></span></a><a href="mong.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำโมง</b><i>Mong</i></span></a><a href="mo.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำมอ</b><i>Mo</i></span></a><a href="phuay.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพวย</b><i>Phuay</i></span></a><a href="rainfall.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3.5 3.5 0 0 0 6 18z"/><path d="M8 20l1 2M12 20l1 2M16 20l1 2"/></svg></span><span class="lbl"><b>ปริมาณฝน</b><i>Rainfall</i></span></a><a href="reservoir.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6a8 8 0 0 1-16 0zM4 5c3 2 5 2 8 0s5-2 8 0"/></svg></span><span class="lbl"><b>อ่างเก็บน้ำ</b><i>Reservoir</i></span></a><a href="input.html" class="active"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="lbl"><b>บันทึกข้อมูล</b><i>Data Input</i></span></a></nav>
+  <div class="side-foot"><b>สำนักงานสถิติจังหวัดหนองบัวลำภู</b>ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2<br>ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000<div class="cp">© 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู<br>โทร 0 4231 6726</div></div>
+</aside>
+<div class="main-col">
+  <header class="topbar">
+    <button class="burger" onclick="var a=document.getElementById('app');window.innerWidth<=900?a.classList.toggle('navopen'):a.classList.toggle('collapsed')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <div class="tt">บันทึกข้อมูลสถานการณ์น้ำ<i>Data Input</i></div>
+    <div class="tr"><button class="btn-admin" onclick="openAdmin()">🔐 Admin</button></div>
+  </header>
 
 <main>
 
@@ -830,6 +859,8 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
 </section>
 
 </main>
+</div><!--/main-col-->
+</div><!--/app-->
 
 <footer class="app-footer">
   ระบบติดตามสถานการณ์น้ำจังหวัดหนองบัวลำภู · สำนักงานสถิติจังหวัด<br>
