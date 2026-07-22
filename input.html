@@ -61,6 +61,12 @@
 .topbar .tt i{font-style:normal;font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
 .topbar .tr{margin-left:auto;display:flex;gap:9px}
 .btn-admin{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:12.5px;background:linear-gradient(135deg,#c9a24b,#a9822f);color:#fff;border:0;padding:8px 15px;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(201,162,75,.3)}
+.btn-choose{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:12.5px;background:#fff;color:var(--navy);border:1px solid var(--line);padding:8px 14px;border-radius:10px;cursor:pointer}
+.btn-choose:hover{background:var(--bg)}
+.netpill{display:none;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:11.5px;padding:6px 12px;border-radius:99px;cursor:default}
+.netpill.off{display:inline-flex;background:#fee2e2;color:#b91c1c}
+.netpill.queued{display:inline-flex;background:#fef3c7;color:#92400e;cursor:pointer}
+@media(max-width:640px){.topbar .tt i,.btn-choose span,.netpill .lbl{display:none}}
 .scrim{display:none}
 @media(max-width:900px){
  .app{grid-template-columns:1fr}
@@ -308,7 +314,7 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
   <header class="topbar">
     <button class="burger" onclick="var a=document.getElementById('app');window.innerWidth<=900?a.classList.toggle('navopen'):a.classList.toggle('collapsed')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
     <div class="tt">บันทึกข้อมูลสถานการณ์น้ำ<i>Data Input</i></div>
-    <div class="tr"><button class="btn-admin" onclick="openAdmin()">🔐 Admin</button></div>
+    <div class="tr"><span id="netpill" class="netpill" onclick="flushQueue()"></span><button class="btn-choose" onclick="showScreen('scr-choose')">🎯 เลือกจุด</button><button class="btn-admin" onclick="openAdmin()">🔐 Admin</button></div>
   </header>
 
 <main>
@@ -2668,5 +2674,111 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+<script>
+/* ============================================================
+ *  ADD-ON LAYER (non-invasive) — offline queue, anomaly warn,
+ *  date guard, quick-next. ไม่แตะ payload/ตรรกะส่งเดิม
+ * ============================================================ */
+(function(){
+  "use strict";
+  if(!window.api){ console.warn('addon: api() not found'); return; }
+  var _api = window.api;                 // original network fn (bypasses wrapper on replay)
+  var QKEY = 'wat_outbox_v1';
+  var TID  = {savewater:'w-toast',saverain:'r-toast',savereservoir:'rs-toast',savefloodgate:'fg-toast',savehydro:'hy-toast'};
+
+  function qGet(){ try{return JSON.parse(localStorage.getItem(QKEY)||'[]')}catch(e){return[]} }
+  function qSet(a){ try{localStorage.setItem(QKEY, JSON.stringify(a))}catch(e){} paintPill(); }
+  function isWrite(p){ return p && typeof p.action==='string' && /^save/i.test(p.action); }
+  function isNetFail(r){ return r && r.ok===false && /เชื่อมต่อ API ไม่ได้/.test(r.error||''); }
+  function toast(id,msg,ok){ try{ if(typeof showToast==='function') showToast(id,msg,ok);}catch(e){} }
+
+  /* ---- wrap api(): cache context + queue writes on network failure ---- */
+  window.api = async function(p){
+    var r = await _api(p);
+    try{
+      if(r && (r.last_level!=null || r.last_volume!=null || r.last_rain_24hr!=null)) window.__ctx = r;
+      if(isWrite(p) && isNetFail(r)){
+        var q=qGet(); q.push({p:p, ts:Date.now()}); qSet(q);
+        var tid=TID[p.action]||'w-toast';
+        setTimeout(function(){ toast(tid,'📥 บันทึกไว้ในเครื่อง (ออฟไลน์) · ค้างส่ง '+qGet().length+' รายการ — จะส่งอัตโนมัติเมื่อออนไลน์',true); },60);
+        return { ok:true, updated:false, __queued:true };   // optimistic: let form clear for next entry
+      }
+    }catch(e){}
+    return r;
+  };
+
+  /* ---- replay queue ---- */
+  var flushing=false;
+  window.flushQueue = async function(){
+    if(flushing || !navigator.onLine) return;
+    var q=qGet(); if(!q.length){ paintPill(); return; }
+    flushing=true;
+    var keep=[], sent=0;
+    for(var i=0;i<q.length;i++){
+      try{ var r=await _api(q[i].p); if(isNetFail(r)) keep.push(q[i]); else sent++; }
+      catch(e){ keep.push(q[i]); }
+    }
+    qSet(keep); flushing=false;
+    if(sent>0) toast('w-toast','✅ ส่งข้อมูลที่ค้างไว้ '+sent+' รายการสำเร็จ',true);
+    paintPill();
+  };
+
+  /* ---- topbar net/queue pill ---- */
+  function paintPill(){
+    var el=document.getElementById('netpill'); if(!el) return;
+    var n=qGet().length;
+    if(!navigator.onLine){ el.className='netpill off'; el.innerHTML='⚠ <span class="lbl">ออฟไลน์'+(n?' · ค้าง '+n:'')+'</span>'; }
+    else if(n){ el.className='netpill queued'; el.innerHTML='📥 <span class="lbl">ค้างส่ง '+n+' · แตะเพื่อส่ง</span>'; }
+    else { el.className='netpill'; el.innerHTML=''; }
+  }
+  window.addEventListener('online', function(){ paintPill(); window.flushQueue(); });
+  window.addEventListener('offline', paintPill);
+  setInterval(function(){ if(navigator.onLine && qGet().length) window.flushQueue(); }, 30000);
+
+  /* ---- anomaly warning (typo guard) เทียบค่าล่าสุด ---- */
+  function guard(fieldId, ctxKey, fmt, absTh, relTh){
+    var el=document.getElementById(fieldId); if(!el) return true;
+    var v=parseFloat((el.value||'').trim()); if(isNaN(v)) return true;
+    var ctx=window.__ctx||{}; var last=ctx[ctxKey];
+    if(last==null) return true; last=parseFloat(last); if(isNaN(last)) return true;
+    var diff=Math.abs(v-last);
+    var trip = (absTh!=null && diff>=absTh) || (relTh!=null && last>0 && diff/last>=relTh);
+    if(trip) return confirm('⚠️ ค่าที่กรอก '+v+' ต่างจากค่าล่าสุด '+fmt(last)+' อยู่มาก (±'+diff.toFixed(2)+')\nอาจพิมพ์ผิด — ยืนยันว่าถูกต้องหรือไม่?');
+    return true;
+  }
+  function wrapSave(name, fieldId, ctxKey, fmt, absTh, relTh){
+    if(typeof window[name]!=='function') return;
+    var orig=window[name];
+    window[name]=async function(){
+      try{ if(!guard(fieldId,ctxKey,fmt,absTh,relTh)) return; }catch(e){}
+      return orig.apply(this, arguments);
+    };
+  }
+  var f2=function(x){return x.toFixed(2)+' ม.';}, f3=function(x){return x.toFixed(3)+' ล้าน ลบ.ม.';};
+  wrapSave('saveWater','w-level','last_level',f2,2.0,null);
+  wrapSave('saveFloodgate','fg-level','last_level',f2,2.0,null);
+  wrapSave('saveHydro','hy-level','last_level',f2,2.0,null);
+  wrapSave('saveReservoir','rs-volume','last_volume',f3,null,0.5);
+
+  /* ---- date inputs: default today + block future in picker ---- */
+  function initDates(){
+    var t=new Date(); t.setMinutes(t.getMinutes()-t.getTimezoneOffset());
+    var iso=t.toISOString().slice(0,10);
+    ['w-date','r-date','rs-date','fg-date','hy-date'].forEach(function(id){
+      var el=document.getElementById(id); if(!el) return; el.max=iso; if(!el.value) el.value=iso;
+    });
+  }
+  if(typeof window.showScreen==='function'){
+    var _show=window.showScreen;
+    window.showScreen=function(id){ var r=_show.apply(this,arguments); if(id==='scr-record') try{initDates()}catch(e){} return r; };
+  }
+
+  /* ---- init ---- */
+  function boot(){ try{initDates()}catch(e){} paintPill(); if(navigator.onLine) window.flushQueue(); }
+  if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();
+</script>
+
 </body>
 </html>
