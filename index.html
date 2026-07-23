@@ -1,6 +1,12 @@
 <!DOCTYPE html><html lang="th"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ศูนย์บัญชาการข้อมูลน้ำ · หนองบัวลำภู</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0a1e3c">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -202,7 +208,62 @@ const FILL={crit:'#fca5a5',warn:'#fcd34d',normal:'#86efac',nodata:'#cbd5e1'};
 const I={rain:'<path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><path d="M8 19v2M12 19v2M16 19v2"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7z"/>',alert:'<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/>',pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>'};
 function ic(n){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+I[n]+'</svg>';}
 function spark(d,c,w=44,h=20){const mn=Math.min(...d),mx=Math.max(...d),rg=(mx-mn)||1;const p=d.map((v,i)=>`${(i/(d.length-1)*w).toFixed(1)},${(h-2-((v-mn)/rg)*(h-4)).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
-async function loadData(){try{const r=await fetch(GAS,{cache:'no-store'});if(!r.ok)throw 0;return{...DEMO,...await r.json()};}catch(e){return DEMO;}}
+/* รวมข้อมูลจาก API แล้ว "ทำให้ครบ" เสมอ — กัน undefined เมื่อ API ส่งฟิลด์ไม่ครบ */
+function num(v){const x=parseFloat(v);return isNaN(x)?null:x;}
+function normalize(d){
+  d=d||{};
+  d.stations=(Array.isArray(d.stations)&&d.stations.length?d.stations:DEMO.stations).map((raw,i)=>{
+    const base=DEMO.stations[i]||{};
+    const s=Object.assign({},base,raw);
+    s.cur = num(s.cur!=null?s.cur:s.water_level!=null?s.water_level:s.level);
+    s.bank= num(s.bank!=null?s.bank:s.crit);
+    if(s.cur==null) s.cur=num(base.cur);
+    if(s.bank==null) s.bank=num(base.bank);
+    if(s.cur==null||s.bank==null) return Object.assign({},base);
+    s.prev = num(s.prev)!=null?num(s.prev):num(base.prev);
+    s.gap  = +(s.bank-s.cur).toFixed(2);
+    s.fill = +(s.cur/s.bank*100).toFixed(1);
+    s.rise = s.prev!=null?+(s.cur-s.prev).toFixed(2):0;
+    s.st   = s.gap<=0?'crit':(s.gap<=0.5?'warn':'normal');
+    s.name = s.name||base.name||'สถานี';
+    s.river= s.river||base.river||'';
+    s.amphoe=s.amphoe||base.amphoe||'';
+    s.lat  = num(s.lat)!=null?num(s.lat):base.lat;
+    s.lon  = num(s.lon)!=null?num(s.lon):base.lon;
+    return s;
+  }).filter(s=>s.lat!=null&&s.lon!=null&&s.cur!=null);
+  d.reservoirs=(Array.isArray(d.reservoirs)&&d.reservoirs.length?d.reservoirs:DEMO.reservoirs).map((raw,i)=>{
+    const base=DEMO.reservoirs[i]||{};const r=Object.assign({},base,raw);
+    r.cap=num(r.cap)!=null?num(r.cap):num(base.cap);
+    const cur=num(r.cur!=null?r.cur:r.current_volume);
+    r.pct = (r.pct!=null&&!isNaN(parseFloat(r.pct)))?+parseFloat(r.pct).toFixed(1)
+          : (cur!=null&&r.cap)? +(cur/r.cap*100).toFixed(1) : null;
+    return r;
+  }).filter(r=>r.lat!=null&&r.lon!=null);
+  d.floodgates=Array.isArray(d.floodgates)&&d.floodgates.length?d.floodgates:DEMO.floodgates;
+  d.rainByAmphoe=Array.isArray(d.rainByAmphoe)&&d.rainByAmphoe.length?d.rainByAmphoe:DEMO.rainByAmphoe;
+  d.rivers=Array.isArray(d.rivers)&&d.rivers.length?d.rivers:DEMO.rivers;
+  d.today=Array.isArray(d.today)&&d.today.length?d.today:DEMO.today;
+  d.trend=d.trend&&d.trend.days?d.trend:DEMO.trend;
+  d.src=d.src||DEMO.src;
+  /* คำนวณสรุปใหม่จากสถานีจริง ไม่ให้ตัวเลขขัดกันเอง */
+  const mix={normal:0,warn:0,crit:0};
+  d.stations.forEach(s=>mix[s.st]=(mix[s.st]||0)+1);
+  d.statusMix=mix;
+  d.kpi=Object.assign({},DEMO.kpi,d.kpi||{},{normal:mix.normal,warn:mix.warn,crit:mix.crit,total:d.stations.length});
+  d.amp=d.amp&&Object.keys(d.amp).length?d.amp:(function(){
+    const rank={normal:1,warn:2,crit:3},a={};
+    d.stations.forEach(s=>{const c=a[s.amphoe];a[s.amphoe]=(!c||rank[s.st]>rank[c])?s.st:c;});
+    return Object.assign({},DEMO.amp,a);})();
+  d.kpi.riskAmphoe=Object.values(d.amp).filter(v=>v==='crit'||v==='warn').length||d.kpi.riskAmphoe;
+  return d;
+}
+async function loadData(){
+  try{const r=await fetch(GAS,{cache:'no-store'});if(!r.ok)throw 0;
+    const j=await r.json();
+    if(j&&typeof j==='object'&&!Array.isArray(j)) return normalize(Object.assign({},DEMO,j,{__live:true}));
+    return normalize(Object.assign({},DEMO));
+  }catch(e){return normalize(Object.assign({},DEMO));}}
 
 function renderAlert(d){const c=d.stations.filter(s=>s.st==='crit');const el=document.getElementById('alert');if(!c.length){el.style.display='none';return;}el.innerHTML=`<span class="ab">${ic('alert')} เตือนภัย · ${c.length} สถานีเกินตลิ่ง</span><span>${c.map(s=>s.name).join(', ')} — อ.${[...new Set(c.map(s=>s.amphoe))].join(', ')}</span><button class="abtn" onclick="setMode('stn')">ดูบนแผนที่</button><span class="x" onclick="this.parentElement.style.display='none'">✕</span>`;}
 
@@ -219,7 +280,7 @@ function renderKPI(d){const k=d.kpi;const cards=[
 
 let map,tamLayer,stnLayer,resLayer,fgLayer;
 function tGeo(f){return (window._d||DEMO).amp[f.properties.amp_th]||'nodata';}
-function ttStation(s){const c=COL[s.st],lab={crit:'เกินตลิ่ง',warn:'ใกล้ตลิ่ง',normal:'ปกติ'}[s.st];return `<div class="tth" style="background:${c}">${s.name}</div><div class="ttb"><div class="row"><span>ลำน้ำ</span><b>${s.river}</b></div><div class="row"><span>อำเภอ</span><b>${s.amphoe}</b></div><div class="row"><span>ระดับปัจจุบัน</span><b>${s.cur} ม.รทก.</b></div><div class="row"><span>ระดับตลิ่ง</span><b>${s.bank} ม.รทก.</b></div><div class="row"><span>เหลือถึงตลิ่ง</span><b style="color:${c}">${s.gap} ม. · ${lab}</b></div></div>`;}
+function ttStation(s){const c=COL[s.st],lab={crit:'เกินตลิ่ง',warn:'ใกล้ตลิ่ง',normal:'ปกติ'}[s.st];return `<div class="tth" style="background:${c}">${s.name}</div><div class="ttb"><div class="row"><span>ลำน้ำ</span><b>${s.river}</b></div><div class="row"><span>อำเภอ</span><b>${s.amphoe}</b></div><div class="row"><span>ระดับปัจจุบัน</span><b>${s.cur!=null?s.cur.toFixed(2):'–'} ม.รทก.</b></div><div class="row"><span>ระดับตลิ่ง</span><b>${s.bank!=null?s.bank.toFixed(2):'–'} ม.รทก.</b></div><div class="row"><span>เหลือถึงตลิ่ง</span><b style="color:${c}">${s.gap!=null?(s.gap<=0?'เกิน '+Math.abs(s.gap).toFixed(2):s.gap.toFixed(2))+' ม.':'–'} · ${lab}</b></div></div>`;}
 function ttRes(r){return `<div class="tth" style="background:#0891b2">${r.full}</div><div class="ttb"><div class="row"><span>ตำบล/อำเภอ</span><b>${r.tambon} · ${r.amphoe}</b></div><div class="row"><span>ประเภท</span><b>${r.type}</b></div><div class="row"><span>ความจุ</span><b>${r.cap.toFixed(2)} ล้าน ลบ.ม.</b></div><div class="row"><span>ปัจจุบัน</span><b style="color:#0891b2">${r.pct!=null?r.pct+'%':'รอข้อมูลสด'}</b></div></div>`;}
 function ttFg(g){const open=g.open>0,c=open?'#0ea5e9':'#64748b';return `<div class="tth" style="background:${c}">${g.name}</div><div class="ttb"><div class="row"><span>ลำน้ำ/อำเภอ</span><b>${g.river} · ${g.amphoe}</b></div><div class="row"><span>สถานะ</span><b style="color:${c}">${g.status}</b></div><div class="row"><span>บานที่เปิด</span><b>${g.open}/${g.gates} บาน</b></div><div class="row"><span>อัตราระบาย</span><b>${g.q} ลบ.ม./วิ</b></div></div>`;}
 function renderMap(d){map=L.map('map',{zoomControl:true,attributionControl:false}).setView([17.28,102.2],9);window._map=map;
@@ -263,8 +324,8 @@ let CUR='fill';
 function renderWatch(d){const el=document.getElementById('watch');let list=[...d.stations];
  if(CUR==='fill')list.sort((a,b)=>b.fill-a.fill);else if(CUR==='rise')list.sort((a,b)=>b.rise-a.rise);else list.sort((a,b)=>a.gap-b.gap);
  el.innerHTML=list.slice(0,6).map((s,i)=>{const cls=s.st==='crit'?'crit':(s.st==='warn'?'warn':'');const c=COL[s.st];let metric;
-  if(CUR==='fill')metric=`<div class="wg" style="color:${c}">${s.fill}%<small>เต็มตลิ่ง</small></div>`;
-  else if(CUR==='rise')metric=`<div class="wg" style="color:${s.rise>0?'#dc2626':'#16a34a'}">${s.rise>0?'+':''}${s.rise} ม.<small>ต่อวัน</small></div>`;
+  if(CUR==='fill')metric=`<div class="wg" style="color:${c}">${s.fill!=null?s.fill:'–'}%<small>เต็มตลิ่ง</small></div>`;
+  else if(CUR==='rise')metric=`<div class="wg" style="color:${s.rise>0?'#dc2626':'#16a34a'}">${s.rise>0?'+':''}${s.rise!=null?s.rise:'–'} ม.<small>ต่อวัน</small></div>`;
   else metric=`<div class="wg" style="color:${c}">${s.gap<=0?'เกิน '+Math.abs(s.gap):'เหลือ '+s.gap} ม.<small>ถึงตลิ่ง</small></div>`;
   return `<div class="wi ${cls}" data-tip="${s.name} · ${s.river} · อ.${s.amphoe} — ระดับ ${s.cur} ม.รทก. / ตลิ่ง ${s.bank} ม.รทก.${s.gap<=0?' · เกินตลิ่ง '+Math.abs(s.gap)+' ม.':' · เหลือถึงตลิ่ง '+s.gap+' ม.'} · แตะเพื่อดูบนแผนที่" onclick="flyTo(${s.lat},${s.lon},'stn')"><div class="rk">${i+1}</div><div><div class="wn">${s.name}</div><div class="wm">${s.river} · อ.${s.amphoe}</div></div>${metric}</div>`;}).join('');}
 function setWatch(w){CUR=w;document.querySelectorAll('.wtabs button').forEach(b=>b.classList.toggle('on',b.dataset.w===w));renderWatch(window._d);}

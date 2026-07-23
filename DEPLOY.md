@@ -6,6 +6,7 @@
 |---|---|
 | `ds.css` | **ไฟล์ใหม่** — Design System กลาง (สี/ฟอนต์/เลย์เอาต์) ต้องอัปด้วยเสมอ |
 | `ds.js` | **ไฟล์ใหม่** — ระบบ Tooltip กลาง ต้องอัปด้วยเสมอ |
+| `favicon.svg` | **ไฟล์ใหม่** — ไอคอนบนแท็บเบราว์เซอร์ |
 | `index.html` | แทนที่ของเดิม (แดชบอร์ดผู้บริหารแบบเต็มจอ) |
 | `daily_briefing.html` | แทนที่ของเดิม |
 | `paneang.html` `mong.html` `mo.html` `phuay.html` | แทนที่ของเดิม |
@@ -20,12 +21,12 @@
 `index_legacy_patchv2.html` = หน้า index เดิม เก็บไว้เผื่อย้อนกลับ (ไม่ต้องอัปก็ได้)
 
 ## 2. หลังอัปเสร็จ
-กด `Ctrl + Shift + R` (ล้าง cache) — sw.js ขยับเป็น **wnb-v7** แล้ว
+กด `Ctrl + Shift + R` (ล้าง cache) — sw.js ขยับเป็น **wnb-v8** แล้ว
 ระบบจะล้าง cache เก่าให้ผู้ใช้ทุกคนอัตโนมัติ
 
 ## 3. สิ่งที่เปลี่ยนใน sw.js
-- `VERSION` : wnb-v6 → **wnb-v7**
-- เพิ่ม `./ds.css` และ `./ds.js` เข้า precache
+- `VERSION` : wnb-v6 → **wnb-v8**
+- เพิ่ม `./ds.css`, `./ds.js`, `./favicon.svg` เข้า precache
 - **ตัด** `nbp_water_lines.geojson` และ `nbp_water_points.geojson` ออกจาก precache
   (หน้าใหม่ฝังขอบเขตตำบลไว้ในไฟล์แล้ว ไม่ต้องโหลดไฟล์เส้นน้ำ ~5 MB อีก
   → เปิดเว็บครั้งแรกเร็วขึ้นมาก) ถ้าต้องการย้อนกลับ ให้เพิ่ม 2 บรรทัดนี้กลับเข้า `PRECACHE_URLS`

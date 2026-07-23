@@ -1,14 +1,22 @@
 <!DOCTYPE html><html lang="th"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ปริมาณฝน · จ.หนองบัวลำภู</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0a1e3c">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ds.css">
 <script src="ds.js" defer></script>
-<style>.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
+<style>
+.chip.live{background:#f0fdf4;border-color:#c7ecd0;color:#15803d}
+.chip.demo{background:#fffbeb;border-color:#fbe6b0;color:#b45309}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
 .content{flex:1;min-height:0;padding:11px 15px 12px;display:grid;grid-template-rows:auto minmax(0,1fr) 132px;gap:10px;overflow:hidden}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
@@ -147,17 +155,41 @@ const DOW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 /* เกณฑ์กรมอุตุนิยมวิทยา */
 const BANDS=[{t:0.1,c:'#e2e8f0',l:'ไม่มีฝน'},{t:10,c:'#bae6fd',l:'เล็กน้อย ≤10'},{t:35,c:'#38bdf8',l:'ปานกลาง 10-35'},{t:90,c:'#f59e0b',l:'หนัก 35-90'},{t:1e9,c:'#dc2626',l:'หนักมาก >90'}];
 function rc(v){for(const b of BANDS){if(v<b.t)return b.c}return '#dc2626';}
+/* สีสำหรับ "ข้อความ" — เข้มพอให้อ่านออกบนพื้นขาว */
+function rcText(v){if(v<0.1)return '#94a3b8';if(v<=10)return '#0369a1';if(v<=35)return '#0284c7';if(v<=90)return '#b45309';return '#b91c1c';}
 function rl(v){if(v<0.1)return'ไม่มีฝน';if(v<=10)return'ฝนเล็กน้อย';if(v<=35)return'ฝนปานกลาง';if(v<=90)return'ฝนหนัก';return'ฝนหนักมาก';}
 async function J(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
 let RAIN=[], SRC='Demo', FC={}, MODE='rain_24hr', map, tamLayer, radarLayer=null, radarOn=false, hourlyC, dailyC;
 
 /* ---------- ข้อมูลฝนตรวจวัดรายอำเภอ (ของเรา) ---------- */
+let SRC_NOTE='';
+function pick(o,keys){for(const k of keys){if(o[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k];}return null;}
 async function loadRain(){
-  try{const d=await J(GAS+'?action=rain&days=7');
-    if(Array.isArray(d)&&d.length){const last={};d.forEach(r=>{if(r.amphoe)last[r.amphoe]=r});
-      RAIN=Object.values(last);SRC='ข้อมูลตรวจวัด (API)';return;}
-  }catch(e){}
-  RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่เชื่อม API)';
+  try{
+    const d=await J(GAS+'?action=rain&days=7');
+    const rows=Array.isArray(d)?d:(d&&Array.isArray(d.data)?d.data:null);
+    if(rows&&rows.length){
+      const last={};
+      rows.forEach(r=>{
+        const a=pick(r,['amphoe','amphoe_name','district','อำเภอ']);
+        if(!a)return;
+        const rec={amphoe:String(a).trim(),
+          rain_24hr:parseFloat(pick(r,['rain_24hr','rain24','rain_24','rain','ฝน24','rainfall']))||0,
+          rain_7day:parseFloat(pick(r,['rain_7day','rain7','rain_7','ฝน7วัน']))||0,
+          rain_month:parseFloat(pick(r,['rain_month','rainMonth','rain_mon','ฝนเดือน']))||0};
+        last[rec.amphoe]=rec;
+      });
+      const vals=Object.values(last);
+      if(vals.length){RAIN=vals;SRC='ข้อมูลตรวจวัด (API)';SRC_NOTE='เชื่อมต่อระบบหลังบ้านสำเร็จ — ตัวเลขฝนเป็นข้อมูลที่เจ้าหน้าที่บันทึกจริง ('+vals.length+' อำเภอ)';return;}
+      RAIN=DEMO;SRC='ชุดตัวอย่าง (รูปแบบข้อมูลไม่ตรง)';
+      SRC_NOTE='เชื่อมต่อ API ได้ แต่ไม่พบคอลัมน์ amphoe / rain_24hr ในผลลัพธ์ — ตรวจชื่อคอลัมน์ในชีตหรือฟังก์ชัน action=rain';return;
+    }
+    RAIN=DEMO;SRC='ชุดตัวอย่าง (API ไม่มีข้อมูล)';
+    SRC_NOTE='เชื่อมต่อ API ได้ แต่ยังไม่มีแถวข้อมูลฝนส่งกลับมา — ตรวจว่ามีการบันทึกฝนในชีตแล้วหรือยัง';return;
+  }catch(e){
+    RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่เชื่อม API)';
+    SRC_NOTE='เรียก action=rain ไม่สำเร็จ ('+(e&&e.message?e.message:'network/CORS')+') — ตัวเลขที่แสดงเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ ไม่ใช่สถานการณ์จริง';
+  }
 }
 function ampVal(a,mode){const r=RAIN.find(x=>x.amphoe===a);return r?(+r[mode]||0):0;}
 
@@ -228,12 +260,12 @@ function renderAmp(){
   rows.sort((x,y)=>y.v-x.v);
   const mx=Math.max(...rows.map(r=>r.v),1);
   document.getElementById('ampbars').innerHTML=rows.map(r=>{const c=rc(r.v);
-    return `<div class="br" data-tip="อ.${r.a} — ${MODE==='fc'?'ฝนพยากรณ์เฉลี่ยรายตำบล':'ฝนตรวจวัด'} ${r.v.toFixed(1)} มม. · เกณฑ์: ${rl(r.v)}"><div class="bt"><b>${r.a}</b><span class="bv" style="color:${c}">${r.v.toFixed(1)} <span class="ba">มม. · ${rl(r.v)}</span></span></div><div class="bb"><i style="width:${r.v/mx*100}%;background:${c}"></i></div></div>`;}).join('');
+    return `<div class="br" data-tip="อ.${r.a} — ${MODE==='fc'?'ฝนพยากรณ์เฉลี่ยรายตำบล':'ฝนตรวจวัด'} ${r.v.toFixed(1)} มม. · เกณฑ์: ${rl(r.v)}"><div class="bt"><b>${r.a}</b><span class="bv" style="color:${rcText(r.v)}">${r.v.toFixed(1)} <span class="ba">มม. · ${rl(r.v)}</span></span></div><div class="bb"><i style="width:${r.v/mx*100}%;background:${c}"></i></div></div>`;}).join('');
   document.getElementById('ampSrc').textContent=MODE==='fc'?'Open-Meteo':SRC;
 }
 function renderTamList(){
   const rows=TPTS.map(t=>({...t,mm:FC[t.c]?.mm??0,p:FC[t.c]?.p??0})).sort((a,b)=>b.mm-a.mm).slice(0,8);
-  document.getElementById('tamlist').innerHTML=rows.map((r,i)=>`<div class="ti" data-tip="ต.${r.t} · อ.${r.a} — ฝนพยากรณ์ 24 ชม. ${r.mm.toFixed(1)} มม. · โอกาสเกิดฝน ${r.p}% · เกณฑ์: ${rl(r.mm)}"><span class="rk">${i+1}</span><div><div class="tn">${r.t}</div><div class="ta">อ.${r.a}</div></div><div class="tv" style="color:${rc(r.mm)}">${r.mm.toFixed(1)}<small>มม. · ${r.p}%</small></div></div>`).join('');
+  document.getElementById('tamlist').innerHTML=rows.map((r,i)=>`<div class="ti" data-tip="ต.${r.t} · อ.${r.a} — ฝนพยากรณ์ 24 ชม. ${r.mm.toFixed(1)} มม. · โอกาสเกิดฝน ${r.p}% · เกณฑ์: ${rl(r.mm)}"><span class="rk">${i+1}</span><div><div class="tn">${r.t}</div><div class="ta">อ.${r.a}</div></div><div class="tv" style="color:${rcText(r.mm)}">${r.mm.toFixed(1)}<small>มม. · ${r.p}%</small></div></div>`).join('');
 }
 function renderKPI(wx){
   const v24=AMP.map(a=>ampVal(a.a,'rain_24hr'));
@@ -295,7 +327,7 @@ function renderCharts(wx){
     const isT=D.time[i]===new Date().toISOString().slice(0,10);
     h+=`<div class="fd${isT?' today':''}${mm>=35?' hv':''}"><div class="fdn">${isT?'วันนี้':DOW[dt.getDay()]}</div><div class="fdl">${dt.getDate()} ${MON[dt.getMonth()]}</div>
       <div class="fde">${mm>=35?'⛈️':mm>=10?'🌧️':mm>=0.1?'🌦️':'☀️'}</div>
-      <div class="fdv" style="color:${rc(mm)}">${mm.toFixed(1)}</div><div class="fdp">💧${p}%</div></div>`;}
+      <div class="fdv" style="color:${rcText(mm)}">${mm.toFixed(1)}</div><div class="fdp">💧${p}%</div></div>`;}
   document.getElementById('fc7').innerHTML=h;
 }
 
@@ -303,7 +335,10 @@ function renderCharts(wx){
   const now=new Date();
   document.getElementById('tdate').textContent=now.getDate()+' '+MON[now.getMonth()]+' '+(now.getFullYear()+543);
   await loadRain();
-  document.getElementById('src').textContent=SRC;
+  const sc=document.getElementById('src');
+  sc.textContent=(SRC.indexOf('ตรวจวัด')>=0?'● ':'● ')+SRC;
+  sc.className='chip '+(SRC.indexOf('ตรวจวัด')>=0?'live':'demo');
+  sc.dataset.tip=SRC_NOTE||SRC;
   initMap(); renderAmp();
   let wx=null;
   try{

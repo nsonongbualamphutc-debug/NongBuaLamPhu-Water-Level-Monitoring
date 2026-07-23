@@ -1,7 +1,12 @@
 <!DOCTYPE html><html lang="th"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ลำน้ำมอ · จ.หนองบัวลำภู</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0a1e3c">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -218,7 +223,7 @@ function initMap(){
   const c0=[ST.reduce((a,x)=>a+x.lat,0)/ST.length,ST.reduce((a,x)=>a+x.lon,0)/ST.length];
   map=L.map('map',{zoomControl:true,attributionControl:false}).setView(c0,10);window._m=map;
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-  L.geoJSON(TAM,{style:{fillColor:'#eef3f9',fillOpacity:.65,color:'#fff',weight:1},interactive:false}).addTo(map);
+  L.geoJSON(TAM,{style:{fillColor:'#dbeafe',fillOpacity:.7,color:'#fff',weight:1},interactive:false}).addTo(map);
   buildMarkers();
   map.fitBounds(L.latLngBounds(ST.map(s=>[s.lat,s.lon])).pad(.22));
   document.getElementById('mapSub').textContent=ST.length+' สถานี · '+FG.length+' ปตร.';
@@ -234,9 +239,12 @@ function buildMarkers(){
     const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div style="width:22px;height:22px;border-radius:6px;background:${SB[k].c};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transform:translate(-11px,-11px);color:#fff;font-size:11px">🚪</div>`})});
     m.bindTooltip(TIPS[g.id],{className:'lft',sticky:true,opacity:1});mk.push(m);});
   ptLayer=L.layerGroup(mk).addTo(map);
+  map.on('click',closeTips);
 }
+function closeTips(){try{if(ptLayer)ptLayer.eachLayer(m=>m.closeTooltip&&m.closeTooltip());}catch(e){}}
 function select(id){SEL=id;renderList();drawProfile();renderTrend();try{renderLadder();}catch(e){}
-  if(ptLayer)ptLayer.eachLayer(m=>{if(m._id===id){map.flyTo(m.getLatLng(),12,{duration:.6});setTimeout(()=>m.openTooltip(),620);}});}
+  closeTips();
+  if(ptLayer)ptLayer.eachLayer(m=>{if(m._id===id){map.flyTo(m.getLatLng(),12,{duration:.6});setTimeout(()=>{closeTips();m.openTooltip&&m.openTooltip();},620);}});}
 
 /* ===== list ===== */
 function setSort(s){SORT=s;document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));renderList();}
