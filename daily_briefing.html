@@ -4,38 +4,9 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--navy:#0a1e3c;--ink:#0f172a;--muted:#64748b;--bg:#eef2f7;--card:#fff;--line:#e4eaf2;--gold:#c9a24b;
---ok:#16a34a;--warn:#f59e0b;--crit:#dc2626;--info:#0ea5e9;--cyan:#0891b2;--r:13px;--sh:0 5px 16px rgba(15,40,80,.07);
---disp:'Kanit',sans-serif;--font:'Sarabun',system-ui,sans-serif}
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-.app{display:grid;grid-template-columns:250px 1fr;height:100vh;transition:grid-template-columns .25s}
-.app.collapsed{grid-template-columns:76px 1fr}
-.side{background:linear-gradient(185deg,#0a1e3c,#0b2547 55%,#0a1e3c);color:#fff;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.side::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),transparent)}
-.brand{display:flex;align-items:center;gap:12px;padding:16px 15px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.brand img{width:44px;height:44px;flex:0 0 44px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
-.brand .bt{overflow:hidden}.brand .kick{font-family:var(--disp);font-size:8.5px;font-weight:600;letter-spacing:2px;color:var(--gold);white-space:nowrap}
-.brand .ttl{font-family:var(--disp);font-weight:700;font-size:15px;line-height:1.1;white-space:nowrap;background:linear-gradient(90deg,#fff,#bcd4f0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.brand .en{font-size:8.5px;opacity:.55;letter-spacing:1.5px;white-space:nowrap;margin-top:2px}
-.menu{flex:1;overflow-y:auto;padding:7px 9px}.menu::-webkit-scrollbar{width:0}
-.menu a{display:flex;align-items:center;gap:12px;padding:9px 11px;border-radius:10px;color:#c3cfe0;text-decoration:none;margin-bottom:2px;transition:.15s;position:relative}
-.menu a:hover{background:rgba(255,255,255,.07);color:#fff}
-.menu a.active{background:linear-gradient(100deg,rgba(56,189,248,.22),rgba(56,189,248,.05));color:#fff}
-.menu a.active::before{content:"";position:absolute;left:-9px;top:50%;transform:translateY(-50%);width:4px;height:20px;border-radius:0 4px 4px 0;background:var(--gold)}
-.menu .ic{width:20px;height:20px;flex:0 0 20px}.menu .lbl{white-space:nowrap;overflow:hidden;line-height:1.1}
-.menu .lbl b{font-family:var(--disp);font-weight:500;font-size:13px;display:block}.menu .lbl i{font-style:normal;font-size:9px;opacity:.5}
-.side-foot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);font-size:9.5px;color:#8fa2bd;line-height:1.45}
-.side-foot b{font-family:var(--disp);color:#dbe6f5;font-weight:500;font-size:11px;display:block;margin-bottom:2px}.side-foot .cp{margin-top:4px;opacity:.75}
-.app.collapsed .brand .bt,.app.collapsed .menu .lbl,.app.collapsed .side-foot{opacity:0;width:0;height:0;pointer-events:none}
-.main-col{min-width:0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.topbar{height:54px;flex:0 0 54px;display:flex;align-items:center;gap:13px;padding:0 18px;background:var(--card);border-bottom:1px solid var(--line)}
-.burger{width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy)}.burger svg{width:19px;height:19px}
-.topbar .tt{font-family:var(--disp);font-weight:600;font-size:15.5px;color:var(--navy)}.topbar .tt i{font-style:normal;font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
-.topbar .tr{margin-left:auto;display:flex;gap:8px;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:12px;background:var(--navy);color:#fff;border:0;padding:7px 13px;border-radius:9px;cursor:pointer}.btn svg{width:14px;height:14px}
+<link rel="stylesheet" href="ds.css">
+<script src="ds.js" defer></script>
+<style>.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
 .content{flex:1;min-height:0;padding:11px 15px 12px;display:grid;grid-template-rows:auto minmax(0,1fr) 124px;gap:10px;overflow:hidden}
 /* VERDICT */
 .verdict{display:flex;align-items:center;gap:16px;border-radius:14px;padding:12px 18px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--sh);background:linear-gradient(120deg,#0a1e3c,#12305c)}
@@ -50,16 +21,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .verdict .vs{font-size:12px;opacity:.88;margin-top:2px}
 .verdict .vkpi{margin-left:auto;display:flex;gap:8px;position:relative;z-index:1;flex-wrap:wrap;justify-content:flex-end}
 .vk{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:7px 12px;text-align:center;min-width:76px}
-.vk .n{font-family:var(--disp);font-weight:800;font-size:18px;line-height:1}.vk .n small{font-size:10px;font-weight:600;opacity:.8}
+.vk .n{font-family:var(--disp);font-weight:800;font-size:18px;line-height:1}
+.vk .n small{font-size:10px;font-weight:600;opacity:.8}
 .vk .l{font-size:9px;opacity:.82;margin-top:2px;white-space:nowrap}
 /* MID 4 cols */
 .mid{display:grid;grid-template-columns:1.45fr 1fr 1fr 1fr;gap:10px;min-height:0}
-.col{display:flex;flex-direction:column;gap:10px;min-height:0}
-.panel{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.panel.f1{flex:1}.panel.f2{flex:1.25}
+.panel.f2{flex:1.25}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;gap:6px}
 .ph h3{font-family:var(--disp);font-size:12.5px;font-weight:700;color:var(--navy)}
-.ph .sub{font-size:8.5px;color:var(--muted);font-weight:400;display:block}
 .ph .meta{font-size:9.5px;color:var(--muted);white-space:nowrap}
 .ph a{font-size:9.5px;color:var(--info);text-decoration:none}
 .pb{flex:1;min-height:0;position:relative;padding:6px 10px}
@@ -68,18 +37,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .hc{flex:0 0 auto;min-width:44px;text-align:center;font-size:9px;color:var(--muted);padding:2px 4px;border-radius:6px}
 .hc .h1{font-family:var(--disp);font-weight:600;color:var(--ink);font-size:10px}
 .hc .h2{color:var(--info);font-weight:600}
-.hc.wet{background:#e0f2fe}.hc.heavy{background:#fee2e2}.hc.heavy .h2{color:var(--crit)}
+.hc.wet{background:#e0f2fe}
+.hc.heavy{background:#fee2e2}
+.hc.heavy .h2{color:var(--crit)}
 /* water status */
 .wstat{display:flex;gap:6px;padding:9px 11px 7px}
 .ws{flex:1;text-align:center;border-radius:10px;padding:7px 3px;border:1px solid}
 .ws .n{font-family:var(--disp);font-weight:800;font-size:19px;line-height:1}
 .ws .l{font-size:8.5px;margin-top:2px}
-.ws.ok{background:#f0fdf4;border-color:#c7ecd0}.ws.ok .n{color:var(--ok)}
-.ws.wn{background:#fffbeb;border-color:#fbe6b0}.ws.wn .n{color:var(--warn)}
-.ws.cr{background:#fff5f5;border-color:#fbd5d5}.ws.cr .n{color:var(--crit)}
+.ws.ok{background:#f0fdf4;border-color:#c7ecd0}
+.ws.ok .n{color:var(--ok)}
+.ws.wn{background:#fffbeb;border-color:#fbe6b0}
+.ws.wn .n{color:var(--warn)}
+.ws.cr{background:#fff5f5;border-color:#fbd5d5}
+.ws.cr .n{color:var(--crit)}
 .wlist{padding:2px 10px 8px;overflow-y:auto;flex:1;min-height:0}
 .wi{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:6px 8px;border-radius:9px;margin-bottom:4px;border:1px solid var(--line);font-size:11px}
-.wi.cr{background:#fff6f6;border-color:#fbd5d5}.wi.wn{background:#fffbeb;border-color:#fbe6b0}
+.wi.cr{background:#fff6f6;border-color:#fbd5d5}
+.wi.wn{background:#fffbeb;border-color:#fbe6b0}
 .wi .wn2{font-family:var(--disp);font-weight:600;font-size:11.5px;line-height:1.1}
 .wi .wm{font-size:8.5px;color:var(--muted)}
 .wi .wg{font-family:var(--disp);font-weight:700;font-size:11.5px;text-align:right;white-space:nowrap}
@@ -87,10 +62,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 /* actions */
 .acts{padding:7px 10px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
 .act{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:10.5px;line-height:1.4}
-.act.c{background:#fff5f5;border-color:#fbd5d5}.act.w{background:#fffbeb;border-color:#fbe6b0}.act.o{background:#f0fdf4;border-color:#c7ecd0}.act.i{background:#eff8ff;border-color:#cfe8fb}
-.act .ai{font-size:15px;line-height:1.2}
-.act b{font-family:var(--disp);font-weight:600;display:block;font-size:11.5px;margin-bottom:1px}
-.act .an{color:var(--muted);font-size:9.5px}
 /* bars list (amphoe rain / reservoir rain) */
 .bl{padding:7px 11px;overflow-y:auto;flex:1;min-height:0}
 .br{margin-bottom:7px}
@@ -103,11 +74,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 /* floodgate mini */
 .fgl{padding:7px 11px;overflow-y:auto;flex:1;min-height:0}
 .fgi{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 2px;border-bottom:1px dashed var(--line);font-size:10.5px}
-.fgi:last-child{border-bottom:0}
 .fgi .fn{font-family:var(--disp);font-weight:600;font-size:11px;line-height:1.1}
-.fgi .fa{font-size:8.5px;color:var(--muted)}
-.fgi .fp{font-family:var(--disp);font-size:9px;font-weight:600;color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap}
-.fgi .fq{font-size:8.5px;color:var(--muted);text-align:right;margin-top:2px}
 /* 7-day */
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-height:0}
 .day{background:var(--card);border-radius:11px;border:1px solid var(--line);box-shadow:var(--sh);padding:7px 4px;text-align:center;position:relative;display:flex;flex-direction:column;justify-content:center;gap:0;transition:.15s}
@@ -125,13 +92,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .day.today .bg{background:rgba(255,255,255,.3)}
 .skel{background:linear-gradient(90deg,#eef2f7,#f6f9fc,#eef2f7);background-size:200% 100%;animation:sh 1.3s infinite}
 @keyframes sh{to{background-position:-200% 0}}
-.err{color:var(--crit);font-size:11px;padding:10px}
 @media(max-width:1450px){.mid{grid-template-columns:1.3fr 1fr 1fr}.col.c4{display:none}}
 @media(max-width:1150px){.content{grid-template-rows:auto auto auto;overflow:auto}.mid{grid-template-columns:1fr 1fr}.col.c4{display:flex}.mid .col:first-child{grid-column:1/-1;min-height:260px}}
 @media(max-width:820px){.app{grid-template-columns:1fr}.side{position:fixed;left:0;top:0;bottom:0;width:250px;transform:translateX(-100%);transition:.25s;z-index:300}.app.navopen .side{transform:none}.app.navopen .scrim{display:block;position:fixed;inset:0;background:rgba(6,15,30,.45);z-index:250}.mid{grid-template-columns:1fr}.days{grid-template-columns:repeat(4,1fr)}.verdict{flex-wrap:wrap}.verdict .vkpi{margin-left:0;width:100%}}
-.scrim{display:none}
-@media print{html,body{overflow:visible;height:auto}.side,.topbar{display:none!important}.app{grid-template-columns:1fr;height:auto}.main-col{height:auto}.content{overflow:visible;grid-template-rows:none}.panel{break-inside:avoid}}
-</style></head>
+@media print{html,body{overflow:visible;height:auto}.side,.topbar{display:none!important}.app{grid-template-columns:1fr;height:auto}.main-col{height:auto}.content{overflow:visible;grid-template-rows:none}.panel{break-inside:avoid}}</style></head>
 <body>
 <div class="app" id="app">
 <div class="scrim" onclick="document.getElementById('app').classList.remove('navopen')"></div>
@@ -157,35 +121,35 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
     <div class="mid">
       <div class="col">
         <div class="panel f1">
-          <div class="ph"><div><h3>ฝนและอุณหภูมิวันนี้<span class="sub">แท่ง = โอกาสฝน (%) · เส้น = อุณหภูมิ (°C)</span></h3></div><span class="meta" id="sun">—</span></div>
+          <div class="ph"><div><h3 data-tip="แท่งฟ้า = โอกาสเกิดฝนรายชั่วโมง (%) · เส้นส้ม = อุณหภูมิ (°C) — ใช้ดูว่าฝนจะตกช่วงไหนของวัน">ฝนและอุณหภูมิวันนี้<span class="sub">แท่ง = โอกาสฝน (%) · เส้น = อุณหภูมิ (°C)</span></h3></div><span class="meta" id="sun">—</span></div>
           <div class="pb"><canvas id="hourly"></canvas></div>
           <div class="hrow" id="hrow"></div>
         </div>
       </div>
       <div class="col">
         <div class="panel f2">
-          <div class="ph"><div><h3>สถานการณ์น้ำวันนี้<span class="sub">20 สถานีตรวจวัด · 4 ลำน้ำ</span></h3></div><a href="index.html">แผนที่ →</a></div>
+          <div class="ph"><div><h3 data-tip="สถานะสถานีตรวจวัดระดับน้ำทั้ง 20 จุดของจังหวัด และจุดที่ใกล้ล้นตลิ่งที่สุด">สถานการณ์น้ำวันนี้<span class="sub">20 สถานีตรวจวัด · 4 ลำน้ำ</span></h3></div><a href="index.html">แผนที่ →</a></div>
           <div class="wstat" id="wstat"></div>
           <div class="wlist" id="wlist"></div>
         </div>
         <div class="panel f1">
-          <div class="ph"><div><h3>ประตูระบายน้ำ<span class="sub">สถานะบานประตู</span></h3></div></div>
+          <div class="ph"><div><h3 data-tip="สถานะการเปิด-ปิดบานประตูระบายน้ำของกรมชลประทาน">ประตูระบายน้ำ<span class="sub">สถานะบานประตู</span></h3></div></div>
           <div class="fgl" id="fgl"></div>
         </div>
       </div>
       <div class="col">
         <div class="panel f1">
-          <div class="ph"><div><h3>สิ่งที่ต้องเฝ้าระวัง / ดำเนินการ<span class="sub">ประเมินอัตโนมัติจากพยากรณ์ + ระดับน้ำ</span></h3></div></div>
+          <div class="ph"><div><h3 data-tip="ประเด็นที่ระบบประเมินอัตโนมัติจากระดับน้ำจริงร่วมกับพยากรณ์อากาศ">สิ่งที่ต้องเฝ้าระวัง / ดำเนินการ<span class="sub">ประเมินอัตโนมัติจากพยากรณ์ + ระดับน้ำ</span></h3></div></div>
           <div class="acts" id="acts"></div>
         </div>
       </div>
       <div class="col c4">
         <div class="panel f1">
-          <div class="ph"><div><h3>ฝนรายอำเภอวันนี้<span class="sub">พยากรณ์ 6 อำเภอ (มม.)</span></h3></div><a href="rainfall.html">ทั้งหมด →</a></div>
+          <div class="ph"><div><h3 data-tip="พยากรณ์ฝนแยกรายอำเภอ คำนวณจากจุดกึ่งกลางของแต่ละอำเภอ">ฝนรายอำเภอวันนี้<span class="sub">พยากรณ์ 6 อำเภอ (มม.)</span></h3></div><a href="rainfall.html">ทั้งหมด →</a></div>
           <div class="bl" id="ampbars"></div>
         </div>
         <div class="panel f1">
-          <div class="ph"><div><h3>ฝนเหนืออ่างเก็บน้ำ<span class="sub">สะสม 7 วัน · 5 อันดับ</span></h3></div><a href="reservoir.html">ทั้งหมด →</a></div>
+          <div class="ph"><div><h3 data-tip="ฝนสะสม 7 วันข้างหน้าเหนือพื้นที่อ่าง — ใช้ประเมินน้ำที่จะไหลเข้าอ่าง">ฝนเหนืออ่างเก็บน้ำ<span class="sub">สะสม 7 วัน · 5 อันดับ</span></h3></div><a href="reservoir.html">ทั้งหมด →</a></div>
           <div class="bl" id="resbars"></div>
         </div>
       </div>
@@ -203,7 +167,7 @@ function wmo(c){if(c===0)return['แจ่มใส','☀️'];if(c<=2)return['�
  if(c<=48)return['หมอก','🌫️'];if(c<=57)return['ฝนละออง','🌦️'];if(c<=67)return['ฝนตก','🌧️'];
  if(c<=77)return['หิมะ','❄️'];if(c<=82)return['ฝนโปรย','🌧️'];if(c<=86)return['หิมะโปรย','🌨️'];return['พายุฝนฟ้าคะนอง','⛈️'];}
 async function J(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
-function vk(n,u,l){return `<div class="vk"><div class="n">${n}<small>${u||''}</small></div><div class="l">${l}</div></div>`;}
+function vk(n,u,l,tip){return `<div class="vk" data-tip="${tip||l}"><div class="n">${n}<small>${u||''}</small></div><div class="l">${l}</div></div>`;}
 let WX=null;
 
 /* ---------- น้ำ: จาก GAS ถ้าได้ ไม่ได้ใช้ชุดสำรอง ---------- */
@@ -217,19 +181,19 @@ function renderWater(w){
   const mix={normal:0,warn:0,crit:0};
   st.forEach(s=>{mix[s.st]=(mix[s.st]||0)+1});
   document.getElementById('wstat').innerHTML=
-   `<div class="ws ok"><div class="n">${mix.normal||0}</div><div class="l">ปกติ</div></div>
-    <div class="ws wn"><div class="n">${mix.warn||0}</div><div class="l">เฝ้าระวัง</div></div>
-    <div class="ws cr"><div class="n">${mix.crit||0}</div><div class="l">เกินตลิ่ง</div></div>`;
+   `<div class="ws ok" data-tip="ระดับน้ำต่ำกว่าเกณฑ์เฝ้าระวัง — ปลอดภัย"><div class="n">${mix.normal||0}</div><div class="l">ปกติ</div></div>
+    <div class="ws wn" data-tip="ระดับน้ำถึงเกณฑ์เฝ้าระวังแล้ว แต่ยังไม่ล้นตลิ่ง — ต้องอ่านค่าถี่ขึ้น"><div class="n">${mix.warn||0}</div><div class="l">เฝ้าระวัง</div></div>
+    <div class="ws cr" data-tip="ระดับน้ำสูงกว่าสันตลิ่ง — น้ำไหลออกนอกลำน้ำแล้ว"><div class="n">${mix.crit||0}</div><div class="l">เกินตลิ่ง</div></div>`;
   const top=[...st].sort((a,b)=>a.gap-b.gap).slice(0,5);
   document.getElementById('wlist').innerHTML=top.map(s=>{
     const cls=s.st==='crit'?'cr':s.st==='warn'?'wn':'';
     const c=s.st==='crit'?'var(--crit)':s.st==='warn'?'var(--warn)':'var(--ok)';
     const rise=s.rise>0?`▲ +${s.rise}`:s.rise<0?`▼ ${s.rise}`:'– คงที่';
-    return `<div class="wi ${cls}"><div><div class="wn2">${s.n}</div><div class="wm">${s.r} · อ.${s.a} · ${rise} ม./วัน</div></div>
+    return `<div class="wi ${cls}" data-tip="${s.n} · ${s.r} · อ.${s.a} — ระดับ ${s.cur} ม.รทก. / ตลิ่ง ${s.bank} ม.รทก.${s.gap<=0?' · เกินตลิ่ง '+Math.abs(s.gap).toFixed(2)+' ม.':' · เหลือถึงตลิ่ง '+s.gap.toFixed(2)+' ม.'} · เปลี่ยนแปลง ${s.rise>0?'+':''}${s.rise} ม./วัน"><div><div class="wn2">${s.n}</div><div class="wm">${s.r} · อ.${s.a} · ${rise} ม./วัน</div></div>
       <div class="wg" style="color:${c}">${s.gap<=0?'เกิน '+Math.abs(s.gap).toFixed(2):s.gap.toFixed(2)}<small>${s.gap<=0?'ม.':'ม.ถึงตลิ่ง'}</small></div></div>`;}).join('');
   const fg=w.fg||[];
   document.getElementById('fgl').innerHTML=fg.length?fg.map(g=>{const open=g.open>0,c=open?'#0ea5e9':'#94a3b8';
-    return `<div class="fgi"><div><div class="fn">${g.name}</div><div class="fa">อ.${g.amphoe}</div></div>
+    return `<div class="fgi" data-tip="${g.name} · อ.${g.amphoe} — ${open?'เปิดระบาย '+g.open+'/'+g.gates+' บาน · อัตรา '+g.q+' ลบ.ม./วินาที':'ปิดบานทุกบาน เก็บกักน้ำไว้ใช้'}"><div><div class="fn">${g.name}</div><div class="fa">อ.${g.amphoe}</div></div>
       <div style="text-align:right"><span class="fp" style="background:${c}">${g.status}</span><div class="fq">${open?'เปิด '+g.open+'/'+g.gates+' บาน · '+g.q+' ลบ.ม./วิ':'ปิดทุกบาน'}</div></div></div>`;}).join(''):'<div class="err">ไม่มีข้อมูล ปตร.</div>';
   return mix;
 }
@@ -263,10 +227,13 @@ async function main(){
   const heavy7=dd.precipitation_sum.filter(v=>v>=20).length;
   document.getElementById('v-sub').textContent=`วันนี้ ${wc[0]} · ฝนคาด ${mm.toFixed(1)} มม. (โอกาส ${pop}%) · `+(heavy7?`7 วันข้างหน้ามีวันฝนหนัก ${heavy7} วัน`:'7 วันข้างหน้าไม่มีฝนหนัก');
   document.getElementById('v-kpi').innerHTML=
-    vk(mix.crit||0,' จุด','สถานีเกินตลิ่ง')+vk(mix.normal||0,'/'+((w.stations||[]).length),'สถานีปกติ')
-   +vk(pop,'%','โอกาสฝนวันนี้')+vk(mm.toFixed(1),' มม.','ฝนคาดวันนี้')
-   +vk(Math.round(cur.temperature_2m),'°','อุณหภูมิ')+vk(cur.relative_humidity_2m,'%','ความชื้น')
-   +'<div class="vk" id="aqiK"><div class="n" id="aqiN">–</div><div class="l">คุณภาพอากาศ</div></div>';
+    vk(mix.crit||0,' จุด','สถานีเกินตลิ่ง','สถานีที่ระดับน้ำสูงกว่าสันตลิ่ง — น้ำเริ่มไหลออกนอกลำน้ำ ต้องแจ้งเตือนพื้นที่ท้ายน้ำ')
+   +vk(mix.normal||0,'/'+((w.stations||[]).length),'สถานีปกติ','สถานีที่ระดับน้ำยังต่ำกว่าเกณฑ์เฝ้าระวัง')
+   +vk(pop,'%','โอกาสฝนวันนี้','ความน่าจะเป็นสูงสุดที่จะเกิดฝนในวันนี้ (พยากรณ์ Open-Meteo)')
+   +vk(mm.toFixed(1),' มม.','ฝนคาดวันนี้','ปริมาณฝนที่คาดว่าจะตกรวมทั้งวัน · เกณฑ์กรมอุตุฯ ฝนหนัก 35.1–90 มม.')
+   +vk(Math.round(cur.temperature_2m),'°','อุณหภูมิ','อุณหภูมิอากาศขณะนี้')
+   +vk(cur.relative_humidity_2m,'%','ความชื้น','ความชื้นสัมพัทธ์ในอากาศขณะนี้ — ยิ่งสูงยิ่งมีโอกาสเกิดฝน')
+   +'<div class="vk" id="aqiK" data-tip="ดัชนีคุณภาพอากาศ (US AQI) และค่าฝุ่น PM2.5 ขณะนี้ · 0–50 ดี · 51–100 ปานกลาง · 101–150 เริ่มมีผลต่อกลุ่มเสี่ยง"><div class="n" id="aqiN">–</div><div class="l">คุณภาพอากาศ</div></div>';
 
   const H=d.hourly, today=dd.time[0], idx=[];
   for(let i=0;i<H.time.length;i++) if(H.time[i].slice(0,10)===today) idx.push(i);
@@ -279,7 +246,7 @@ async function main(){
            x:{grid:{display:false},ticks:{font:{size:8},maxTicksLimit:12}}}}});
   let hr='';
   for(let k=0;k<idx.length;k+=2){const i=idx[k],p=H.precipitation_probability[i]??0,q=H.precipitation[i]??0;
-    hr+=`<div class="hc ${q>=5?'heavy':p>=60?'wet':''}"><div class="h1">${H.time[i].slice(11,13)}น.</div><div class="h2">${p}%</div><div style="font-size:8px">${q.toFixed(1)}มม.</div></div>`;}
+    hr+=`<div class="hc ${q>=5?'heavy':p>=60?'wet':''}" data-tip="เวลา ${H.time[i].slice(11,16)} น. — โอกาสเกิดฝน ${p}% · ปริมาณคาด ${q.toFixed(1)} มม."><div class="h1">${H.time[i].slice(11,13)}น.</div><div class="h2">${p}%</div><div style="font-size:8px">${q.toFixed(1)}มม.</div></div>`;}
   document.getElementById('hrow').innerHTML=hr;
 
   /* actions */
@@ -303,7 +270,7 @@ async function main(){
   for(let i=0;i<dd.time.length;i++){
     const dt=new Date(dd.time[i]+'T00:00'), c2=wmo(dd.weather_code[i]);
     const p=dd.precipitation_probability_max[i]??0,m2=dd.precipitation_sum[i]??0,hv=m2>=20||p>=80;
-    ds+=`<div class="day${i===0?' today':''}">${hv?'<span class="bg">ฝนหนัก</span>':''}
+    ds+=`<div class="day${i===0?' today':''}" data-tip="${i===0?'วันนี้':'วัน'+DOW[dt.getDay()]} ${dt.getDate()} ${MON[dt.getMonth()]} — ${c2[0]} · สูงสุด ${Math.round(dd.temperature_2m_max[i])}° ต่ำสุด ${Math.round(dd.temperature_2m_min[i])}° · โอกาสฝน ${p}% ปริมาณ ${m2.toFixed(1)} มม. · ลม ${Math.round(dd.wind_speed_10m_max[i])} กม./ชม.${hv?' · เข้าเกณฑ์ฝนหนัก':''}">${hv?'<span class="bg">ฝนหนัก</span>':''}
      <div class="dn">${i===0?'วันนี้':DOW[dt.getDay()]}</div><div class="dl">${dt.getDate()} ${MON[dt.getMonth()]}</div>
      <div class="em">${c2[1]}</div>
      <div class="hi">${Math.round(dd.temperature_2m_max[i])}°<span class="lo">/${Math.round(dd.temperature_2m_min[i])}°</span></div>

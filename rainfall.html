@@ -6,38 +6,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--navy:#0a1e3c;--ink:#0f172a;--muted:#64748b;--bg:#eef2f7;--card:#fff;--line:#e4eaf2;--gold:#c9a24b;
---ok:#16a34a;--warn:#f59e0b;--crit:#dc2626;--info:#0ea5e9;--cyan:#0891b2;--r:13px;--sh:0 5px 16px rgba(15,40,80,.07);
---disp:'Kanit',sans-serif;--font:'Sarabun',system-ui,sans-serif}
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-.app{display:grid;grid-template-columns:250px 1fr;height:100vh;transition:grid-template-columns .25s}
-.app.collapsed{grid-template-columns:76px 1fr}
-.side{background:linear-gradient(185deg,#0a1e3c,#0b2547 55%,#0a1e3c);color:#fff;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.side::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),transparent)}
-.brand{display:flex;align-items:center;gap:12px;padding:16px 15px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.brand img{width:44px;height:44px;flex:0 0 44px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
-.brand .bt{overflow:hidden}.brand .kick{font-family:var(--disp);font-size:8.5px;font-weight:600;letter-spacing:2px;color:var(--gold);white-space:nowrap}
-.brand .ttl{font-family:var(--disp);font-weight:700;font-size:15px;line-height:1.1;white-space:nowrap;background:linear-gradient(90deg,#fff,#bcd4f0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.brand .en{font-size:8.5px;opacity:.55;letter-spacing:1.5px;white-space:nowrap;margin-top:2px}
-.menu{flex:1;overflow-y:auto;padding:7px 9px}.menu::-webkit-scrollbar{width:0}
-.menu a{display:flex;align-items:center;gap:12px;padding:9px 11px;border-radius:10px;color:#c3cfe0;text-decoration:none;margin-bottom:2px;transition:.15s;position:relative}
-.menu a:hover{background:rgba(255,255,255,.07);color:#fff}
-.menu a.active{background:linear-gradient(100deg,rgba(56,189,248,.22),rgba(56,189,248,.05));color:#fff}
-.menu a.active::before{content:"";position:absolute;left:-9px;top:50%;transform:translateY(-50%);width:4px;height:20px;border-radius:0 4px 4px 0;background:var(--gold)}
-.menu .ic{width:20px;height:20px;flex:0 0 20px}.menu .lbl{white-space:nowrap;overflow:hidden;line-height:1.1}
-.menu .lbl b{font-family:var(--disp);font-weight:500;font-size:13px;display:block}.menu .lbl i{font-style:normal;font-size:9px;opacity:.5}
-.side-foot{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);font-size:9.5px;color:#8fa2bd;line-height:1.45}
-.side-foot b{font-family:var(--disp);color:#dbe6f5;font-weight:500;font-size:11px;display:block;margin-bottom:2px}.side-foot .cp{margin-top:4px;opacity:.75}
-.app.collapsed .brand .bt,.app.collapsed .menu .lbl,.app.collapsed .side-foot{opacity:0;width:0;height:0;pointer-events:none}
-.main-col{min-width:0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.topbar{height:54px;flex:0 0 54px;display:flex;align-items:center;gap:13px;padding:0 18px;background:var(--card);border-bottom:1px solid var(--line)}
-.burger{width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy)}.burger svg{width:19px;height:19px}
-.topbar .tt{font-family:var(--disp);font-weight:600;font-size:15.5px;color:var(--navy)}.topbar .tt i{font-style:normal;font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
-.topbar .tr{margin-left:auto;display:flex;gap:8px;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-weight:600;font-size:12px;background:var(--navy);color:#fff;border:0;padding:7px 13px;border-radius:9px;cursor:pointer}.btn svg{width:14px;height:14px}
+<link rel="stylesheet" href="ds.css">
+<script src="ds.js" defer></script>
+<style>.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;color:var(--muted)}
 .content{flex:1;min-height:0;padding:11px 15px 12px;display:grid;grid-template-rows:auto minmax(0,1fr) 132px;gap:10px;overflow:hidden}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
@@ -48,31 +19,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .k .kv{font-family:var(--disp);font-weight:800;font-size:25px;line-height:1}
 .k .kv small{font-size:12px;font-weight:600;opacity:.7}
 .k .kd{font-size:10px;margin-top:3px;color:var(--muted)}
-.k.b1{background:#eff8ff;border-color:#cfe8fb}.k.b1 .kv{color:#0369a1}
-.k.b2{background:#f0fdf4;border-color:#c7ecd0}.k.b2 .kv{color:#15803d}
-.k.b3{background:#ecfeff;border-color:#c3ece9}.k.b3 .kv{color:#0e7490}
-.k.b4{background:#fffbeb;border-color:#fbe6b0}.k.b4 .kv{color:#b45309}
-.k.b5{background:#fff5f5;border-color:#fbd5d5}.k.b5 .kv{color:#b91c1c}
 /* mid */
 .mid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;min-height:0}
-.col{display:flex;flex-direction:column;gap:10px;min-height:0}
-.panel{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.panel.f1{flex:1}.panel.f11{flex:1.15}
+.panel.f11{flex:1.15}
 .ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;gap:6px;flex-wrap:wrap}
 .ph h3{font-family:var(--disp);font-size:12.5px;font-weight:700;color:var(--navy)}
-.ph .sub{font-size:8.5px;color:var(--muted);font-weight:400;display:block}
 .ph a{font-size:9.5px;color:var(--info);text-decoration:none}
-.seg{display:inline-flex;background:var(--bg);border-radius:8px;padding:2px}
-.seg button{border:0;background:transparent;font-family:var(--disp);font-size:10px;font-weight:500;padding:4px 8px;border-radius:6px;cursor:pointer;color:var(--muted)}
-.seg button.on{background:var(--navy);color:#fff}
 .tg{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);cursor:pointer;font-family:var(--disp);font-weight:500;background:var(--bg);padding:4px 9px;border-radius:8px;border:1px solid var(--line)}
 .tg.on{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
-.pb{flex:1;min-height:0;position:relative}
-#map{position:absolute;inset:0}
 .legend{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:1px solid var(--line);font-size:9.5px;color:var(--muted);flex-wrap:wrap}
 .legend .lg{display:inline-flex;align-items:center;gap:4px}
 .legend .sw{width:16px;height:9px;border-radius:2px;display:inline-block}
-.legend .note{margin-left:auto;font-size:9px}
 /* bars */
 .bl{padding:7px 11px;overflow-y:auto;flex:1;min-height:0}
 .br{margin-bottom:7px;cursor:pointer}
@@ -95,10 +52,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 /* alerts */
 .acts{padding:7px 10px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
 .act{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:10.5px;line-height:1.4}
-.act.c{background:#fff5f5;border-color:#fbd5d5}.act.w{background:#fffbeb;border-color:#fbe6b0}.act.o{background:#f0fdf4;border-color:#c7ecd0}.act.i{background:#eff8ff;border-color:#cfe8fb}
-.act .ai{font-size:15px;line-height:1.2}
-.act b{font-family:var(--disp);font-weight:600;display:block;font-size:11.5px;margin-bottom:1px}
-.act .an{color:var(--muted);font-size:9.5px}
 /* bottom */
 .bot{display:grid;grid-template-columns:1.75fr 1fr;gap:10px;min-height:0}
 .chartp{padding:6px 10px}
@@ -114,17 +67,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .fd.hv{border-color:#fbd5d5;background:#fff5f5}
 .skel{background:linear-gradient(90deg,#eef2f7,#f6f9fc,#eef2f7);background-size:200% 100%;animation:sh 1.3s infinite}
 @keyframes sh{to{background-position:-200% 0}}
-.err{color:var(--crit);font-size:11px;padding:10px}
 .leaflet-tooltip.tt{font-family:var(--font);font-size:11.5px;border:0;border-radius:9px;box-shadow:0 8px 20px rgba(0,0,0,.2);padding:0;overflow:hidden}
 .tt .tth{font-family:var(--disp);font-weight:600;color:#fff;padding:6px 10px;font-size:12px}
 .tt .ttb{padding:7px 10px;line-height:1.55}
-.tt .ttb .row{display:flex;justify-content:space-between;gap:14px}.tt .ttb b{font-family:var(--disp)}
+.tt .ttb .row{display:flex;justify-content:space-between;gap:14px}
+.tt .ttb b{font-family:var(--disp)}
 @media(max-width:1300px){.mid{grid-template-columns:1.3fr 1fr}.col.c3{display:none}.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1050px){.content{grid-template-rows:auto auto auto;overflow:auto}.mid{grid-template-columns:1fr}.col.c3{display:flex}#map{position:relative;height:320px}.bot{grid-template-columns:1fr}}
-@media(max-width:820px){.app{grid-template-columns:1fr}.side{position:fixed;left:0;top:0;bottom:0;width:250px;transform:translateX(-100%);transition:.25s;z-index:300}.app.navopen .side{transform:none}.app.navopen .scrim{display:block;position:fixed;inset:0;background:rgba(6,15,30,.45);z-index:250}.kpis{grid-template-columns:repeat(2,1fr)}}
-.scrim{display:none}
-@media print{html,body{overflow:visible;height:auto}.side,.topbar{display:none!important}.app{grid-template-columns:1fr;height:auto}.main-col{height:auto}.content{overflow:visible;grid-template-rows:none}.panel{break-inside:avoid}}
-</style></head>
+@media print{html,body{overflow:visible;height:auto}.side,.topbar{display:none!important}.app{grid-template-columns:1fr;height:auto}.main-col{height:auto}.content{overflow:visible;grid-template-rows:none}.panel{break-inside:avoid}}</style></head>
 <body>
 <div class="app" id="app">
 <div class="scrim" onclick="document.getElementById('app').classList.remove('navopen')"></div>
@@ -145,10 +95,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
       <div class="col">
         <div class="panel f1">
           <div class="ph">
-            <div><h3>แผนที่ปริมาณฝน<span class="sub">เกณฑ์กรมอุตุนิยมวิทยา · ชี้เพื่อดูรายละเอียด</span></h3></div>
+            <div><h3 data-tip="ระบายสีพื้นที่ตามปริมาณฝน ใช้เกณฑ์สีของกรมอุตุนิยมวิทยา · โหมดตรวจวัดคือข้อมูลจริงรายอำเภอ · โหมดพยากรณ์รายตำบลดึงจาก Open-Meteo 59 จุด">แผนที่ปริมาณฝน<span class="sub">เกณฑ์กรมอุตุนิยมวิทยา · ชี้เพื่อดูรายละเอียด</span></h3></div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <div class="seg"><button data-m="rain_24hr" class="on" onclick="setMode('rain_24hr')">24 ชม.</button><button data-m="rain_7day" onclick="setMode('rain_7day')">7 วัน</button><button data-m="rain_month" onclick="setMode('rain_month')">เดือนนี้</button><button data-m="fc" onclick="setMode('fc')">พยากรณ์รายตำบล</button></div>
-              <span class="tg" id="radarTg" onclick="toggleRadar()">📡 เรดาร์ฝน</span>
+              <div class="seg"><button data-m="rain_24hr" class="on" data-tip="ฝนตรวจวัดสะสม 24 ชั่วโมง (ข้อมูลจริงรายอำเภอ)" onclick="setMode('rain_24hr')">24 ชม.</button><button data-m="rain_7day" data-tip="ฝนตรวจวัดสะสม 7 วันย้อนหลัง" onclick="setMode('rain_7day')">7 วัน</button><button data-m="rain_month" data-tip="ฝนตรวจวัดสะสมตั้งแต่ต้นเดือน" onclick="setMode('rain_month')">เดือนนี้</button><button data-m="fc" data-tip="ฝนพยากรณ์รายตำบล 59 ตำบล — เห็นความต่างระดับตำบลจริง (Open-Meteo)" onclick="setMode('fc')">พยากรณ์รายตำบล</button></div>
+              <span class="tg" id="radarTg" onclick="toggleRadar()" data-tip="ซ้อนภาพเรดาร์ตรวจอากาศแบบเรียลไทม์ลงบนแผนที่ เพื่อดูกลุ่มฝนที่กำลังเคลื่อนเข้าพื้นที่">📡 เรดาร์ฝน</span>
             </div>
           </div>
           <div class="pb"><div id="map"></div></div>
@@ -157,32 +107,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
       </div>
       <div class="col">
         <div class="panel f11">
-          <div class="ph"><div><h3>ฝนรายอำเภอ<span class="sub" id="ampSub">ตรวจวัด 24 ชม. (มม.)</span></h3></div><span style="font-size:9px;color:var(--muted)" id="ampSrc">—</span></div>
+          <div class="ph"><div><h3 data-tip="เปรียบเทียบปริมาณฝนของทั้ง 6 อำเภอ เรียงจากมากไปน้อย">ฝนรายอำเภอ<span class="sub" id="ampSub">ตรวจวัด 24 ชม. (มม.)</span></h3></div><span style="font-size:9px;color:var(--muted)" id="ampSrc">—</span></div>
           <div class="bl" id="ampbars"></div>
         </div>
         <div class="panel f1">
-          <div class="ph"><div><h3>ตำบลที่คาดฝนสูงสุด<span class="sub">พยากรณ์ 24 ชม. · 59 ตำบล</span></h3></div></div>
+          <div class="ph"><div><h3 data-tip="ตำบลที่พยากรณ์ว่าจะมีฝนมากที่สุดใน 24 ชั่วโมงข้างหน้า จาก 59 ตำบลของจังหวัด">ตำบลที่คาดฝนสูงสุด<span class="sub">พยากรณ์ 24 ชม. · 59 ตำบล</span></h3></div></div>
           <div class="tl" id="tamlist"></div>
         </div>
       </div>
       <div class="col c3">
         <div class="panel f1">
-          <div class="ph"><div><h3>ฝนและเมฆรายชั่วโมง<span class="sub">แท่ง = ฝน (มม.) · เส้น = เมฆปกคลุม (%)</span></h3></div></div>
+          <div class="ph"><div><h3 data-tip="แท่ง = ปริมาณฝนรายชั่วโมง (มม.) · เส้นเทา = สัดส่วนเมฆปกคลุม (%) — ดูว่าฝนจะมาช่วงไหน">ฝนและเมฆรายชั่วโมง<span class="sub">แท่ง = ฝน (มม.) · เส้น = เมฆปกคลุม (%)</span></h3></div></div>
           <div class="pb chartp"><canvas id="hourly"></canvas></div>
         </div>
         <div class="panel f1">
-          <div class="ph"><div><h3>เฝ้าระวัง / ข้อสังเกต<span class="sub">ประเมินจากข้อมูลตรวจวัด + พยากรณ์</span></h3></div></div>
+          <div class="ph"><div><h3 data-tip="ประเด็นที่ระบบประเมินอัตโนมัติจากข้อมูลตรวจวัดร่วมกับพยากรณ์">เฝ้าระวัง / ข้อสังเกต<span class="sub">ประเมินจากข้อมูลตรวจวัด + พยากรณ์</span></h3></div></div>
           <div class="acts" id="acts"></div>
         </div>
       </div>
     </div>
     <div class="bot">
       <div class="panel">
-        <div class="ph"><div><h3>ฝนสะสมรายวัน 14 วันล่าสุด<span class="sub">เฉลี่ยทั้งจังหวัด (มม.) · เส้นประ = เกณฑ์ฝนหนัก 35 มม.</span></h3></div></div>
+        <div class="ph"><div><h3 data-tip="ฝนรายวันย้อนหลัง 14 วัน เทียบกับเส้นประเกณฑ์ฝนหนัก 35 มม. ของกรมอุตุนิยมวิทยา">ฝนสะสมรายวัน 14 วันล่าสุด<span class="sub">เฉลี่ยทั้งจังหวัด (มม.) · เส้นประ = เกณฑ์ฝนหนัก 35 มม.</span></h3></div></div>
         <div class="pb chartp"><canvas id="daily"></canvas></div>
       </div>
       <div class="panel">
-        <div class="ph"><div><h3>พยากรณ์ฝน 7 วัน<span class="sub">ปริมาณ (มม.) · โอกาสเกิดฝน (%)</span></h3></div></div>
+        <div class="ph"><div><h3 data-tip="ปริมาณฝนและโอกาสเกิดฝนล่วงหน้า 7 วัน — ใช้วางแผนพร่องน้ำอ่างและ ปตร.">พยากรณ์ฝน 7 วัน<span class="sub">ปริมาณ (มม.) · โอกาสเกิดฝน (%)</span></h3></div></div>
         <div class="fc7" id="fc7"><div class="fd skel"></div><div class="fd skel"></div><div class="fd skel"></div><div class="fd skel"></div><div class="fd skel"></div><div class="fd skel"></div><div class="fd skel"></div></div>
       </div>
     </div>
@@ -278,12 +228,12 @@ function renderAmp(){
   rows.sort((x,y)=>y.v-x.v);
   const mx=Math.max(...rows.map(r=>r.v),1);
   document.getElementById('ampbars').innerHTML=rows.map(r=>{const c=rc(r.v);
-    return `<div class="br"><div class="bt"><b>${r.a}</b><span class="bv" style="color:${c}">${r.v.toFixed(1)} <span class="ba">มม. · ${rl(r.v)}</span></span></div><div class="bb"><i style="width:${r.v/mx*100}%;background:${c}"></i></div></div>`;}).join('');
+    return `<div class="br" data-tip="อ.${r.a} — ${MODE==='fc'?'ฝนพยากรณ์เฉลี่ยรายตำบล':'ฝนตรวจวัด'} ${r.v.toFixed(1)} มม. · เกณฑ์: ${rl(r.v)}"><div class="bt"><b>${r.a}</b><span class="bv" style="color:${c}">${r.v.toFixed(1)} <span class="ba">มม. · ${rl(r.v)}</span></span></div><div class="bb"><i style="width:${r.v/mx*100}%;background:${c}"></i></div></div>`;}).join('');
   document.getElementById('ampSrc').textContent=MODE==='fc'?'Open-Meteo':SRC;
 }
 function renderTamList(){
   const rows=TPTS.map(t=>({...t,mm:FC[t.c]?.mm??0,p:FC[t.c]?.p??0})).sort((a,b)=>b.mm-a.mm).slice(0,8);
-  document.getElementById('tamlist').innerHTML=rows.map((r,i)=>`<div class="ti"><span class="rk">${i+1}</span><div><div class="tn">${r.t}</div><div class="ta">อ.${r.a}</div></div><div class="tv" style="color:${rc(r.mm)}">${r.mm.toFixed(1)}<small>มม. · ${r.p}%</small></div></div>`).join('');
+  document.getElementById('tamlist').innerHTML=rows.map((r,i)=>`<div class="ti" data-tip="ต.${r.t} · อ.${r.a} — ฝนพยากรณ์ 24 ชม. ${r.mm.toFixed(1)} มม. · โอกาสเกิดฝน ${r.p}% · เกณฑ์: ${rl(r.mm)}"><span class="rk">${i+1}</span><div><div class="tn">${r.t}</div><div class="ta">อ.${r.a}</div></div><div class="tv" style="color:${rc(r.mm)}">${r.mm.toFixed(1)}<small>มม. · ${r.p}%</small></div></div>`).join('');
 }
 function renderKPI(wx){
   const v24=AMP.map(a=>ampVal(a.a,'rain_24hr'));
@@ -294,12 +244,12 @@ function renderKPI(wx){
   const cloud=wx?.current?.cloud_cover??null;
   const fcToday=wx?.daily?.precipitation_sum?.[0]??0;
   const cards=[
-    ['b1','🌧️','#0ea5e9','ฝนสะสม 24 ชม.',avg.toFixed(1),' มม.','เฉลี่ยทั้งจังหวัด · '+rl(avg)],
-    ['b3','📍','#0891b2','อำเภอฝนสูงสุด',top.v.toFixed(1),' มม.','อ.'+top.a],
-    ['b2','📆','#16a34a','ฝนสะสมเดือนนี้',mAvg.toFixed(0),' มม.','เฉลี่ย 6 อำเภอ'],
-    [watch?'b5':'b4','⚠️',watch?'#dc2626':'#f59e0b','พื้นที่ฝนหนัก',watch,' อำเภอ',watch?'เกินเกณฑ์ 35 มม.':'ไม่มีอำเภอเกินเกณฑ์'],
-    ['b1','☁️','#64748b','เมฆปกคลุมขณะนี้',cloud!=null?cloud:'—','%','ฝนคาดวันนี้ '+fcToday.toFixed(1)+' มม.']];
-  document.getElementById('kpis').innerHTML=cards.map(c=>`<div class="k ${c[0]}"><div class="kh"><div class="ki" style="background:${c[2]}22">${c[1]}</div><div class="kt">${c[3]}</div></div><div class="kv">${c[4]}<small>${c[5]}</small></div><div class="kd">${c[6]}</div></div>`).join('');
+    ['b1','🌧️','#0ea5e9','ฝนสะสม 24 ชม.',avg.toFixed(1),' มม.','เฉลี่ยทั้งจังหวัด · '+rl(avg),'ค่าเฉลี่ยฝนสะสม 24 ชั่วโมงจากทุกอำเภอ (ข้อมูลตรวจวัดของสำนักงาน) · เกณฑ์กรมอุตุนิยมวิทยา: เล็กน้อย ≤10 · ปานกลาง 10.1–35 · หนัก 35.1–90 · หนักมาก มากกว่า 90 มม.'],
+    ['b3','📍','#0891b2','อำเภอฝนสูงสุด',top.v.toFixed(1),' มม.','อ.'+top.a,'อำเภอที่วัดฝนได้มากที่สุดในรอบ 24 ชั่วโมง — จุดที่ควรตรวจสอบระดับน้ำในลำน้ำก่อนพื้นที่อื่น'],
+    ['b2','📆','#16a34a','ฝนสะสมเดือนนี้',mAvg.toFixed(0),' มม.','เฉลี่ย 6 อำเภอ','ฝนสะสมตั้งแต่ต้นเดือนถึงปัจจุบัน เฉลี่ยทั้ง 6 อำเภอ — ใช้ดูว่าเดือนนี้ฝนมากหรือน้อยกว่าปกติ'],
+    [watch?'b5':'b4','⚠️',watch?'#dc2626':'#f59e0b','พื้นที่ฝนหนัก',watch,' อำเภอ',watch?'เกินเกณฑ์ 35 มม.':'ไม่มีอำเภอเกินเกณฑ์','จำนวนอำเภอที่ฝน 24 ชั่วโมงเกิน 35 มม. ซึ่งเป็นเกณฑ์ฝนหนักของกรมอุตุนิยมวิทยา — เสี่ยงน้ำหลากและน้ำท่วมขัง'],
+    ['b1','☁️','#64748b','เมฆปกคลุมขณะนี้',cloud!=null?cloud:'—','%','ฝนคาดวันนี้ '+fcToday.toFixed(1)+' มม.','สัดส่วนพื้นที่ท้องฟ้าที่ถูกเมฆปกคลุมขณะนี้ — ใช้ประกอบการคาดการณ์ฝนระยะสั้น']];
+  document.getElementById('kpis').innerHTML=cards.map(c=>`<div class="k ${c[0]}" data-tip="${c[7]}"><div class="kh"><div class="ki" style="background:${c[2]}22">${c[1]}</div><div class="kt">${c[3]}</div></div><div class="kv">${c[4]}<small>${c[5]}</small></div><div class="kd">${c[6]}</div></div>`).join('');
 }
 function renderActs(wx){
   const acts=[];
