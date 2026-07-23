@@ -162,34 +162,75 @@ async function J(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);re
 let RAIN=[], SRC='Demo', FC={}, MODE='rain_24hr', map, tamLayer, radarLayer=null, radarOn=false, hourlyC, dailyC;
 
 /* ---------- ข้อมูลฝนตรวจวัดรายอำเภอ (ของเรา) ---------- */
-let SRC_NOTE='';
-function pick(o,keys){for(const k of keys){if(o[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k];}return null;}
-async function loadRain(){
-  try{
-    const d=await J(GAS+'?action=rain&days=7');
-    const rows=Array.isArray(d)?d:(d&&Array.isArray(d.data)?d.data:null);
-    if(rows&&rows.length){
-      const last={};
-      rows.forEach(r=>{
-        const a=pick(r,['amphoe','amphoe_name','district','อำเภอ']);
-        if(!a)return;
-        const rec={amphoe:String(a).trim(),
-          rain_24hr:parseFloat(pick(r,['rain_24hr','rain24','rain_24','rain','ฝน24','rainfall']))||0,
-          rain_7day:parseFloat(pick(r,['rain_7day','rain7','rain_7','ฝน7วัน']))||0,
-          rain_month:parseFloat(pick(r,['rain_month','rainMonth','rain_mon','ฝนเดือน']))||0};
-        last[rec.amphoe]=rec;
-      });
-      const vals=Object.values(last);
-      if(vals.length){RAIN=vals;SRC='ข้อมูลตรวจวัด (API)';SRC_NOTE='เชื่อมต่อระบบหลังบ้านสำเร็จ — ตัวเลขฝนเป็นข้อมูลที่เจ้าหน้าที่บันทึกจริง ('+vals.length+' อำเภอ)';return;}
-      RAIN=DEMO;SRC='ชุดตัวอย่าง (รูปแบบข้อมูลไม่ตรง)';
-      SRC_NOTE='เชื่อมต่อ API ได้ แต่ไม่พบคอลัมน์ amphoe / rain_24hr ในผลลัพธ์ — ตรวจชื่อคอลัมน์ในชีตหรือฟังก์ชัน action=rain';return;
+let SRC_NOTE='',RAW_INFO='';
+function pick(o,keys){for(const k of keys){if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=='')return o[k];}return null;}
+function num(v){if(v===null||v===undefined||v==='')return 0;const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?0:x;}
+const K_AMP=['amphoe','amphoe_name','amphoe_th','district','area','name','อำเภอ','ชื่ออำเภอ'];
+const K_24 =['rain_24hr','rain24hr','rain_24','rain24','rain','rainfall','rain_today','ฝน24','ฝน_24','ปริมาณฝน'];
+const K_7  =['rain_7day','rain7day','rain_7','rain7','rain_week','ฝน7วัน','ฝน_7วัน'];
+const K_M  =['rain_month','rainmonth','rain_mon','rain_monthly','ฝนเดือน','ฝนสะสมเดือน'];
+
+/* แปลงผลลัพธ์จาก API ให้เป็นตารางแถว ไม่ว่าจะส่งมาแบบไหน */
+function toRows(d){
+  if(!d) return null;
+  if(Array.isArray(d)){
+    if(!d.length) return [];
+    // array ของ array (มีแถวหัวตาราง) — รูปแบบที่ Google Sheets ส่งบ่อย
+    if(Array.isArray(d[0])){
+      const head=d[0].map(x=>String(x).trim());
+      return d.slice(1).map(r=>{const o={};head.forEach((k,i)=>o[k]=r[i]);return o;});
     }
-    RAIN=DEMO;SRC='ชุดตัวอย่าง (API ไม่มีข้อมูล)';
-    SRC_NOTE='เชื่อมต่อ API ได้ แต่ยังไม่มีแถวข้อมูลฝนส่งกลับมา — ตรวจว่ามีการบันทึกฝนในชีตแล้วหรือยัง';return;
-  }catch(e){
+    return d;                                    // array ของ object
+  }
+  if(typeof d==='object'){
+    // มี array ซ่อนอยู่ใต้คีย์ยอดนิยม
+    for(const k of ['data','rows','result','results','records','values','items','rain','list']){
+      if(Array.isArray(d[k])) return toRows(d[k]);
+    }
+    // object ที่ใช้ชื่ออำเภอเป็นคีย์
+    const ks=Object.keys(d);
+    if(ks.length&&ks.every(k=>d[k]&&typeof d[k]==='object'&&!Array.isArray(d[k]))){
+      return ks.map(k=>Object.assign({amphoe:k},d[k]));
+    }
+  }
+  return null;
+}
+function describe(d){
+  try{
+    if(Array.isArray(d)) return 'array ยาว '+d.length+(d.length?' · ตัวอย่างคีย์: '+(Array.isArray(d[0])?('แถวหัวตาราง ['+d[0].slice(0,5).join(', ')+']'):Object.keys(d[0]).slice(0,7).join(', ')):'');
+    if(d&&typeof d==='object') return 'object · คีย์: '+Object.keys(d).slice(0,8).join(', ');
+    return String(d).slice(0,120);
+  }catch(e){return 'อ่านผลลัพธ์ไม่ได้';}
+}
+async function loadRain(){
+  let d=null;
+  try{ d=await J(GAS+'?action=rain&days=7'); }
+  catch(e){
     RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่เชื่อม API)';
     SRC_NOTE='เรียก action=rain ไม่สำเร็จ ('+(e&&e.message?e.message:'network/CORS')+') — ตัวเลขที่แสดงเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ ไม่ใช่สถานการณ์จริง';
+    return;
   }
+  RAW_INFO=describe(d);
+  const rows=toRows(d);
+  if(rows&&rows.length){
+    const last={};
+    rows.forEach(r=>{
+      const a=pick(r,K_AMP); if(!a)return;
+      last[String(a).trim()]={amphoe:String(a).trim(),
+        rain_24hr:num(pick(r,K_24)),rain_7day:num(pick(r,K_7)),rain_month:num(pick(r,K_M))};
+    });
+    const vals=Object.values(last);
+    if(vals.length){
+      RAIN=vals;SRC='ข้อมูลตรวจวัด (API)';
+      SRC_NOTE='เชื่อมต่อระบบหลังบ้านสำเร็จ — ตัวเลขฝนเป็นข้อมูลที่เจ้าหน้าที่บันทึกจริง ('+vals.length+' อำเภอ)';
+      return;
+    }
+    RAIN=DEMO;SRC='ชุดตัวอย่าง (ไม่พบคอลัมน์อำเภอ)';
+    SRC_NOTE='เชื่อมต่อ API ได้และมีข้อมูล '+rows.length+' แถว แต่หาคอลัมน์ชื่ออำเภอไม่เจอ<br><b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO+'<br><b>ต้องมีคอลัมน์:</b> amphoe และ rain_24hr';
+    return;
+  }
+  RAIN=DEMO;SRC='ชุดตัวอย่าง (รูปแบบข้อมูลไม่ตรง)';
+  SRC_NOTE='เชื่อมต่อ API สำเร็จ แต่ผลลัพธ์ไม่ใช่ตารางข้อมูลฝน<br><b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO+'<br><b>รูปแบบที่ต้องการ:</b> [{amphoe, rain_24hr, rain_7day, rain_month}, ...]';
 }
 function ampVal(a,mode){const r=RAIN.find(x=>x.amphoe===a);return r?(+r[mode]||0):0;}
 
@@ -338,7 +379,7 @@ function renderCharts(wx){
   const sc=document.getElementById('src');
   sc.textContent=(SRC.indexOf('ตรวจวัด')>=0?'● ':'● ')+SRC;
   sc.className='chip '+(SRC.indexOf('ตรวจวัด')>=0?'live':'demo');
-  sc.dataset.tip=SRC_NOTE||SRC;
+  sc.dataset.tip=(SRC_NOTE||SRC)+(SRC.indexOf('ตรวจวัด')>=0?'':'<br><br><b>วิธีตรวจ:</b> เปิด URL ของ Apps Script ต่อท้ายด้วย <b>?action=rain&days=7</b> ในเบราว์เซอร์ จะเห็นผลลัพธ์จริงที่ส่งกลับมา');
   initMap(); renderAmp();
   let wx=null;
   try{

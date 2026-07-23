@@ -1,0 +1,144 @@
+<!DOCTYPE html><html lang="th"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ศูนย์บัญชาการข้อมูลสถานการณ์น้ำ จังหวัดหนองบัวลำภู</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0a1e3c">
+<link rel="stylesheet" href="ds.css">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{height:100%;overflow:hidden}
+body{font-family:'Sarabun',system-ui,sans-serif;background:#06152c;color:#fff}
+.cover{position:relative;height:100vh;width:100%;overflow:hidden;display:flex;flex-direction:column}
+/* ── ชั้นพื้นหลัง ── */
+.bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .8s}
+.bg.on{opacity:1}
+.bgfall{position:absolute;inset:0;background:
+   radial-gradient(1200px 700px at 78% -10%,rgba(56,189,248,.28),transparent 60%),
+   radial-gradient(900px 600px at 12% 110%,rgba(14,116,144,.35),transparent 62%),
+   linear-gradient(160deg,#0a1e3c 0%,#0d2a52 45%,#08203f 100%)}
+.veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,18,38,.62),rgba(6,18,38,.78) 55%,rgba(6,18,38,.92))}
+.grid{position:absolute;inset:0;opacity:.16;
+  background-image:linear-gradient(rgba(125,211,252,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(125,211,252,.35) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(circle at 50% 45%,#000 35%,transparent 78%)}
+/* แผนที่จังหวัดเป็นลายน้ำ */
+.mapwm{position:absolute;right:-4%;top:50%;transform:translateY(-50%);height:118%;opacity:.15;pointer-events:none}
+.mapwm path{fill:none;stroke:#7dd3fc;stroke-width:5;stroke-linejoin:round}
+.mapwm .fillp{fill:rgba(56,189,248,.10);stroke:none}
+/* คลื่นล่าง */
+.waves{position:absolute;left:0;right:0;bottom:0;height:210px;pointer-events:none;opacity:.5}
+/* ── เนื้อหา ── */
+.inner{position:relative;z-index:3;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 28px}
+.seal{width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55));animation:rise .9s cubic-bezier(.2,.7,.3,1) both}
+.kick{margin-top:16px;font-family:'Kanit';font-size:12px;font-weight:600;letter-spacing:6px;color:#c9a24b;text-transform:uppercase;animation:rise .9s .08s cubic-bezier(.2,.7,.3,1) both}
+.rule{width:110px;height:2px;margin:12px auto 14px;background:linear-gradient(90deg,transparent,#c9a24b,transparent);animation:rise .9s .12s cubic-bezier(.2,.7,.3,1) both}
+h1{font-family:'Kanit';font-weight:600;font-size:clamp(26px,4.4vw,50px);line-height:1.18;letter-spacing:.5px;animation:rise .9s .16s cubic-bezier(.2,.7,.3,1) both}
+h1 b{display:block;font-weight:800;background:linear-gradient(92deg,#fff 15%,#bfe3ff 55%,#7dd3fc 95%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{margin-top:12px;font-size:clamp(13px,1.5vw,17px);color:#c9d8ee;animation:rise .9s .22s cubic-bezier(.2,.7,.3,1) both}
+.sub b{font-family:'Kanit';font-weight:500;color:#fff}
+.en{margin-top:5px;font-size:11px;letter-spacing:3px;color:#7f9bc0;text-transform:uppercase;animation:rise .9s .26s cubic-bezier(.2,.7,.3,1) both}
+/* แถบสรุป */
+.stats{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;justify-content:center;animation:rise .9s .3s cubic-bezier(.2,.7,.3,1) both}
+.st{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:11px 18px;min-width:104px;backdrop-filter:blur(7px)}
+.st .n{font-family:'Kanit';font-weight:800;font-size:23px;line-height:1;color:#fff}
+.st .n small{font-size:11px;font-weight:600;color:#9fc4e8}
+.st .l{font-size:10.5px;color:#9fb6d4;margin-top:4px}
+/* ปุ่ม */
+.acts{display:flex;gap:11px;margin-top:28px;flex-wrap:wrap;justify-content:center;animation:rise .9s .36s cubic-bezier(.2,.7,.3,1) both}
+.b{display:inline-flex;align-items:center;gap:9px;font-family:'Kanit';font-weight:600;font-size:14.5px;padding:13px 26px;border-radius:13px;text-decoration:none;transition:.18s;border:1px solid transparent}
+.b svg{width:17px;height:17px}
+.b.p{background:linear-gradient(135deg,#e9b949,#c9a24b);color:#0a1e3c;box-shadow:0 12px 28px rgba(201,162,75,.34)}
+.b.p:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(201,162,75,.44)}
+.b.s{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(255,255,255,.24);backdrop-filter:blur(7px)}
+.b.s:hover{background:rgba(255,255,255,.17);transform:translateY(-3px)}
+/* ทางลัด */
+.quick{display:flex;gap:7px;margin-top:20px;flex-wrap:wrap;justify-content:center;animation:rise .9s .42s cubic-bezier(.2,.7,.3,1) both}
+.q{font-size:11.5px;color:#a9c3e0;text-decoration:none;padding:6px 13px;border-radius:99px;border:1px solid rgba(255,255,255,.13);transition:.15s}
+.q:hover{background:rgba(255,255,255,.11);color:#fff;border-color:rgba(255,255,255,.3)}
+/* ท้ายปก */
+.foot{position:relative;z-index:3;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:13px 30px;border-top:1px solid rgba(255,255,255,.11);background:rgba(4,13,28,.5);backdrop-filter:blur(9px);flex-wrap:wrap}
+.foot .org{font-family:'Kanit';font-weight:500;font-size:12.5px;color:#dbe8f8}
+.foot .addr{font-size:10.5px;color:#88a2c2;margin-top:2px;line-height:1.45}
+.foot .when{text-align:right;font-size:11px;color:#a9c3e0}
+.foot .when b{font-family:'Kanit';font-weight:600;color:#fff;display:block;font-size:13px}
+.live{display:inline-flex;align-items:center;gap:6px;font-family:'Kanit';font-weight:600;font-size:11px;color:#86efac}
+.live .d{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 1.9s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@media(max-width:720px){.seal{width:96px;height:96px}.stats{gap:7px}.st{min-width:88px;padding:9px 13px}.foot{justify-content:center;text-align:center}.foot .when{text-align:center}}
+@media(max-height:620px){.seal{width:88px;height:88px}.stats{margin-top:16px}.acts{margin-top:18px}.quick{display:none}}
+@media print{html,body{overflow:visible;height:auto}.cover{height:auto;min-height:96vh}.acts,.quick{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div class="cover">
+  <div class="bgfall"></div>
+  <div class="bg" id="bg"></div>
+  <div class="grid"></div>
+  <svg class="mapwm" viewBox="0 0 1000 1306" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path class="fillp" d="M 374.4,1147.3 L 370.6,1155.6 L 359.2,1149.2 L 349.8,1156.4 L 332.0,1180.7 L 315.2,1174.6 L 292.3,1181.0 L 281.7,1161.2 L 268.8,1170.7 L 250.1,1161.3 L 246.3,1147.6 L 229.6,1154.4 L 200.5,1147.9 L 172.9,1124.5 L 161.5,1133.9 L 165.2,1146.5 L 139.1,1135.9 L 123.3,1142.2 L 117.2,1126.8 L 87.9,1110.2 L 65.2,1048.0 L 106.4,1026.8 L 125.4,1030.8 L 150.7,1007.2 L 202.7,989.2 L 217.7,960.5 L 243.0,937.3 L 202.4,917.8 L 190.8,893.4 L 177.6,888.4 L 168.8,876.4 L 174.2,857.8 L 153.8,817.3 L 55.3,787.9 L 45.8,775.5 L 51.8,755.1 L 86.8,739.3 L 68.7,727.1 L 65.4,700.3 L 47.3,686.0 L 62.2,682.2 L 76.4,659.0 L 80.8,673.1 L 113.6,685.7 L 140.0,731.8 L 166.0,717.0 L 145.3,673.3 L 143.7,636.3 L 122.3,606.9 L 98.1,614.7 L 65.2,587.2 L 60.7,572.2 L 43.4,574.5 L 46.3,564.1 L 26.1,551.2 L 2.2,511.5 L 11.1,494.7 L 36.2,496.7 L 51.9,485.7 L 41.4,455.5 L 48.0,438.6 L 0.4,379.8 L 12.3,373.1 L 0.0,339.8 L 10.6,315.5 L 68.9,316.4 L 97.2,329.9 L 154.1,308.7 L 207.2,268.5 L 203.5,243.8 L 216.1,243.6 L 223.6,213.6 L 214.2,196.7 L 215.5,171.6 L 189.1,147.0 L 174.5,101.4 L 141.4,63.0 L 172.2,45.8 L 196.4,65.8 L 208.1,61.3 L 231.2,24.6 L 252.8,18.1 L 335.1,26.2 L 376.4,18.6 L 400.3,27.0 L 418.4,16.1 L 449.0,23.9 L 434.9,7.3 L 480.1,0.0 L 492.3,124.6 L 502.3,144.0 L 500.4,178.7 L 552.8,257.7 L 596.8,380.1 L 652.2,488.4 L 653.6,568.1 L 628.8,641.4 L 653.4,570.0 L 710.4,580.9 L 746.5,565.1 L 794.4,605.0 L 843.8,609.6 L 875.4,594.7 L 847.0,636.9 L 816.2,637.2 L 802.0,664.3 L 792.7,647.5 L 773.0,652.6 L 746.9,696.0 L 771.2,759.3 L 771.3,767.6 L 751.7,776.5 L 770.8,832.4 L 804.7,880.0 L 940.6,967.2 L 985.5,985.8 L 1000.0,1022.8 L 920.7,1201.8 L 901.2,1305.8 L 888.9,1304.4 L 796.1,1286.6 L 736.7,1259.3 L 711.4,1254.0 L 700.2,1260.9 L 674.9,1248.8 L 663.2,1276.2 L 627.3,1271.5 L 606.0,1244.7 L 585.7,1249.5 L 566.2,1239.6 L 565.5,1249.3 L 542.0,1240.8 L 526.7,1220.9 L 520.8,1239.8 L 509.0,1230.1 L 511.0,1211.1 L 487.4,1197.6 L 499.5,1194.6 L 497.5,1185.1 L 477.0,1185.3 L 489.3,1167.5 L 469.8,1166.7 L 456.7,1153.0 L 464.2,1143.4 L 440.4,1142.1 L 448.3,1133.8 L 388.6,1128.2 L 381.0,1151.2 L 374.4,1147.3 Z"/><path d="M 374.4,1147.3 L 370.6,1155.6 L 359.2,1149.2 L 349.8,1156.4 L 332.0,1180.7 L 315.2,1174.6 L 292.3,1181.0 L 281.7,1161.2 L 268.8,1170.7 L 250.1,1161.3 L 246.3,1147.6 L 229.6,1154.4 L 200.5,1147.9 L 172.9,1124.5 L 161.5,1133.9 L 165.2,1146.5 L 139.1,1135.9 L 123.3,1142.2 L 117.2,1126.8 L 87.9,1110.2 L 65.2,1048.0 L 106.4,1026.8 L 125.4,1030.8 L 150.7,1007.2 L 202.7,989.2 L 217.7,960.5 L 243.0,937.3 L 202.4,917.8 L 190.8,893.4 L 177.6,888.4 L 168.8,876.4 L 174.2,857.8 L 153.8,817.3 L 55.3,787.9 L 45.8,775.5 L 51.8,755.1 L 86.8,739.3 L 68.7,727.1 L 65.4,700.3 L 47.3,686.0 L 62.2,682.2 L 76.4,659.0 L 80.8,673.1 L 113.6,685.7 L 140.0,731.8 L 166.0,717.0 L 145.3,673.3 L 143.7,636.3 L 122.3,606.9 L 98.1,614.7 L 65.2,587.2 L 60.7,572.2 L 43.4,574.5 L 46.3,564.1 L 26.1,551.2 L 2.2,511.5 L 11.1,494.7 L 36.2,496.7 L 51.9,485.7 L 41.4,455.5 L 48.0,438.6 L 0.4,379.8 L 12.3,373.1 L 0.0,339.8 L 10.6,315.5 L 68.9,316.4 L 97.2,329.9 L 154.1,308.7 L 207.2,268.5 L 203.5,243.8 L 216.1,243.6 L 223.6,213.6 L 214.2,196.7 L 215.5,171.6 L 189.1,147.0 L 174.5,101.4 L 141.4,63.0 L 172.2,45.8 L 196.4,65.8 L 208.1,61.3 L 231.2,24.6 L 252.8,18.1 L 335.1,26.2 L 376.4,18.6 L 400.3,27.0 L 418.4,16.1 L 449.0,23.9 L 434.9,7.3 L 480.1,0.0 L 492.3,124.6 L 502.3,144.0 L 500.4,178.7 L 552.8,257.7 L 596.8,380.1 L 652.2,488.4 L 653.6,568.1 L 628.8,641.4 L 653.4,570.0 L 710.4,580.9 L 746.5,565.1 L 794.4,605.0 L 843.8,609.6 L 875.4,594.7 L 847.0,636.9 L 816.2,637.2 L 802.0,664.3 L 792.7,647.5 L 773.0,652.6 L 746.9,696.0 L 771.2,759.3 L 771.3,767.6 L 751.7,776.5 L 770.8,832.4 L 804.7,880.0 L 940.6,967.2 L 985.5,985.8 L 1000.0,1022.8 L 920.7,1201.8 L 901.2,1305.8 L 888.9,1304.4 L 796.1,1286.6 L 736.7,1259.3 L 711.4,1254.0 L 700.2,1260.9 L 674.9,1248.8 L 663.2,1276.2 L 627.3,1271.5 L 606.0,1244.7 L 585.7,1249.5 L 566.2,1239.6 L 565.5,1249.3 L 542.0,1240.8 L 526.7,1220.9 L 520.8,1239.8 L 509.0,1230.1 L 511.0,1211.1 L 487.4,1197.6 L 499.5,1194.6 L 497.5,1185.1 L 477.0,1185.3 L 489.3,1167.5 L 469.8,1166.7 L 456.7,1153.0 L 464.2,1143.4 L 440.4,1142.1 L 448.3,1133.8 L 388.6,1128.2 L 381.0,1151.2 L 374.4,1147.3 Z"/>
+  </svg>
+  <div class="veil"></div>
+  <svg class="waves" viewBox="0 0 1440 210" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 120 C 240 70,420 170,720 120 S 1200 70,1440 120 L1440 210 L0 210 Z" fill="rgba(14,165,233,.20)"/>
+    <path d="M0 150 C 260 105,460 195,760 148 S 1220 105,1440 150 L1440 210 L0 210 Z" fill="rgba(56,189,248,.16)"/>
+    <path d="M0 178 C 280 145,500 210,800 176 S 1240 142,1440 178 L1440 210 L0 210 Z" fill="rgba(125,211,252,.13)"/>
+  </svg>
+
+  <div class="inner">
+    <img class="seal" src="logo-nbp-lg.png" alt="ตราสัญลักษณ์จังหวัดหนองบัวลำภู">
+    <div class="kick">Water Situation Command Center</div>
+    <div class="rule"></div>
+    <h1>ศูนย์บัญชาการข้อมูลสถานการณ์น้ำ<b>จังหวัดหนองบัวลำภู</b></h1>
+    <div class="sub">ระบบติดตามและเฝ้าระวังสถานการณ์น้ำ เพื่อการบริหารและตัดสินใจ<br><b>สำนักงานสถิติจังหวัดหนองบัวลำภู</b></div>
+    <div class="en">Nong Bua Lam Phu Provincial Statistical Office</div>
+
+    <div class="stats">
+      <div class="st" data-tip="จุดตรวจวัดระดับน้ำที่เจ้าหน้าที่บันทึกข้อมูลทุกวัน"><div class="n">20<small> จุด</small></div><div class="l">สถานีตรวจวัด</div></div>
+      <div class="st" data-tip="ลำน้ำสายหลักที่ติดตาม: พะเนียง · โมง · มอ · พวย"><div class="n">4<small> สาย</small></div><div class="l">ลำน้ำหลัก</div></div>
+      <div class="st" data-tip="อ่างเก็บน้ำขนาดกลางและเล็ก ความจุรวม 31.56 ล้าน ลบ.ม."><div class="n">15<small> แห่ง</small></div><div class="l">อ่างเก็บน้ำ</div></div>
+      <div class="st" data-tip="ประตูระบายน้ำของกรมชลประทานในลำน้ำพะเนียง"><div class="n">3<small> แห่ง</small></div><div class="l">ประตูระบายน้ำ</div></div>
+      <div class="st" data-tip="ครอบคลุมทุกอำเภอและทุกตำบลของจังหวัด"><div class="n">6<small>/59</small></div><div class="l">อำเภอ / ตำบล</div></div>
+    </div>
+
+    <div class="acts">
+      <a class="b p" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>เข้าสู่แดชบอร์ด</a>
+      <a class="b s" href="daily_briefing.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>รายงานประจำวัน</a>
+    </div>
+
+    <div class="quick">
+      <a class="q" href="paneang.html">ลำน้ำพะเนียง</a><a class="q" href="mong.html">ลำน้ำโมง</a>
+      <a class="q" href="mo.html">ลำน้ำมอ</a><a class="q" href="phuay.html">ลำน้ำพวย</a>
+      <a class="q" href="rainfall.html">ปริมาณฝน</a><a class="q" href="reservoir.html">อ่างเก็บน้ำ</a>
+      <a class="q" href="input.html">บันทึกข้อมูล</a>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>
+      <div class="org">สำนักงานสถิติจังหวัดหนองบัวลำภู</div>
+      <div class="addr">ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2 · ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000 · โทร 0 4231 6726</div>
+    </div>
+    <div class="when"><span class="live"><span class="d"></span>ระบบพร้อมใช้งาน</span><b id="dt">—</b><span id="tm">—</span></div>
+  </div>
+</div>
+<script src="ds.js" defer></script>
+<script>
+/* ใส่ภาพพื้นหลังเองได้: วางไฟล์ชื่อ cover-bg.jpg ไว้โฟลเดอร์เดียวกัน
+   ถ้าไม่มีไฟล์ ระบบจะใช้พื้นหลังไล่เฉด + ลายแผนที่จังหวัดแทนโดยอัตโนมัติ */
+(function(){
+  var img=new Image();
+  img.onload=function(){var b=document.getElementById('bg');b.style.backgroundImage='url(cover-bg.jpg)';b.classList.add('on');};
+  img.onerror=function(){};
+  img.src='cover-bg.jpg';
+  var MON=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var DOW=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  function tick(){var d=new Date();
+    document.getElementById('dt').textContent='วัน'+DOW[d.getDay()]+'ที่ '+d.getDate()+' '+MON[d.getMonth()]+' '+(d.getFullYear()+543);
+    document.getElementById('tm').textContent=d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+' น.';}
+  tick();setInterval(tick,30000);
+})();
+</script>
+</body></html>
