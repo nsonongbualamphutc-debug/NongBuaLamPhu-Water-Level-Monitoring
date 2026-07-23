@@ -226,3 +226,38 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .tipbox .glbl,.leaflet-tooltip .glbl{font-size:7px}
 .tipbox .seprow,.leaflet-tooltip .seprow{font-size:8px;padding:4px 0 1px;margin-top:3px}
 .tipbox .simple{padding:7px 10px;line-height:1.5}
+
+/* ═══════════════════════════════════════════════════════════
+   มือถือ (≤820px) — ปล่อยให้หน้าเลื่อนตามปกติ
+   หน้าแดชบอร์ดถูกออกแบบเป็น "1 หน้าจอ" สำหรับจอคอม/แท็บเล็ต
+   แต่บนมือถือการล็อกไม่ให้เลื่อนจะทำให้เนื้อหาถูกตัดและใช้งานไม่ได้
+   ═══════════════════════════════════════════════════════════ */
+@media(max-width:820px){
+  html,body{height:auto!important;min-height:100%;overflow:visible!important;overflow-x:hidden!important}
+  .app,.app.collapsed{display:block!important;height:auto!important;min-height:100vh}
+  .main-col,.main{height:auto!important;min-height:0!important;overflow:visible!important;width:100%}
+  .content{display:block!important;overflow:visible!important;grid-template-rows:none!important;padding:12px!important}
+  .content>*{margin-bottom:11px}
+  .mid,.midrow,.bot,.botrow,.kpis,.kpirow{display:block!important}
+  .mid>*,.midrow>*,.bot>*,.botrow>*,.col>*{margin-bottom:11px}
+  .kpis,.kpirow{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px}
+  .panel{min-height:0}
+  #map,#prof{position:relative!important;height:300px!important;inset:auto!important}
+  .pb{min-height:220px}
+  .topbar{position:sticky;top:0;z-index:60;padding:0 12px;gap:8px}
+  .topbar .tt i,.top-title i{display:none}
+  /* เปิดลิ้นชักแล้วต้องเห็นตัวหนังสือในเมนู แม้ก่อนหน้าจะพับไว้ */
+  .app.navopen .side .bt,.app.navopen .side .brand .bt,
+  .app.navopen .side .menu .lbl,.app.navopen .side .side-foot{opacity:1!important;width:auto!important;height:auto!important;pointer-events:auto!important}
+  .side{width:254px}
+  /* ตารางและกราฟไม่ดันจอกว้างเกิน */
+  img,canvas,svg,table{max-width:100%}
+}
+@media(max-width:520px){
+  .kpis,.kpirow{grid-template-columns:1fr!important}
+}
+/* ปุ่ม/ช่องกรอกบนจอสัมผัส */
+@media(pointer:coarse){
+  button,.seg button,.tabs button,.wtabs button,.ltabs button,.mode-tab{min-height:40px}
+  input,select,textarea{font-size:16px}
+}

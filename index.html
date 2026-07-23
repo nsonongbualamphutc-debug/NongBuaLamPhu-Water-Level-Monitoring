@@ -69,6 +69,28 @@ h1 b{display:block;font-weight:800;background:linear-gradient(92deg,#fff 15%,#bf
 @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @media(max-width:720px){.seal{width:96px;height:96px}.stats{gap:7px}.st{min-width:88px;padding:9px 13px}.foot{justify-content:center;text-align:center}.foot .when{text-align:center}}
 @media(max-height:620px){.seal{width:88px;height:88px}.stats{margin-top:16px}.acts{margin-top:18px}.quick{display:none}}
+
+@media(max-width:520px){
+  .seal{width:78px;height:78px}
+  .kick{font-size:10px;letter-spacing:3px;margin-top:12px}
+  h1{font-size:22px}
+  .sub{font-size:12px}
+  .en{font-size:9.5px;letter-spacing:2px}
+  .st{min-width:0;flex:1 1 44%;padding:8px 10px}
+  .st .n{font-size:17px}
+  .st .l{font-size:9px}
+  .b{font-size:13px;padding:11px 18px;flex:1 1 100%;justify-content:center}
+  .quick{gap:5px}.q{font-size:10.5px;padding:5px 10px}
+  .foot{padding:11px 14px;font-size:11px}
+  .foot .addr{font-size:9.5px}
+  .waves{height:150px}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .seal{width:64px;height:64px}
+  h1{font-size:20px}
+  .stats{margin-top:12px}.acts{margin-top:14px}.quick{display:none}
+  .rule{margin:8px auto 10px}
+}
 @media print{html,body{overflow:visible;height:auto}.cover{height:auto;min-height:96vh}.acts,.quick{display:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head>

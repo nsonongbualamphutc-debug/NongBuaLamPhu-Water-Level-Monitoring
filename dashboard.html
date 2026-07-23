@@ -154,10 +154,48 @@
 .tt .ttb .row{display:flex;justify-content:space-between;gap:14px}
 .tt .ttb b{font-family:var(--disp)}
 @media(max-width:1250px){.content{grid-template-rows:auto auto auto auto;overflow:auto}.midrow,.botrow{grid-template-columns:1fr 1fr}#map{position:relative;height:320px}.midrow .panel:first-child{min-height:340px;grid-column:1/-1}}
+
+/* ── แท็บเล็ต ── */
+@media(max-width:1024px){
+  .app{grid-template-columns:78px 1fr}
+  .brand .bt,.menu .lbl,.side-foot{opacity:0;width:0;height:0;pointer-events:none}
+  .kpirow{grid-template-columns:repeat(3,1fr)}
+  .midrow{grid-template-columns:1.2fr 1fr}
+  .botrow{grid-template-columns:1fr 1fr}
+  .content{grid-template-rows:auto auto auto;overflow:auto}
+  #map{position:relative;height:320px}
+  .midrow .panel,.botrow .panel{min-height:250px}
+}
+/* ── มือถือ ── */
+@media(max-width:820px){
+  html,body{height:auto;overflow:auto;overflow-x:hidden}
+  .app,.app.collapsed{display:block}
+  .side{position:fixed;left:0;top:0;bottom:0;width:254px;height:100vh;transform:translateX(-100%);transition:transform .25s;z-index:300}
+  .app.navopen .side{transform:none}
+  .app.navopen .side .bt,.app.navopen .side .lbl,.app.navopen .side .side-foot{opacity:1;width:auto;height:auto;pointer-events:auto}
+  .app.navopen .scrim{display:block;position:fixed;inset:0;background:rgba(6,15,30,.45);z-index:250}
+  .main{height:auto;overflow:visible;width:100%}
+  .topbar{position:sticky;top:0;z-index:60;padding:0 12px;gap:8px}
+  .top-title i{display:none}
+  .content{display:block;overflow:visible;padding:12px}
+  .kpirow{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px}
+  .midrow,.botrow{display:block}
+  .midrow .panel,.botrow .panel,.col{margin-bottom:11px}
+  #map{position:relative;height:300px}
+  .alert{flex-wrap:wrap;padding:9px 12px}
+  .alert .abtn{margin-left:0}
+}
+@media(max-width:520px){
+  .kpirow{grid-template-columns:1fr}
+  .k .kv{font-size:24px}
+}
+@media(pointer:coarse){button,.seg button,.wtabs button{min-height:40px}}
 @media print{.side,.burger,.top-right .btn,.seg,.wtabs,.alert .abtn,.alert .x{display:none!important}.app,.app.collapsed{grid-template-columns:1fr}.main{height:auto}.content{grid-template-rows:none;overflow:visible;display:block}.panel{break-inside:avoid;box-shadow:none;margin-bottom:10px}.midrow,.botrow,.kpirow{display:grid}#map{position:relative;height:300px}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}</style></head>
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}.scrim{display:none}
+</style></head>
 <body>
 <div class="app" id="app">
+<div class="scrim" onclick="document.getElementById('app').classList.remove('navopen')"></div>
   <aside class="side">
     <div class="brand"><a href="index.html" title="กลับหน้าปกนำเสนอ" style="display:contents"><img src="logo-nbp.png" alt="ตราจังหวัด"><div class="bt"><div class="kick">Water Command</div><div class="ttl">สถานการณ์น้ำจังหวัด</div><div class="en">NONG BUA LAM PHU</div></div></a></div>
     <nav class="menu"><a href="dashboard.html" class="active" title="ภาพรวมสถานการณ์"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></span><span class="lbl"><b>ภาพรวมสถานการณ์</b><i>Executive Summary</i></span></a><a href="daily_briefing.html" class="" title="รายงานประจำวัน"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span><span class="lbl"><b>รายงานประจำวัน</b><i>Daily Briefing</i></span></a><a href="paneang.html" class="" title="ลำน้ำพะเนียง"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพะเนียง</b><i>Phaneang</i></span></a><a href="mong.html" class="" title="ลำน้ำโมง"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำโมง</b><i>Mong</i></span></a><a href="mo.html" class="" title="ลำน้ำมอ"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำมอ</b><i>Mo</i></span></a><a href="phuay.html" class="" title="ลำน้ำพวย"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพวย</b><i>Phuay</i></span></a><a href="rainfall.html" class="" title="ปริมาณฝน"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3.5 3.5 0 0 0 6 18z"/><path d="M8 20l1 2M12 20l1 2M16 20l1 2"/></svg></span><span class="lbl"><b>ปริมาณฝน</b><i>Rainfall</i></span></a><a href="reservoir.html" class="" title="อ่างเก็บน้ำ"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6a8 8 0 0 1-16 0zM4 5c3 2 5 2 8 0s5-2 8 0"/></svg></span><span class="lbl"><b>อ่างเก็บน้ำ</b><i>Reservoir</i></span></a><a href="input.html" class="" title="บันทึกข้อมูล"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="lbl"><b>บันทึกข้อมูล</b><i>Data Input</i></span></a></nav>
@@ -165,7 +203,7 @@
   </aside>
   <main class="main">
     <header class="top">
-      <button class="burger" onclick="document.getElementById('app').classList.toggle('collapsed');setTimeout(()=>window._map&&window._map.invalidateSize(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <button class="burger" onclick="var a=document.getElementById('app');window.innerWidth<=820?a.classList.toggle('navopen'):a.classList.toggle('collapsed');setTimeout(()=>window._map&&window._map.invalidateSize(),300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
       <div class="top-title">ภาพรวมสถานการณ์น้ำ<i>Executive Summary</i></div>
       <div class="top-right"><span class="live"><span class="d"></span>LIVE</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> <span id="upd"></span><div class="srcpop" id="srcpop"></div></span>
