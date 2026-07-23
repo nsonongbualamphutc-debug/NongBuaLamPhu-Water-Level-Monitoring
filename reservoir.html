@@ -129,6 +129,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .tipbox .row b{font-family:var(--disp);font-weight:600;text-align:right}
 /* gauge */
 .gg{flex:0 0 52px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.gg.wide{flex:0 0 150px}
+.grow{display:flex;gap:7px;align-items:stretch}
+.gz{position:absolute;left:0;right:0}
+.gline{position:absolute;left:-2px;right:-2px;height:2px;opacity:.95}
+.gnow{position:absolute;left:-4px;right:-4px;height:0;border-top:2px dashed rgba(15,23,42,.55)}
+.gticks{position:relative;width:108px;height:118px}
+.gtk{position:absolute;left:0;transform:translateY(50%);display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:8px;color:var(--muted);line-height:1}
+.gtk i{width:8px;height:2px;border-radius:1px;flex:0 0 8px}
+.gtk em{font-style:normal;font-family:var(--disp);font-weight:600}
+.seprow{font-family:var(--disp);font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;padding:6px 0 2px;border-top:1px solid var(--line);margin-top:4px}
 .gtube{position:relative;width:26px;height:118px;border-radius:14px;background:#e8eef6;border:1px solid #dbe4ef;overflow:hidden;box-shadow:inset 0 2px 5px rgba(15,40,80,.09)}
 .gfill{position:absolute;left:0;right:0;bottom:0;border-radius:0 0 13px 13px;transition:height .4s}
 .gmk{position:absolute;left:-2px;right:-2px;height:2px;background:#ef4444;opacity:.85}
@@ -251,33 +261,63 @@ function gauge(pct,color,marks,label){
   <div class="gpct" style="color:${color}">${pct.toFixed(0)}%</div><div class="glbl">${label}</div></div>`;
 }
 function row(l,v){return `<div class="row"><span>${l}</span><b>${v}</b></div>`;}
+function sepRow(t){return `<div class="seprow">${t}</div>`;}
+function gaugeZ(pct,color,zones,ticks,label){
+ const p=Math.max(0,Math.min(100,pct));
+ const bg=zones.map(z=>`<span class="gz" style="bottom:${z.f}%;height:${Math.max(0,z.t-z.f)}%;background:${z.c}"></span>`).join('');
+ const ln=ticks.map(t=>`<span class="gline" style="bottom:${t.v}%;background:${t.c}"></span>`).join('');
+ const lb=ticks.map(t=>`<span class="gtk" style="bottom:${t.v}%"><i style="background:${t.c}"></i><em>${t.l}</em></span>`).join('');
+ return `<div class="gg wide"><div class="grow"><div class="gtube">${bg}<div class="gfill" style="height:${p}%;background:linear-gradient(180deg,${color}dd,${color}88)"></div>${ln}
+   <span class="gnow" style="bottom:${p}%"></span></div><div class="gticks">${lb}</div></div>
+  <div class="gpct" style="color:${color}">${pct.toFixed(0)}%</div><div class="glbl">${label}</div></div>`;}
 
 /* ================= tooltip builders ================= */
 function tipRes(r){const p=pctOf(r),b=band(p);
+ const zR=[{f:0,t:20,c:'#fee2e2'},{f:20,t:40,c:'#fef3c7'},{f:40,t:80,c:'#dcfce7'},{f:80,t:100,c:'#dbeafe'}];
+ const tR=[{v:20,c:'#dc2626',l:'วิกฤติ < 20%'},{v:40,c:'#f59e0b',l:'น้ำน้อย 20–39%'},{v:80,c:'#2563eb',l:'สูง/เต็ม ≥ 80%'}];
  return `<div class="tth" style="background:${b.c}">${r.full}<small>รหัส ${r.id} · ${b.l.split(' ')[0]}</small></div>
- <div class="body">${gauge(p,b.c,[{v:80,k:''},{v:40,k:'mid'},{v:20,k:'lo'}],'% เก็บกัก')}
+ <div class="body">${gaugeZ(p,b.c,zR,tR,'% เก็บกัก<br>เทียบเกณฑ์')}
  <div class="dt">${row('ชื่อโครงการ',r.full)}${row('ที่ตั้ง','ต.'+r.tambon+' อ.'+r.amphoe)}${row('ประเภท',r.type)}
  ${row('ความจุ',nf(r.cap,3)+' ล้าน ลบ.ม.')}${row('ปริมาณน้ำปัจจุบัน',nf(r.cur,3)+' ล้าน ลบ.ม.')}
  ${row('% เก็บกัก','<span style="color:'+b.c+'">'+p.toFixed(1)+'%</span>')}
  ${row('พื้นที่ได้ประโยชน์',(r.benefit?nf(r.benefit,0):(r.irrig?nf(r.irrig,0):'—'))+' ไร่')}
- ${row('สร้างเสร็จ','พ.ศ. '+(r.year||'—'))}${row('สถานะ','<span style="color:'+b.c+'">'+b.l+'</span>')}</div></div>`;
+ ${row('สร้างเสร็จ','พ.ศ. '+(r.year||'—'))}
+ ${sepRow('เกณฑ์ปริมาณน้ำใช้การ')}
+ ${row('<span style="color:#2563eb">● สูง/เต็ม</span>','ตั้งแต่ 80% · '+nf(r.cap*0.8,2)+' ล.ลบ.ม.')}
+ ${row('<span style="color:#16a34a">● ปกติ</span>','40–79% · '+nf(r.cap*0.4,2)+'–'+nf(r.cap*0.79,2))}
+ ${row('<span style="color:#f59e0b">● น้ำน้อย</span>','20–39% · '+nf(r.cap*0.2,2)+'–'+nf(r.cap*0.39,2))}
+ ${row('<span style="color:#dc2626">● วิกฤติ</span>','ต่ำกว่า 20% · '+nf(r.cap*0.2,2))}
+ ${row('สถานะปัจจุบัน','<span style="color:'+b.c+'">'+b.l+'</span>')}</div></div>`;
 }
 function tipFg(g){const s=lvStatus(g);
- const span=(g.warn-g.normal)||1, p=Math.max(0,Math.min(100,((g.level-(g.normal-span*2))/(span*3))*100));
+ const sp=(g.warn-g.normal)||1,lo=g.normal-sp*2,hi=g.warn+sp,R=hi-lo,P=v=>Math.max(0,Math.min(100,(v-lo)/R*100));
+ const p=P(g.level),w=P(g.normal),c=P(g.warn);
+ const z=[{f:0,t:w,c:'#dcfce7'},{f:w,t:c,c:'#fef3c7'},{f:c,t:100,c:'#fee2e2'}];
+ const tk=[{v:w,c:'#f59e0b',l:'เฝ้าระวัง '+nf(g.normal,2)},{v:c,c:'#dc2626',l:'วิกฤติ '+nf(g.warn,2)}];
  return `<div class="tth" style="background:${s.c}">${g.name}<small>รหัส ${g.id} · ${s.l}</small></div>
- <div class="body">${gauge(p,s.c,[{v:66.7,k:''},{v:33.3,k:'lo'}],'ระดับน้ำ')}
+ <div class="body">${gaugeZ(p,s.c,z,tk,'ระดับน้ำ<br>เทียบเกณฑ์')}
  <div class="dt">${row('ชื่อโครงการ',g.name)}${row('ที่ตั้ง','อ.'+g.amphoe+' · '+g.river)}${row('ประเภท','ประตูระบายน้ำ (ปตร.)')}
- ${row('ระดับน้ำปัจจุบัน',nf(g.level,2)+' ม.รทก.')}${row('เกณฑ์เฝ้าระวัง',nf(g.normal,2)+' ม.รทก.')}${row('เกณฑ์วิกฤติ',nf(g.warn,2)+' ม.รทก.')}
+ ${row('ระดับน้ำปัจจุบัน',nf(g.level,2)+' ม.รทก.')}
+ ${sepRow('เกณฑ์เฝ้าระวัง (ม.รทก.)')}
+ ${row('<span style="color:var(--ok)">● ปกติ</span>','ต่ำกว่า '+nf(g.normal,2))}
+ ${row('<span style="color:var(--warn)">● เฝ้าระวัง</span>',nf(g.normal,2)+' – '+nf(g.warn,2))}
+ ${row('<span style="color:var(--crit)">● วิกฤติ</span>','สูงกว่า '+nf(g.warn,2))}
  ${row('บานประตู',g.open+' / '+g.gates+' บาน')}${row('อัตราระบาย',nf(g.q,1)+' ลบ.ม./วินาที')}
  ${row('สถานะ','<span style="color:'+s.c+'">'+(g.open>0?'เปิดระบาย · ':'ปิดบาน · ')+s.l+'</span>')}</div></div>`;
 }
 function tipHy(h){const s=lvStatus(h);
- const span=(h.warn-h.normal)||1, p=Math.max(0,Math.min(100,((h.level-(h.normal-span*2))/(span*3))*100));
+ const sp=(h.warn-h.normal)||1,lo=h.normal-sp*2,hi=h.warn+sp,R=hi-lo,P=v=>Math.max(0,Math.min(100,(v-lo)/R*100));
+ const p=P(h.level),w=P(h.normal),c=P(h.warn);
+ const z=[{f:0,t:w,c:'#dcfce7'},{f:w,t:c,c:'#fef3c7'},{f:c,t:100,c:'#fee2e2'}];
+ const tk=[{v:w,c:'#f59e0b',l:'เฝ้าระวัง '+nf(h.normal,2)},{v:c,c:'#dc2626',l:'วิกฤติ '+nf(h.warn,2)}];
  return `<div class="tth" style="background:${s.c}">สถานี ${h.name}<small>รหัส ${h.id} · ${s.l}</small></div>
- <div class="body">${gauge(p,s.c,[{v:66.7,k:''},{v:33.3,k:'lo'}],'ระดับน้ำ')}
+ <div class="body">${gaugeZ(p,s.c,z,tk,'ระดับน้ำ<br>เทียบเกณฑ์')}
  <div class="dt">${row('ชื่อสถานี',h.name+' ('+h.id+')')}${row('ที่ตั้ง','อ.'+h.amphoe+' · '+h.river)}${row('ประเภท','สถานีอุทกวิทยา')}
  ${row('ระดับน้ำปัจจุบัน',nf(h.level,2)+' ม.รทก.')}${row('ระดับตลิ่ง',nf(h.bank,2)+' ม.')}
- ${row('เกณฑ์เฝ้าระวัง',nf(h.normal,2)+' ม.รทก.')}${row('เกณฑ์วิกฤติ',nf(h.warn,2)+' ม.รทก.')}
+ ${sepRow('เกณฑ์เฝ้าระวัง (ม.รทก.)')}
+ ${row('<span style="color:var(--ok)">● ปกติ</span>','ต่ำกว่า '+nf(h.normal,2))}
+ ${row('<span style="color:var(--warn)">● เฝ้าระวัง</span>',nf(h.normal,2)+' – '+nf(h.warn,2))}
+ ${row('<span style="color:var(--crit)">● วิกฤติ</span>','สูงกว่า '+nf(h.warn,2))}
  ${row('ห่างเกณฑ์วิกฤติ',nf(h.warn-h.level,2)+' ม.')}${row('สถานะ','<span style="color:'+s.c+'">'+s.l+'</span>')}</div></div>`;
 }
 function buildTips(){
