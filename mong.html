@@ -353,24 +353,63 @@ function renderLadder(){
       <div class="ldv" style="color:${b.c}">${nf(s.cur,2)}<small>${s.gap<=0?'เกิน '+nf(-s.gap,2):'เหลือ '+nf(s.gap,2)} ม.</small></div></div>`;}).join('');
 }
 /* ===== data ===== */
+function _n(v){if(v===null||v===undefined||v==='')return null;const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?null:x;}
+function _f(o,ks){for(const k of ks){const v=_n(o&&o[k]);if(v!==null)return v;}return null;}
+function _s(o,ks){for(const k of ks){const v=o&&o[k];if(v!==undefined&&v!==null&&v!=='')return String(v);}return '';}
 async function loadLive(){
-  try{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
-    const r=await fetch(GAS+'?action='+ACTION+'&_t='+Date.now(),{cache:'no-store',signal:c.signal});clearTimeout(t);
-    const d=await r.json();
-    if(Array.isArray(d)&&d.length){let n=0;const byId={};
-      d.forEach(it=>{const id=it.station_id||it.id;if(!id)return;
-        const lv=parseFloat(it.water_level!==undefined?it.water_level:it.level);
-        if(isNaN(lv))return;(byId[id]=byId[id]||[]).push({d:it.date||'',v:lv});});
-      Object.keys(byId).forEach(id=>{const arr=byId[id].sort((a,b)=>String(a.d).localeCompare(String(b.d)));
-        HIST[id]=arr.map(x=>x.v);
-        const x=ST.find(v=>v.id===id);
-        if(x){x.cur=arr[arr.length-1].v;x.gap=+(x.bank-x.cur).toFixed(2);n++;
-          if(arr[arr.length-1].d>DATE)DATE=arr[arr.length-1].d;}});
-      if(n)LIVE=true;}
-  }catch(e){}
-  try{const r=await fetch(GAS+'?action=floodgate&_t='+Date.now(),{cache:'no-store'});const d=await r.json();
-    if(Array.isArray(d))d.forEach(it=>{const x=FG.find(v=>v.id===(it.floodgate_id||it.id));
-      if(x&&it.water_level!==undefined)x.level=parseFloat(it.water_level)||x.level;});}catch(e){}
+  const q=a=>GAS+'?action='+a+'&_t='+Date.now();
+  const settle=p=>p.then(v=>({ok:true,v})).catch(e=>({ok:false}));
+  const jf=async u=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
+    try{const r=await fetch(u,{cache:'no-store',signal:c.signal});clearTimeout(t);
+      if(!r.ok)throw 0;return await r.json();}finally{clearTimeout(t);}};
+  const [riv,wat,fgd]=await Promise.all([settle(jf(q(ACTION))),settle(jf(q('water')+'&days=30')),settle(jf(q('floodgate')))]);
+
+  /* 1) ระดับน้ำล่าสุดรายสถานี — endpoint คืน {river,stations:[...]} */
+  if(riv.ok&&riv.v&&Array.isArray(riv.v.stations)&&riv.v.stations.length){
+    let n=0;
+    riv.v.stations.forEach(it=>{
+      const id=_s(it,['id','station_id']).toUpperCase();
+      const x=ST.find(s=>s.id===id); if(!x)return;
+      const lv=_f(it,['cur','current','current_level','water_level','level']);
+      if(lv===null)return;
+      x.cur=lv;
+      const bk=_f(it,['bank','bank_level','crit','crit_level']); if(bk!==null)x.bank=bk;
+      const wn=_f(it,['warn','warn_level']);                     if(wn!==null)x.warn=wn;
+      const cr=_f(it,['crit','crit_level','bank','bank_level']); if(cr!==null)x.crit=cr;
+      x.gap=+(x.bank-x.cur).toFixed(2);
+      const lu=_s(it,['last_update']); if(lu&&lu>DATE)DATE=lu.slice(0,16);
+      n++;
+    });
+    if(n)LIVE=true;
+  }
+
+  /* 2) ประวัติย้อนหลังสำหรับกราฟแนวโน้ม — action=water คืนแถวดิบ (field: level) */
+  if(wat.ok&&Array.isArray(wat.v)&&wat.v.length){
+    const by={};
+    wat.v.forEach(r=>{const id=_s(r,['station_id','id']).toUpperCase();const lv=_f(r,['level','water_level','current']);
+      if(!id||lv===null)return;(by[id]=by[id]||[]).push({d:_s(r,['date']),v:lv});});
+    Object.keys(by).forEach(id=>{
+      HIST[id]=by[id].sort((a,b)=>String(a.d).localeCompare(String(b.d))).map(x=>x.v);
+      const x=ST.find(s=>s.id===id);
+      if(x&&!LIVE&&HIST[id].length){x.cur=HIST[id][HIST[id].length-1];x.gap=+(x.bank-x.cur).toFixed(2);LIVE=true;}
+    });
+  }
+
+  /* 3) ประตูระบายน้ำ — field: gate_id / water_level / gate_opening / flow_rate */
+  if(fgd.ok&&Array.isArray(fgd.v)&&fgd.v.length){
+    fgd.v.forEach(it=>{
+      const id=_s(it,['gate_id','id']).toUpperCase();
+      const x=FG.find(g=>g.id===id); if(!x)return;
+      const lv=_f(it,['water_level','level']); if(lv!==null)x.level=lv;
+      const nm=_f(it,['threshold_normal']);    if(nm!==null)x.normal=nm;
+      const wn=_f(it,['threshold_warn']);      if(wn!==null)x.warn=wn;
+      const op=_f(it,['gate_opening']);        if(op!==null)x.open=op;
+      const fr=_f(it,['flow_rate']);           if(fr!==null)x.q=fr;
+      const nmS=_s(it,['name']);               if(nmS)x.name=nmS;
+      const d=_s(it,['date']); if(d&&d>DATE)DATE=d;
+    });
+  }
+  if(!DATE&&LIVE)DATE=new Date().toISOString().slice(0,10);
 }
 async function loadRain(){
   try{const d=await J(`https://api.open-meteo.com/v1/forecast?latitude=${ST.map(s=>s.lat).join(',')}&longitude=${ST.map(s=>s.lon).join(',')}&daily=precipitation_sum&timezone=Asia%2FBangkok&forecast_days=7`);

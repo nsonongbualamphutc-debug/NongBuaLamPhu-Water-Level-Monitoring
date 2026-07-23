@@ -204,7 +204,7 @@ function describe(d){
 }
 async function loadRain(){
   let d=null;
-  try{ d=await J(GAS+'?action=rain&days=7'); }
+  try{ d=await J(GAS+'?action=rain&days=30'); }
   catch(e){
     RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่เชื่อม API)';
     SRC_NOTE='เรียก action=rain ไม่สำเร็จ ('+(e&&e.message?e.message:'network/CORS')+') — ตัวเลขที่แสดงเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ ไม่ใช่สถานการณ์จริง';
@@ -229,8 +229,23 @@ async function loadRain(){
     SRC_NOTE='เชื่อมต่อ API ได้และมีข้อมูล '+rows.length+' แถว แต่หาคอลัมน์ชื่ออำเภอไม่เจอ<br><b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO+'<br><b>ต้องมีคอลัมน์:</b> amphoe และ rain_24hr';
     return;
   }
-  RAIN=DEMO;SRC='ชุดตัวอย่าง (รูปแบบข้อมูลไม่ตรง)';
-  SRC_NOTE='เชื่อมต่อ API สำเร็จ แต่ผลลัพธ์ไม่ใช่ตารางข้อมูลฝน<br><b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO+'<br><b>รูปแบบที่ต้องการ:</b> [{amphoe, rain_24hr, rain_7day, rain_month}, ...]';
+  /* สำรอง: ดึงจาก action=summary ซึ่งรวมฝนรายอำเภอไว้ให้แล้ว */
+  try{
+    const s=await J(GAS+'?action=summary');
+    if(s&&Array.isArray(s.rain)&&s.rain.length){
+      RAIN=s.rain.map(r=>({amphoe:String(r.amphoe||'').trim(),
+        rain_24hr:num(pick(r,['rain24'].concat(K_24))),
+        rain_7day:num(pick(r,K_7)),rain_month:num(pick(r,K_M))})).filter(r=>r.amphoe);
+      if(RAIN.length){SRC='ข้อมูลตรวจวัด (API)';
+        SRC_NOTE='เชื่อมต่อสำเร็จผ่าน action=summary — ตัวเลขฝนเป็นข้อมูลจริงที่เจ้าหน้าที่บันทึก ('+RAIN.length+' อำเภอ)';return;}
+    }
+  }catch(e){}
+  RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่มีการบันทึกฝน)';
+  SRC_NOTE='เชื่อมต่อ API สำเร็จ แต่ยังไม่พบข้อมูลฝนในระบบ<br>'+
+    '<b>สาเหตุที่พบบ่อย:</b> ชีต <b>Rainfall</b> ยังไม่มีใครกรอกข้อมูลในช่วง 30 วันล่าสุด '+
+    '(ฟังก์ชัน getRainfall กรองเฉพาะข้อมูลย้อนหลังตามจำนวนวัน)<br>'+
+    '<b>วิธีแก้:</b> ให้เจ้าหน้าที่กรอกปริมาณฝนที่หน้า “บันทึกข้อมูล” อย่างน้อย 1 อำเภอ<br>'+
+    '<b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO;
 }
 function ampVal(a,mode){const r=RAIN.find(x=>x.amphoe===a);return r?(+r[mode]||0):0;}
 

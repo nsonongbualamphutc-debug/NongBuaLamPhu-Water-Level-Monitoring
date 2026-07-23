@@ -237,22 +237,63 @@ function items(){return TAB==='res'?RES:TAB==='fg'?FG:HY;}
 function colorOf(x){return TAB==='res'?band(pctOf(x)).c:lvStatus(x).c;}
 
 /* ================= data ================= */
+function _n(v){if(v===null||v===undefined||v==='')return null;const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?null:x;}
+function _f(o,ks){for(const k of ks){const v=_n(o&&o[k]);if(v!==null)return v;}return null;}
+function _s(o,ks){for(const k of ks){const v=o&&o[k];if(v!==undefined&&v!==null&&v!=='')return String(v);}return '';}
 async function loadLive(){
-  try{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
-    const r=await fetch(GAS+'?action=reservoir&_t='+Date.now(),{cache:'no-store',signal:c.signal});clearTimeout(t);
-    const d=await r.json();
-    if(Array.isArray(d)&&d.length){let n=0;
-      d.forEach(it=>{if(it.reservoir_id&&it.current_volume!==undefined){
-        const x=RES.find(v=>v.id===it.reservoir_id);if(x){x.cur=parseFloat(it.current_volume)||0;n++;}
-        if(it.date&&String(it.date)>String(DATE))DATE=String(it.date);}});
-      if(n)LIVE=true;}
-  }catch(e){}
-  try{const r2=await fetch(GAS+'?action=floodgate&_t='+Date.now(),{cache:'no-store'});const d2=await r2.json();
-    if(Array.isArray(d2))d2.forEach(it=>{const x=FG.find(v=>v.id===(it.floodgate_id||it.id));
-      if(x&&it.water_level!==undefined)x.level=parseFloat(it.water_level)||x.level;});}catch(e){}
-  try{const r3=await fetch(GAS+'?action=hydro&_t='+Date.now(),{cache:'no-store'});const d3=await r3.json();
-    if(Array.isArray(d3))d3.forEach(it=>{const x=HY.find(v=>v.id===(it.station_code||it.id));
-      if(x&&it.water_level!==undefined)x.level=parseFloat(it.water_level)||x.level;});}catch(e){}
+  const q=a=>GAS+'?action='+a+'&_t='+Date.now();
+  const settle=p=>p.then(v=>({ok:true,v})).catch(()=>({ok:false}));
+  const jf=async u=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
+    try{const r=await fetch(u,{cache:'no-store',signal:c.signal});if(!r.ok)throw 0;return await r.json();}
+    finally{clearTimeout(t);}};
+  const [rv,fg,hy]=await Promise.all([settle(jf(q('reservoir'))),settle(jf(q('floodgate'))),settle(jf(q('hydro')))]);
+
+  /* อ่างเก็บน้ำ — field: reservoir_id / capacity / current_volume / date (_no_data = ยังไม่มีคนกรอก) */
+  if(rv.ok&&Array.isArray(rv.v)&&rv.v.length){
+    let n=0;
+    rv.v.forEach(it=>{
+      if(it&&it._no_data)return;
+      const id=_s(it,['reservoir_id','id']).toUpperCase();
+      const x=RES.find(v=>v.id===id); if(!x)return;
+      const cap=_f(it,['capacity']); if(cap!==null&&cap>0)x.cap=cap;
+      const cur=_f(it,['current_volume','cur']);
+      if(cur===null)return;
+      x.cur=cur; n++;
+      const nm=_s(it,['reservoir_name']); if(nm)x.full=nm;
+      const d=_s(it,['date']); if(d&&d>DATE)DATE=d;
+    });
+    if(n)LIVE=true;
+  }
+
+  /* ประตูระบายน้ำ — field: gate_id / water_level / gate_opening / flow_rate / threshold_* */
+  if(fg.ok&&Array.isArray(fg.v)&&fg.v.length){
+    fg.v.forEach(it=>{
+      const id=_s(it,['gate_id','id']).toUpperCase();
+      const x=FG.find(v=>v.id===id); if(!x)return;
+      const lv=_f(it,['water_level','level']); if(lv!==null)x.level=lv;
+      const nm=_f(it,['threshold_normal']);    if(nm!==null)x.normal=nm;
+      const wn=_f(it,['threshold_warn']);      if(wn!==null)x.warn=wn;
+      const op=_f(it,['gate_opening']);        if(op!==null)x.open=op;
+      const fr=_f(it,['flow_rate']);           if(fr!==null)x.q=fr;
+      const nmS=_s(it,['name']);               if(nmS)x.name=nmS;
+      const am=_s(it,['amphoe']);              if(am)x.amphoe=am;
+      const d=_s(it,['date']); if(d&&d>DATE)DATE=d;
+    });
+  }
+
+  /* สถานีอุทกวิทยา — field: station_code / water_level / water_height / threshold_* / bank_height */
+  if(hy.ok&&Array.isArray(hy.v)&&hy.v.length){
+    hy.v.forEach(it=>{
+      const id=_s(it,['station_code','id']).toUpperCase();
+      const x=HY.find(v=>v.id===id); if(!x)return;
+      const lv=_f(it,['water_level','level']); if(lv!==null)x.level=lv;
+      const nm=_f(it,['threshold_normal']);    if(nm!==null)x.normal=nm;
+      const wn=_f(it,['threshold_warn']);      if(wn!==null)x.warn=wn;
+      const bk=_f(it,['bank_height']);         if(bk!==null)x.bank=bk;
+      const am=_s(it,['amphoe']);              if(am)x.amphoe=am;
+      const d=_s(it,['date']); if(d&&d>DATE)DATE=d;
+    });
+  }
 }
 function srcChip(){const el=document.getElementById('src');
   if(LIVE){el.className='chip live';el.textContent='● ข้อมูลจริง'+(DATE?' · '+DATE:'');el.dataset.tip='เชื่อมต่อระบบหลังบ้านสำเร็จ — กำลังแสดงข้อมูลล่าสุด'+(DATE?' (วันที่ '+DATE+')':'');}

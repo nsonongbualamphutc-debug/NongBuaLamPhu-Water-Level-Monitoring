@@ -208,62 +208,135 @@ const FILL={crit:'#fca5a5',warn:'#fcd34d',normal:'#86efac',nodata:'#cbd5e1'};
 const I={rain:'<path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><path d="M8 19v2M12 19v2M16 19v2"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7z"/>',alert:'<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/>',pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>'};
 function ic(n){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+I[n]+'</svg>';}
 function spark(d,c,w=44,h=20){const mn=Math.min(...d),mx=Math.max(...d),rg=(mx-mn)||1;const p=d.map((v,i)=>`${(i/(d.length-1)*w).toFixed(1)},${(h-2-((v-mn)/rg)*(h-4)).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
-/* รวมข้อมูลจาก API แล้ว "ทำให้ครบ" เสมอ — กัน undefined เมื่อ API ส่งฟิลด์ไม่ครบ */
-function num(v){const x=parseFloat(v);return isNaN(x)?null:x;}
-function normalize(d){
+/* ── ชั้นเชื่อมข้อมูลจริงจาก Google Apps Script ──
+   API ใช้ชื่อฟิลด์ current/current_level/bank_level ฯลฯ
+   จึงต้องแปลงให้ตรงกับที่หน้าเว็บใช้ และเติมค่าที่ต้องคำนวณเองเสมอ */
+function num(v){if(v===null||v===undefined||v==='')return null;const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?null:x;}
+function firstNum(o,keys){for(const k of keys){const v=num(o&&o[k]);if(v!==null)return v;}return null;}
+function firstStr(o,keys){for(const k of keys){const v=o&&o[k];if(v!==undefined&&v!==null&&v!=='')return String(v);}return '';}
+async function J(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+function arr(x){return Array.isArray(x)?x:(x&&Array.isArray(x.data)?x.data:[]);}
+
+function normalize(d,live){
   d=d||{};
-  d.stations=(Array.isArray(d.stations)&&d.stations.length?d.stations:DEMO.stations).map((raw,i)=>{
-    const base=DEMO.stations[i]||{};
-    const s=Object.assign({},base,raw);
-    s.cur = num(s.cur!=null?s.cur:s.water_level!=null?s.water_level:s.level);
-    s.bank= num(s.bank!=null?s.bank:s.crit);
-    if(s.cur==null) s.cur=num(base.cur);
-    if(s.bank==null) s.bank=num(base.bank);
-    if(s.cur==null||s.bank==null) return Object.assign({},base);
-    s.prev = num(s.prev)!=null?num(s.prev):num(base.prev);
-    s.gap  = +(s.bank-s.cur).toFixed(2);
-    s.fill = +(s.cur/s.bank*100).toFixed(1);
-    s.rise = s.prev!=null?+(s.cur-s.prev).toFixed(2):0;
-    s.st   = s.gap<=0?'crit':(s.gap<=0.5?'warn':'normal');
-    s.name = s.name||base.name||'สถานี';
-    s.river= s.river||base.river||'';
-    s.amphoe=s.amphoe||base.amphoe||'';
-    s.lat  = num(s.lat)!=null?num(s.lat):base.lat;
-    s.lon  = num(s.lon)!=null?num(s.lon):base.lon;
+  const baseById={};DEMO.stations.forEach(s=>baseById[String(s.id).toUpperCase()]=s);
+  const raw=(Array.isArray(d.stations)&&d.stations.length)?d.stations:DEMO.stations;
+  d.stations=raw.map(r=>{
+    const id=firstStr(r,['id','station_id']).toUpperCase();
+    const base=baseById[id]||{};
+    const s=Object.assign({},base,r);
+    s.id=id||base.id;
+    s.cur =firstNum(r,['cur','current','current_level','water_level','level']);
+    s.bank=firstNum(r,['bank','bank_level','crit','crit_level']);
+    s.warnLv=firstNum(r,['warn','warn_level']);
+    if(s.cur===null) s.cur=num(base.cur);
+    if(s.bank===null) s.bank=num(base.bank);
+    if(s.warnLv===null) s.warnLv=(s.bank!=null?s.bank-0.5:null);
+    s.name  =firstStr(r,['name'])||base.name||'สถานี';
+    s.river =firstStr(r,['river'])||base.river||'';
+    s.amphoe=firstStr(r,['amphoe'])||base.amphoe||'';
+    s.lat=firstNum(r,['lat'])??base.lat; s.lon=firstNum(r,['lon'])??base.lon;
+    if(s.cur===null||s.bank===null||s.lat==null||s.lon==null) return Object.assign({},base);
+    s.gap =+(s.bank-s.cur).toFixed(2);
+    s.fill=+(s.cur/s.bank*100).toFixed(1);
+    s.st  = s.cur>=s.bank?'crit':(s.warnLv!=null&&s.cur>=s.warnLv?'warn':'normal');
+    const prev=num(s.prev);
+    s.rise = prev!=null?+(s.cur-prev).toFixed(2):(num(base.rise)||0);
     return s;
-  }).filter(s=>s.lat!=null&&s.lon!=null&&s.cur!=null);
-  d.reservoirs=(Array.isArray(d.reservoirs)&&d.reservoirs.length?d.reservoirs:DEMO.reservoirs).map((raw,i)=>{
-    const base=DEMO.reservoirs[i]||{};const r=Object.assign({},base,raw);
-    r.cap=num(r.cap)!=null?num(r.cap):num(base.cap);
-    const cur=num(r.cur!=null?r.cur:r.current_volume);
-    r.pct = (r.pct!=null&&!isNaN(parseFloat(r.pct)))?+parseFloat(r.pct).toFixed(1)
-          : (cur!=null&&r.cap)? +(cur/r.cap*100).toFixed(1) : null;
-    return r;
+  }).filter(s=>s&&s.lat!=null&&s.lon!=null&&s.cur!=null);
+
+  d.reservoirs=((Array.isArray(d.reservoirs)&&d.reservoirs.length)?d.reservoirs:DEMO.reservoirs).map((r,i)=>{
+    const base=DEMO.reservoirs.find(x=>x.id===firstStr(r,['id','reservoir_id']).toUpperCase())||DEMO.reservoirs[i]||{};
+    const o=Object.assign({},base,r);
+    o.id=firstStr(r,['id','reservoir_id']).toUpperCase()||base.id;
+    o.name=(firstStr(r,['name','reservoir_name'])||base.name||'').replace('อ่างเก็บน้ำ','');
+    o.cap=firstNum(r,['cap','capacity'])??num(base.cap);
+    const cur=firstNum(r,['cur','current_volume']);
+    o.pct=(cur!=null&&o.cap)?+(cur/o.cap*100).toFixed(1):null;
+    o.lat=firstNum(r,['lat'])??base.lat; o.lon=firstNum(r,['lon'])??base.lon;
+    o.amphoe=firstStr(r,['amphoe'])||base.amphoe||'';
+    return o;
   }).filter(r=>r.lat!=null&&r.lon!=null);
-  d.floodgates=Array.isArray(d.floodgates)&&d.floodgates.length?d.floodgates:DEMO.floodgates;
-  d.rainByAmphoe=Array.isArray(d.rainByAmphoe)&&d.rainByAmphoe.length?d.rainByAmphoe:DEMO.rainByAmphoe;
-  d.rivers=Array.isArray(d.rivers)&&d.rivers.length?d.rivers:DEMO.rivers;
-  d.today=Array.isArray(d.today)&&d.today.length?d.today:DEMO.today;
-  d.trend=d.trend&&d.trend.days?d.trend:DEMO.trend;
-  d.src=d.src||DEMO.src;
-  /* คำนวณสรุปใหม่จากสถานีจริง ไม่ให้ตัวเลขขัดกันเอง */
+
+  d.floodgates=((Array.isArray(d.floodgates)&&d.floodgates.length)?d.floodgates:DEMO.floodgates).map((g,i)=>{
+    const base=DEMO.floodgates[i]||{};const o=Object.assign({},base,g);
+    o.name=firstStr(g,['name'])||base.name;
+    o.amphoe=firstStr(g,['amphoe'])||base.amphoe;
+    o.river=firstStr(g,['river'])||base.river||'ลำน้ำพะเนียง';
+    o.lat=firstNum(g,['lat'])??base.lat; o.lon=firstNum(g,['lon'])??base.lon;
+    const lv=firstNum(g,['water_level','level']);
+    o.level=lv!=null?lv:num(base.level);
+    o.q=firstNum(g,['q','flow_rate'])??num(base.q)??0;
+    const op=firstNum(g,['open','gate_opening']);
+    o.open=op!=null?op:(num(base.open)||0);
+    o.gates=firstNum(g,['gates'])??num(base.gates)??0;
+    o.status=firstStr(g,['status'])||(o.open>0?'เปิดระบาย':'ปิดบาน');
+    return o;
+  }).filter(g=>g.lat!=null&&g.lon!=null);
+
+  if(Array.isArray(d.rain)&&d.rain.length){
+    const byAmp={};
+    d.rain.forEach(r=>{const a=firstStr(r,['amphoe']);if(!a)return;
+      const v=firstNum(r,['rain24','rain_24hr'])||0;
+      if(!(a in byAmp)||v>byAmp[a]) byAmp[a]=v;});
+    const rows=Object.keys(byAmp).map(a=>[a,+byAmp[a].toFixed(1)]).sort((x,y)=>y[1]-x[1]);
+    if(rows.length) d.rainByAmphoe=rows;
+  }
+  d.rainByAmphoe=(Array.isArray(d.rainByAmphoe)&&d.rainByAmphoe.length)?d.rainByAmphoe:DEMO.rainByAmphoe;
+  d.rivers=(Array.isArray(d.rivers)&&d.rivers.length)?d.rivers:DEMO.rivers;
+  d.today=(Array.isArray(d.today)&&d.today.length)?d.today:DEMO.today;
+  d.trend=(d.trend&&d.trend.days)?d.trend:DEMO.trend;
+
+  /* สรุปใหม่จากสถานีจริง ไม่ให้ตัวเลขขัดกันเอง */
   const mix={normal:0,warn:0,crit:0};
   d.stations.forEach(s=>mix[s.st]=(mix[s.st]||0)+1);
   d.statusMix=mix;
-  d.kpi=Object.assign({},DEMO.kpi,d.kpi||{},{normal:mix.normal,warn:mix.warn,crit:mix.crit,total:d.stations.length});
-  d.amp=d.amp&&Object.keys(d.amp).length?d.amp:(function(){
-    const rank={normal:1,warn:2,crit:3},a={};
-    d.stations.forEach(s=>{const c=a[s.amphoe];a[s.amphoe]=(!c||rank[s.st]>rank[c])?s.st:c;});
-    return Object.assign({},DEMO.amp,a);})();
-  d.kpi.riskAmphoe=Object.values(d.amp).filter(v=>v==='crit'||v==='warn').length||d.kpi.riskAmphoe;
+  const rainVals=d.rainByAmphoe.map(r=>r[1]);
+  const rainAvg=rainVals.length?rainVals.reduce((a,b)=>a+b,0)/rainVals.length:null;
+  const pcts=d.reservoirs.map(r=>r.pct).filter(v=>v!=null);
+  d.kpi=Object.assign({},DEMO.kpi,d.kpi||{},{
+    normal:mix.normal,warn:mix.warn,crit:mix.crit,total:d.stations.length});
+  if(rainAvg!=null) d.kpi.rain=+rainAvg.toFixed(1);
+  if(pcts.length)   d.kpi.resAvg=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+  const rank={normal:1,warn:2,crit:3},amp={};
+  d.stations.forEach(s=>{const c=amp[s.amphoe];amp[s.amphoe]=(!c||rank[s.st]>rank[c])?s.st:c;});
+  d.amp=Object.assign({},DEMO.amp,amp);
+  d.kpi.riskAmphoe=Object.values(d.amp).filter(v=>v==='crit'||v==='warn').length;
+  d.__live=!!live;
+  if(live) d.updated=new Date().toLocaleString('th-TH',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' น.';
   return d;
 }
+
+/* เรียก API หลายเส้นพร้อมกัน — เส้นไหนล่มก็ยังใช้เส้นที่เหลือได้ */
 async function loadData(){
-  try{const r=await fetch(GAS,{cache:'no-store'});if(!r.ok)throw 0;
-    const j=await r.json();
-    if(j&&typeof j==='object'&&!Array.isArray(j)) return normalize(Object.assign({},DEMO,j,{__live:true}));
-    return normalize(Object.assign({},DEMO));
-  }catch(e){return normalize(Object.assign({},DEMO));}}
+  const q=(a)=>GAS+'?action='+a+'&_t='+Date.now();
+  const settle=(p)=>p.then(v=>({ok:true,v})).catch(e=>({ok:false,e}));
+  let live=false, merged=Object.assign({},DEMO);
+  try{
+    const [sum,res,fg,wat]=await Promise.all([
+      settle(J(q('summary'))),settle(J(q('reservoir'))),
+      settle(J(q('floodgate'))),settle(J(q('water')+'&days=3'))
+    ]);
+    if(sum.ok&&sum.v&&Array.isArray(sum.v.stations)&&sum.v.stations.length){
+      merged.stations=sum.v.stations; live=true;
+      if(Array.isArray(sum.v.rain)) merged.rain=sum.v.rain;
+    }
+    if(res.ok&&arr(res.v).length){ merged.reservoirs=arr(res.v); live=true; }
+    if(fg.ok&&arr(fg.v).length){ merged.floodgates=arr(fg.v); live=true; }
+    /* คำนวณอัตราขึ้น-ลงต่อวัน จากประวัติระดับน้ำ 3 วันล่าสุด */
+    if(wat.ok&&arr(wat.v).length){
+      const byId={};
+      arr(wat.v).forEach(r=>{const id=String(r.station_id||'').toUpperCase();const lv=num(r.level);
+        if(!id||lv===null)return;(byId[id]=byId[id]||[]).push({d:String(r.date||''),v:lv});});
+      merged.__rise={};
+      Object.keys(byId).forEach(id=>{const a=byId[id].sort((x,y)=>x.d.localeCompare(y.d));
+        if(a.length>=2) merged.__rise[id]=+(a[a.length-1].v-a[a.length-2].v).toFixed(2);});
+    }
+  }catch(e){}
+  const d=normalize(merged,live);
+  if(merged.__rise) d.stations.forEach(s=>{if(merged.__rise[s.id]!=null)s.rise=merged.__rise[s.id];});
+  return d;
+}
 
 function renderAlert(d){const c=d.stations.filter(s=>s.st==='crit');const el=document.getElementById('alert');if(!c.length){el.style.display='none';return;}el.innerHTML=`<span class="ab">${ic('alert')} เตือนภัย · ${c.length} สถานีเกินตลิ่ง</span><span>${c.map(s=>s.name).join(', ')} — อ.${[...new Set(c.map(s=>s.amphoe))].join(', ')}</span><button class="abtn" onclick="setMode('stn')">ดูบนแผนที่</button><span class="x" onclick="this.parentElement.style.display='none'">✕</span>`;}
 
