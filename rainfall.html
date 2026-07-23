@@ -202,50 +202,62 @@ function describe(d){
     return String(d).slice(0,120);
   }catch(e){return 'อ่านผลลัพธ์ไม่ได้';}
 }
+/* ── ฝนรายอำเภอ ──
+   1) ลองข้อมูลตรวจวัดจากระบบหลังบ้านก่อน (ถ้าเจ้าหน้าที่กรอกไว้)
+   2) ถ้าไม่มี ใช้ Open-Meteo คำนวณจากจุดกึ่งกลางแต่ละอำเภอ — ระบุที่มาชัดเจน  */
+async function loadRainAuto(){
+  const la=AMP.map(a=>a.lat).join(','), lo=AMP.map(a=>a.lon).join(',');
+  const d=await J(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}`+
+    `&daily=precipitation_sum&past_days=31&forecast_days=1&timezone=Asia%2FBangkok`);
+  const arr=Array.isArray(d)?d:[d];
+  const today=new Date().toISOString().slice(0,10);
+  return AMP.map((a,i)=>{
+    const dd=arr[i]&&arr[i].daily?arr[i].daily:{};
+    const times=dd.time||[], vals=dd.precipitation_sum||[];
+    let iToday=times.indexOf(today); if(iToday<0)iToday=times.length-1;
+    const at=k=>{const v=vals[k];return (v===null||v===undefined||isNaN(v))?0:+v;};
+    let r24=at(iToday), r7=0, rM=0;
+    for(let k=Math.max(0,iToday-6);k<=iToday;k++) r7+=at(k);
+    const mStart=today.slice(0,8)+'01';
+    times.forEach((t,k)=>{ if(t>=mStart&&t<=today) rM+=at(k); });
+    return {amphoe:a.a,rain_24hr:+r24.toFixed(1),rain_7day:+r7.toFixed(1),rain_month:+rM.toFixed(1)};
+  });
+}
 async function loadRain(){
-  let d=null;
-  try{ d=await J(GAS+'?action=rain&days=30'); }
-  catch(e){
-    RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่เชื่อม API)';
-    SRC_NOTE='เรียก action=rain ไม่สำเร็จ ('+(e&&e.message?e.message:'network/CORS')+') — ตัวเลขที่แสดงเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ ไม่ใช่สถานการณ์จริง';
-    return;
-  }
-  RAW_INFO=describe(d);
-  const rows=toRows(d);
-  if(rows&&rows.length){
-    const last={};
-    rows.forEach(r=>{
-      const a=pick(r,K_AMP); if(!a)return;
-      last[String(a).trim()]={amphoe:String(a).trim(),
-        rain_24hr:num(pick(r,K_24)),rain_7day:num(pick(r,K_7)),rain_month:num(pick(r,K_M))};
-    });
-    const vals=Object.values(last);
-    if(vals.length){
-      RAIN=vals;SRC='ข้อมูลตรวจวัด (API)';
-      SRC_NOTE='เชื่อมต่อระบบหลังบ้านสำเร็จ — ตัวเลขฝนเป็นข้อมูลที่เจ้าหน้าที่บันทึกจริง ('+vals.length+' อำเภอ)';
+  /* 1) ข้อมูลตรวจวัดจากเจ้าหน้าที่ */
+  try{
+    const d=await J(GAS+'?action=rain&days=30');
+    RAW_INFO=describe(d);
+    const rows=toRows(d);
+    if(rows&&rows.length){
+      const last={};
+      rows.forEach(r=>{const a=pick(r,K_AMP); if(!a)return;
+        last[String(a).trim()]={amphoe:String(a).trim(),
+          rain_24hr:num(pick(r,K_24)),rain_7day:num(pick(r,K_7)),rain_month:num(pick(r,K_M))};});
+      const vals=Object.values(last);
+      if(vals.length){
+        RAIN=vals;SRC='ข้อมูลตรวจวัด (เจ้าหน้าที่บันทึก)';
+        SRC_NOTE='ตัวเลขฝนมาจากที่เจ้าหน้าที่บันทึกในระบบจริง ('+vals.length+' อำเภอ) — เป็นข้อมูลตรวจวัดจากพื้นที่';
+        return;
+      }
+    }
+  }catch(e){ RAW_INFO='เรียก action=rain ไม่สำเร็จ ('+(e&&e.message?e.message:'network')+')'; }
+
+  /* 2) ไม่มีข้อมูลตรวจวัด → คำนวณจาก Open-Meteo */
+  try{
+    const auto=await loadRainAuto();
+    if(auto&&auto.length){
+      RAIN=auto;SRC='ข้อมูลอัตโนมัติ (Open-Meteo)';
+      SRC_NOTE='คำนวณจากแบบจำลองสภาพอากาศ Open-Meteo ที่จุดกึ่งกลางของแต่ละอำเภอ — อัปเดตอัตโนมัติทุกวัน ไม่ต้องกรอกเอง<br>'+
+        '<b>ข้อควรทราบ:</b> เป็นค่าจากแบบจำลอง ไม่ใช่ค่าที่วัดจากเครื่องวัดฝนในพื้นที่ '+
+        'หากต้องใช้อ้างอิงทางราชการ ควรให้เจ้าหน้าที่บันทึกค่าตรวจวัดจริงในระบบ (ระบบจะใช้ค่าตรวจวัดก่อนเสมอ)';
       return;
     }
-    RAIN=DEMO;SRC='ชุดตัวอย่าง (ไม่พบคอลัมน์อำเภอ)';
-    SRC_NOTE='เชื่อมต่อ API ได้และมีข้อมูล '+rows.length+' แถว แต่หาคอลัมน์ชื่ออำเภอไม่เจอ<br><b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO+'<br><b>ต้องมีคอลัมน์:</b> amphoe และ rain_24hr';
-    return;
-  }
-  /* สำรอง: ดึงจาก action=summary ซึ่งรวมฝนรายอำเภอไว้ให้แล้ว */
-  try{
-    const s=await J(GAS+'?action=summary');
-    if(s&&Array.isArray(s.rain)&&s.rain.length){
-      RAIN=s.rain.map(r=>({amphoe:String(r.amphoe||'').trim(),
-        rain_24hr:num(pick(r,['rain24'].concat(K_24))),
-        rain_7day:num(pick(r,K_7)),rain_month:num(pick(r,K_M))})).filter(r=>r.amphoe);
-      if(RAIN.length){SRC='ข้อมูลตรวจวัด (API)';
-        SRC_NOTE='เชื่อมต่อสำเร็จผ่าน action=summary — ตัวเลขฝนเป็นข้อมูลจริงที่เจ้าหน้าที่บันทึก ('+RAIN.length+' อำเภอ)';return;}
-    }
   }catch(e){}
-  RAIN=DEMO;SRC='ชุดตัวอย่าง (ยังไม่มีการบันทึกฝน)';
-  SRC_NOTE='เชื่อมต่อ API สำเร็จ แต่ยังไม่พบข้อมูลฝนในระบบ<br>'+
-    '<b>สาเหตุที่พบบ่อย:</b> ชีต <b>Rainfall</b> ยังไม่มีใครกรอกข้อมูลในช่วง 30 วันล่าสุด '+
-    '(ฟังก์ชัน getRainfall กรองเฉพาะข้อมูลย้อนหลังตามจำนวนวัน)<br>'+
-    '<b>วิธีแก้:</b> ให้เจ้าหน้าที่กรอกปริมาณฝนที่หน้า “บันทึกข้อมูล” อย่างน้อย 1 อำเภอ<br>'+
-    '<b>สิ่งที่ API ส่งกลับมา:</b> '+RAW_INFO;
+
+  /* 3) ออฟไลน์ทั้งคู่ */
+  RAIN=DEMO;SRC='ชุดตัวอย่าง (เชื่อมข้อมูลไม่ได้)';
+  SRC_NOTE='เชื่อมต่อทั้งระบบหลังบ้านและ Open-Meteo ไม่สำเร็จ — ตัวเลขที่แสดงเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ ไม่ใช่สถานการณ์จริง<br>'+RAW_INFO;
 }
 function ampVal(a,mode){const r=RAIN.find(x=>x.amphoe===a);return r?(+r[mode]||0):0;}
 
@@ -392,9 +404,9 @@ function renderCharts(wx){
   document.getElementById('tdate').textContent=now.getDate()+' '+MON[now.getMonth()]+' '+(now.getFullYear()+543);
   await loadRain();
   const sc=document.getElementById('src');
-  sc.textContent=(SRC.indexOf('ตรวจวัด')>=0?'● ':'● ')+SRC;
-  sc.className='chip '+(SRC.indexOf('ตรวจวัด')>=0?'live':'demo');
-  sc.dataset.tip=(SRC_NOTE||SRC)+(SRC.indexOf('ตรวจวัด')>=0?'':'<br><br><b>วิธีตรวจ:</b> เปิด URL ของ Apps Script ต่อท้ายด้วย <b>?action=rain&days=7</b> ในเบราว์เซอร์ จะเห็นผลลัพธ์จริงที่ส่งกลับมา');
+  sc.textContent='● '+SRC;
+  sc.className='chip '+(SRC.indexOf('ชุดตัวอย่าง')<0?'live':'demo');
+  sc.dataset.tip=(SRC_NOTE||SRC)+(SRC.indexOf('ชุดตัวอย่าง')<0?'':'<br><br><b>วิธีตรวจ:</b> เปิด URL ของ Apps Script ต่อท้ายด้วย <b>?action=rain&days=7</b> ในเบราว์เซอร์ จะเห็นผลลัพธ์จริงที่ส่งกลับมา');
   initMap(); renderAmp();
   let wx=null;
   try{
