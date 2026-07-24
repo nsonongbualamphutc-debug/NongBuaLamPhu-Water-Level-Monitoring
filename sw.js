@@ -11,7 +11,7 @@
  *  ⚠️ เวลาแก้ไฟล์ HTML/CSS แล้ว deploy ใหม่ ให้ขยับเลข VERSION ทุกครั้ง
  *     เพื่อบังคับล้าง cache เก่าของผู้ใช้
  * ════════════════════════════════════════════════════════════ */
-const VERSION       = "wnb-v14";
+const VERSION       = "wnb-v15";
 const STATIC_CACHE  = VERSION + "-static";
 const RUNTIME_CACHE = VERSION + "-runtime";
 
@@ -37,6 +37,7 @@ const PRECACHE_URLS = [
   "./verdict.js",
   "./logo-nbp.png",
   "./logo-nbp-lg.png",
+  "./cover-bg.webp",
   "./icon-192.png",
   "./icon-512.png",
   "./favicon.ico",

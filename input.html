@@ -386,6 +386,19 @@ footer{padding:24px 20px;text-align:center;color:var(--muted);font-size:11.5px;b
   .atbl{font-size:12.5px;}
   .atbl thead th,.atbl tbody td{padding:9px 8px;}
 }</style>
+<style>
+/* สำรอง: สไตล์ tooltip ขั้นต่ำ เผื่อ ds.css ยังไม่ถูกอัปโหลด */
+.tipbox{position:fixed;z-index:9999;display:none;max-width:296px;overflow:hidden;pointer-events:none;
+ background:#fff;color:#0f172a;border:1px solid #e4eaf2;border-radius:12px;font-size:10.5px;
+ font-family:'Sarabun',system-ui,sans-serif;box-shadow:0 12px 32px rgba(10,30,60,.22)}
+.tipbox .simple{padding:7px 10px;line-height:1.5}
+.tipbox .tth{font-family:'Kanit',sans-serif;font-weight:600;color:#fff;padding:6px 10px;font-size:11.5px}
+.tipbox .body{display:flex;gap:9px;padding:8px 10px}
+.tipbox .row{display:flex;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px dashed #eef2f7}
+.tipbox .row:last-child{border-bottom:0}
+.tipbox .row span{color:#64748b;white-space:nowrap}
+.tipbox .row b{font-family:'Kanit',sans-serif;font-weight:600;text-align:right}
+</style>
 </head>
 <body>
 
@@ -2871,5 +2884,26 @@ if ("serviceWorker" in navigator) {
 })();
 </script>
 
+<div class="tipbox" id="tipbox"></div>
+<script>
+/* สำรอง: ถ้า ds.js โหลดไม่ได้ (ยังไม่ได้อัปไฟล์) ให้ติดตั้งระบบ tooltip ในหน้าเอง */
+window.addEventListener('load',function(){
+  if(window.__dsTip) return;
+  window.__dsTip=true; window.TIPS=window.TIPS||{};
+  var tip=document.getElementById('tipbox');
+  if(!tip){tip=document.createElement('div');tip.className='tipbox';tip.id='tipbox';document.body.appendChild(tip);}
+  function place(e){var r=tip.getBoundingClientRect(),x=e.clientX+15,y=e.clientY+15;
+    if(x+r.width>window.innerWidth-8)x=Math.max(8,e.clientX-r.width-15);
+    if(y+r.height>window.innerHeight-8)y=Math.max(8,e.clientY-r.height-15);
+    tip.style.left=x+'px';tip.style.top=y+'px';}
+  document.addEventListener('mouseover',function(e){
+    var t=e.target.closest&&e.target.closest('[data-tip],[data-tipid]'); if(!t)return;
+    var html=t.dataset.tipid?window.TIPS[t.dataset.tipid]:'<div class="simple">'+t.dataset.tip+'</div>';
+    if(!html)return; tip.innerHTML=html; tip.style.display='block'; place(e);});
+  document.addEventListener('mousemove',function(e){if(tip.style.display==='block')place(e);});
+  document.addEventListener('mouseout',function(e){
+    if(e.target.closest&&e.target.closest('[data-tip],[data-tipid]'))tip.style.display='none';});
+});
+</script>
 </body>
 </html>
