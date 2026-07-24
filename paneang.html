@@ -230,18 +230,28 @@ function tipSt(s){const k=stOf(s),b=SB[k];
  const pct=P(s.cur), wmk=P(s.warn), cmk=P(s.crit);
  const zones=[{f:0,t:wmk,c:'#dcfce7'},{f:wmk,t:cmk,c:'#fef3c7'},{f:cmk,t:100,c:'#fee2e2'}];
  const ticks=[{v:wmk,c:'#f59e0b',l:'เฝ้าระวัง '+nf(s.warn,2)},{v:cmk,c:'#dc2626',l:'วิกฤติ/ตลิ่ง '+nf(s.crit,2)}];
+ const fb=(s.bank-s.cur);
  return `<div class="tth" style="background:${b.c}">${s.name}<small>สถานีที่ ${s.no} · ${RIVER} · ${b.l}</small></div>
- <div class="body">${gaugeZ(pct,b.c,zones,ticks,'ระดับน้ำ<br>เทียบเกณฑ์')}
+ <div class="body">${gaugeZ(pct,b.c,zones,ticks,'ความสูงของน้ำ<br>ในลำน้ำ')}
  <div class="dt">${row('รหัสสถานี',s.id)}${row('ที่ตั้ง',(s.village?s.village+' · ':'')+'อ.'+s.amphoe)}
  ${row('ระยะจากต้นน้ำ',nf(s.km,1)+' กม.')}
- ${row('ระดับน้ำปัจจุบัน',nf(s.cur,2)+' ม.รทก.')}${row('ระดับตลิ่ง',nf(s.bank,2)+' ม.รทก.')}
+ ${row('ระดับน้ำปัจจุบัน','<span style="color:'+b.c+'">'+nf(s.cur,2)+' ม.รทก.</span>')}
+ ${row('ระดับสันตลิ่ง',nf(s.bank,2)+' ม.รทก.')}
+ ${row('ต่ำกว่าสันตลิ่ง','<span style="color:'+b.c+'">'+(fb<=0?'เกินตลิ่ง '+nf(-fb,2):nf(fb,2))+' ม.</span>')}
+ ${row('% เทียบระดับตลิ่ง',(s.bank?(s.cur/s.bank*100).toFixed(1):'—')+'%')}
  ${sepRow('เกณฑ์เฝ้าระวัง (ม.รทก.)')}
  ${row('<span style="color:var(--ok)">● ปกติ</span>','ต่ำกว่า '+nf(s.warn,2))}
  ${row('<span style="color:var(--warn)">● เฝ้าระวัง</span>',nf(s.warn,2)+' – '+nf(s.crit,2))}
  ${row('<span style="color:var(--crit)">● วิกฤติ / ล้นตลิ่ง</span>','สูงกว่า '+nf(s.crit,2))}
  ${row('เหลือถึงตลิ่ง','<span style="color:'+b.c+'">'+(s.gap<=0?'เกินตลิ่ง '+nf(-s.gap,2):nf(s.gap,2))+' ม.</span>')}
  ${row('ฝนคาด 7 วัน',RAIN[s.id]!=null?nf(RAIN[s.id],0)+' มม.':'—')}
- ${row('สถานะ','<span style="color:'+b.c+'">'+b.l+'</span>')}</div></div>`;}
+ ${row('สถานะ','<span style="color:'+b.c+'">'+b.l+'</span>')}
+ <div class="seprow">อ่านแถบวัดอย่างไร</div>
+ <div style="font-size:10.5px;color:var(--muted);line-height:1.55;padding-top:2px">
+   หลอดซ้ายคือ<b>ความสูงของน้ำในลำน้ำ</b> เทียบกับความลึกอ้างอิงร่วมของทั้ง${RIVER} (${SCALE} ม.)
+   — ยิ่งสูงยิ่งใกล้ล้นตลิ่ง จุดนี้อยู่ที่ <b style="color:${b.c}">${pct.toFixed(0)}%</b>
+   ${fb>0?('คือยังห่างจากการล้นตลิ่งอีก <b>'+nf(fb,2)+' ม.</b>'):('<b style="color:var(--crit)">น้ำล้นตลิ่งแล้ว</b>')}
+ </div></div></div>`;}
 function buildTips(){
   recalcScale();ST.forEach(s=>TIPS[s.id]=tipSt(s));
  FG.forEach(g=>{const k=g.level>g.warn?'crit':(g.level>=g.normal?'warn':'normal'),b=SB[k];
