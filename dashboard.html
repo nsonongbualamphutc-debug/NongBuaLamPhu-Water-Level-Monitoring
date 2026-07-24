@@ -438,8 +438,8 @@ function renderOverview(d){const mix=d.statusMix;
  document.getElementById('rain').innerHTML=d.rainByAmphoe.slice(0,4).map(r=>`<div class="rvbar" data-tip="อ.${r[0]} — ฝนสะสม 24 ชม. ${r[1]} มม."><span class="rvn">${r[0]}</span><span class="rvt"><i style="width:${r[1]/mx*100}%;background:linear-gradient(90deg,#7dd3fc,#0ea5e9)"></i></span><span class="rvp" style="background:#0ea5e9">${r[1]}</span></div>`).join('');}
 
 function renderTrend(d){new Chart(document.getElementById('trend'),{data:{labels:d.trend.days,datasets:[
- {type:'bar',label:'ฝนสะสม (มม.)',data:d.trend.rain,backgroundColor:'#38bdf8',yAxisID:'y',borderRadius:4,maxBarThickness:15},
- {type:'line',label:'สถานีเกินตลิ่ง (จุด)',data:d.trend.crit,borderColor:'#dc2626',backgroundColor:'#dc2626',tension:.35,yAxisID:'y1',pointRadius:2,borderWidth:2}]},
+ {type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,label:'ฝนสะสม (มม.)',data:d.trend.rain,backgroundColor:'#38bdf8',yAxisID:'y',borderRadius:4,maxBarThickness:15},
+ {type:'line',order:1,label:'สถานีเกินตลิ่ง (จุด)',data:d.trend.crit,borderColor:'#dc2626',backgroundColor:'#dc2626',tension:.35,yAxisID:'y1',pointRadius:2,borderWidth:2}]},
  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9.5},boxWidth:10,padding:7}}},
  scales:{y:{position:'left',grid:{display:false},title:{display:true,text:'มม.',font:{size:8.5}},ticks:{font:{size:8.5}}},y1:{position:'right',grid:{display:false},min:0,max:5,ticks:{stepSize:1,font:{size:8.5}},title:{display:true,text:'จุด',font:{size:8.5}}},x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:8},maxRotation:0,autoSkip:true,maxTicksLimit:7}}}}});}
 
@@ -464,6 +464,8 @@ function renderWatch(d){const el=document.getElementById('watch');let list=[...d
 function setWatch(w){CUR=w;document.querySelectorAll('.wtabs button').forEach(b=>b.classList.toggle('on',b.dataset.w===w));renderWatch(window._d);}
 function flyTo(la,lo,mode){setMode(mode||'stn');map.flyTo([la,lo],12,{duration:.8});}
 
+/* SAFETY_UNMASK — กันม่านค้างถ้าเครือข่ายค้างหรือโค้ดสะดุด */
+setTimeout(function(){try{hideLoad();}catch(e){}},15000);
 function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
 function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{const d=await loadData();window._d=d;document.getElementById('upd').textContent=d.updated;

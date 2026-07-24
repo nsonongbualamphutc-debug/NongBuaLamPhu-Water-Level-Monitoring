@@ -87,6 +87,18 @@ table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:
  .dtcard{box-shadow:none;max-height:none;animation:none}.dth .grow,.dth .xb{display:none}
  .dtb{overflow:visible}table.dt thead th{position:static}}
 
+
+/* เกจแบบแบ่งโซน — ป้ายซ้าย/ขวา */
+.gg.zone{flex:0 0 auto;display:flex;align-items:stretch;gap:6px}
+.gg.zone .gticks{position:relative;width:82px;height:112px}
+.gg.zone .gtk{position:absolute;transform:translateY(50%);display:flex;align-items:center;gap:4px;
+ white-space:nowrap;font-size:8.5px;color:var(--muted);line-height:1.15}
+.gg.zone .gtk.gl{right:0;justify-content:flex-end;text-align:right}
+.gg.zone .gtk.gr{left:0}
+.gg.zone .gtk i{width:9px;height:2px;border-radius:1px;flex:0 0 9px}
+.gg.zone .gtk em{font-style:normal}
+.gg.zone .gtk b{font-family:var(--disp);font-weight:700;color:var(--ink)}
+.gg.zone .gtube{flex:0 0 25px}
 </style></head>
 <body>
 <div class="app" id="app">
@@ -194,9 +206,37 @@ function recalcScale(){
   ST.forEach(s=>{ if(s.cur!=null&&s.bank!=null&&!isNaN(s.cur)) d=Math.max(d,(+s.bank-+s.cur)); });
   SCALE=Math.min(Math.ceil((d+1)*2)/2,25);   /* เผื่อขอบบน 1 ม. ปัดเป็น 0.5 */
 }
-/* ทุกสถานีใช้สเกลเมตรเดียวกัน → เทียบกันได้ และหลอดขยับตามข้อมูลจริง */
-function rangeOf(s){ return {lo:+s.bank-SCALE, hi:+s.bank+SCALE*0.10}; }
-function posOf(s,v){const r=rangeOf(s);return Math.max(0,Math.min(100,(v-r.lo)/(r.hi-r.lo)*100));}
+/* เกจแบบแบ่งโซนตามเกณฑ์ — สัดส่วนโซนคงที่เสมอ จึงเห็นเกณฑ์ชัดทุกสถานี
+   ปกติ 0–62% · เฝ้าระวัง 62–86% · วิกฤติ 86–100%
+   ป้ายเกณฑ์: วิกฤติอยู่ซ้าย เฝ้าระวังอยู่ขวา — ไม่ทับกัน */
+const Z_OK=62, Z_WARN=86;
+function zonePos(s,v){
+  const bank=+s.bank, warn=(s.warn!=null?+s.warn:bank-0.5), crit=(s.crit!=null?+s.crit:bank);
+  const floor=bank-SCALE;
+  if(v<=floor) return 0;
+  if(v<warn)  return (v-floor)/Math.max(.001,(warn-floor))*Z_OK;
+  if(v<crit)  return Z_OK+(v-warn)/Math.max(.001,(crit-warn))*(Z_WARN-Z_OK);
+  return Math.min(100, Z_WARN+(v-crit)/Math.max(.001,SCALE*0.12)*(100-Z_WARN));
+}
+function posOf(s,v){ return Math.max(0,Math.min(100,zonePos(s,v))); }
+function gaugeZone(s,color){
+  const p=posOf(s,s.cur);
+  const L=`<span class="gtk gl" style="bottom:${Z_WARN}%"><em>วิกฤติ/ตลิ่ง</em><b>${nf(s.crit,2)}</b><i style="background:#dc2626"></i></span>`;
+  const R=`<span class="gtk gr" style="bottom:${Z_OK}%"><i style="background:#f59e0b"></i><em>เฝ้าระวัง</em><b>${nf(s.warn,2)}</b></span>`;
+  return `<div class="gg zone">
+    <div class="gticks gL">${L}</div>
+    <div class="gtube">
+      <span class="gz" style="bottom:0;height:${Z_OK}%;background:#dcfce7"></span>
+      <span class="gz" style="bottom:${Z_OK}%;height:${Z_WARN-Z_OK}%;background:#fef3c7"></span>
+      <span class="gz" style="bottom:${Z_WARN}%;height:${100-Z_WARN}%;background:#fee2e2"></span>
+      <div class="gfill" style="height:${p}%;background:linear-gradient(180deg,${color}dd,${color}88)"></div>
+      <span class="gline" style="bottom:${Z_OK}%;background:#f59e0b"></span>
+      <span class="gline" style="bottom:${Z_WARN}%;background:#dc2626"></span>
+      <span class="gnow" style="bottom:${p}%"></span>
+    </div>
+    <div class="gticks gR">${R}</div>
+  </div>`;
+}
 /* ความลึกภาพตัดตามยาว — ลึกพอครอบคลุมทุกสถานีเสมอ */
 function profDepth(){ recalcScale(); return SCALE; }
 function stOf(s){return s.cur>s.crit?'crit':(s.cur>=s.warn?'warn':'normal');}
@@ -236,11 +276,9 @@ function sepRow(t){return `<div class="seprow">${t}</div>`;}
 function tipSt(s){const k=stOf(s),b=SB[k];
  const P=v=>posOf(s,v);
  const pct=P(s.cur), wmk=P(s.warn), cmk=P(s.crit);
- const zones=[{f:0,t:wmk,c:'#dcfce7'},{f:wmk,t:cmk,c:'#fef3c7'},{f:cmk,t:100,c:'#fee2e2'}];
- const ticks=[{v:wmk,c:'#f59e0b',l:'เฝ้าระวัง '+nf(s.warn,2)},{v:cmk,c:'#dc2626',l:'วิกฤติ/ตลิ่ง '+nf(s.crit,2)}];
  const fb=(s.bank-s.cur);
  return `<div class="tth" style="background:${b.c}">${s.name}<small>สถานีที่ ${s.no} · ${RIVER} · ${b.l}</small></div>
- <div class="body">${gaugeZ(pct,b.c,zones,ticks,'ความสูงของน้ำ<br>ในลำน้ำ')}
+ <div class="body">${gaugeZone(s,b.c)}
  <div class="dt">${row('รหัสสถานี',s.id)}${row('ที่ตั้ง',(s.village?s.village+' · ':'')+'อ.'+s.amphoe)}
  ${row('ระยะจากต้นน้ำ',nf(s.km,1)+' กม.')}
  ${row('ระดับน้ำปัจจุบัน','<span style="color:'+b.c+'">'+nf(s.cur,2)+' ม.รทก.</span>')}
@@ -456,9 +494,9 @@ function renderTrend(){
   if(trendC)trendC.destroy();
   const b=SB[stOf(s)];
   trendC=new Chart(document.getElementById('trend'),{data:{labels,datasets:[
-    {type:'line',label:'ระดับน้ำ',data,borderColor:RCOL,backgroundColor:RCOL+'22',fill:true,tension:.35,pointRadius:2,borderWidth:2.5},
-    {type:'line',label:'ระดับตลิ่ง',data:labels.map(()=>s.bank),borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.8,fill:false},
-    {type:'line',label:'เกณฑ์เฝ้าระวัง',data:labels.map(()=>s.warn),borderColor:'#f59e0b',borderDash:[4,4],pointRadius:0,borderWidth:1.6,fill:false}]},
+    {type:'line',order:1,label:'ระดับน้ำ',data,borderColor:RCOL,backgroundColor:RCOL+'22',fill:true,tension:.35,pointRadius:2,borderWidth:2.5},
+    {type:'line',order:1,label:'ระดับตลิ่ง',data:labels.map(()=>s.bank),borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.8,fill:false},
+    {type:'line',order:1,label:'เกณฑ์เฝ้าระวัง',data:labels.map(()=>s.warn),borderColor:'#f59e0b',borderDash:[4,4],pointRadius:0,borderWidth:1.6,fill:false}]},
    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9.5},boxWidth:10,padding:6}},
     tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y.toFixed(2)+' ม.รทก.',
       afterBody:it=>['เหลือถึงตลิ่ง '+(s.bank-it[0].parsed.y).toFixed(2)+' ม.']}}},
@@ -654,6 +692,8 @@ function srcChip(){const el=document.getElementById('src');
   else{el.className='chip demo';el.textContent='● ชุดตัวอย่าง';el.dataset.tip='ยังเชื่อมต่อข้อมูลจริงไม่ได้ — ตัวเลขเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ';}}
 function safe(fn,name){try{return fn();}catch(e){console.error('['+name+']',e);
   const el=document.getElementById('bootErr');if(el){el.style.display='flex';el.textContent='⚠ ส่วน '+name+' แสดงผลไม่ได้: '+e.message;}}}
+/* SAFETY_UNMASK — กันม่านค้างถ้าเครือข่ายค้างหรือโค้ดสะดุด */
+setTimeout(function(){try{hideLoad();}catch(e){}},15000);
 function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
 function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{

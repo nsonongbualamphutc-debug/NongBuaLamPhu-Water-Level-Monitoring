@@ -265,8 +265,8 @@ async function main(){
   const H=d.hourly, today=dd.time[0], idx=[];
   for(let i=0;i<H.time.length;i++) if(H.time[i].slice(0,10)===today) idx.push(i);
   new Chart(document.getElementById('hourly'),{data:{labels:idx.map(i=>H.time[i].slice(11,16)),datasets:[
-    {type:'bar',label:'โอกาสฝน (%)',data:idx.map(i=>H.precipitation_probability[i]??0),backgroundColor:idx.map(i=>(H.precipitation_probability[i]??0)>=60?'#38bdf8':'#cfe9fb'),yAxisID:'y',borderRadius:3,maxBarThickness:13},
-    {type:'line',label:'อุณหภูมิ (°C)',data:idx.map(i=>H.temperature_2m[i]),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.10)',fill:true,tension:.4,pointRadius:0,borderWidth:2.4,yAxisID:'y1'}]},
+    {type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,label:'โอกาสฝน (%)',data:idx.map(i=>H.precipitation_probability[i]??0),backgroundColor:idx.map(i=>(H.precipitation_probability[i]??0)>=60?'#38bdf8':'#cfe9fb'),yAxisID:'y',borderRadius:3,maxBarThickness:13},
+    {type:'line',order:1,label:'อุณหภูมิ (°C)',data:idx.map(i=>H.temperature_2m[i]),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.10)',fill:true,tension:.4,pointRadius:0,borderWidth:2.4,yAxisID:'y1'}]},
    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9},boxWidth:9,padding:5}}},
    scales:{y:{position:'left',min:0,max:100,grid:{color:'#f1f5f9'},ticks:{font:{size:8.5},callback:v=>v+'%'}},
            y1:{position:'right',grid:{display:false},ticks:{font:{size:8.5},callback:v=>v+'°'}},
@@ -305,6 +305,7 @@ async function main(){
   document.getElementById('days').innerHTML=ds;
   hideLoad();
  }catch(e){
+  hideLoad();
   document.getElementById('v-head').textContent='โหลดพยากรณ์อากาศไม่สำเร็จ';
   document.getElementById('v-sub').textContent=String(e.message||e);
   document.getElementById('days').innerHTML='<div class="err">เชื่อมต่อ Open-Meteo ไม่ได้</div>';

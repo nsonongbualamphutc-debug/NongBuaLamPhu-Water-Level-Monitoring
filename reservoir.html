@@ -682,7 +682,7 @@ function renderCmp(){
   const cv=document.getElementById('cmp');
   if(TAB==='res'){
     const rows=[...RES].sort((a,b)=>b.cap-a.cap).slice(0,8);
-    cmpC=new Chart(cv,{type:'bar',data:{labels:rows.map(r=>r.name),datasets:[
+    cmpC=new Chart(cv,{type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,data:{labels:rows.map(r=>r.name),datasets:[
       {label:'ความจุ',data:rows.map(r=>r.cap),backgroundColor:'#dbeafe',borderRadius:4,maxBarThickness:30},
       {label:'ปริมาณปัจจุบัน',data:rows.map(r=>r.cur),backgroundColor:rows.map(r=>band(pctOf(r)).c),borderRadius:4,maxBarThickness:30}]},
      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:10},boxWidth:10,padding:7}},
@@ -692,10 +692,10 @@ function renderCmp(){
        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:0,autoSkip:false,callback:function(v){const s=this.getLabelForValue(v);return s.length>8?s.slice(0,8)+'…':s;}}}}}});
   }else{
     const rows=items();
-    cmpC=new Chart(cv,{type:'bar',data:{labels:rows.map(r=>r.name),datasets:[
+    cmpC=new Chart(cv,{type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,data:{labels:rows.map(r=>r.name),datasets:[
       {label:'ระดับน้ำปัจจุบัน',data:rows.map(r=>r.level),backgroundColor:rows.map(r=>lvStatus(r).c),borderRadius:4,maxBarThickness:44},
-      {type:'line',label:'เกณฑ์เฝ้าระวัง',data:rows.map(r=>r.normal),borderColor:'#f59e0b',borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#f59e0b',borderWidth:2,fill:false},
-      {type:'line',label:'เกณฑ์วิกฤติ',data:rows.map(r=>r.warn),borderColor:'#dc2626',borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#dc2626',borderWidth:2,fill:false}]},
+      {type:'line',order:1,label:'เกณฑ์เฝ้าระวัง',data:rows.map(r=>r.normal),borderColor:'#f59e0b',borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#f59e0b',borderWidth:2,fill:false},
+      {type:'line',order:1,label:'เกณฑ์วิกฤติ',data:rows.map(r=>r.warn),borderColor:'#dc2626',borderDash:[5,4],pointRadius:3,pointBackgroundColor:'#dc2626',borderWidth:2,fill:false}]},
      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:10},boxWidth:10,padding:7}},
       tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y.toFixed(2)+' ม.รทก.',
         afterBody:it=>{const r=rows[it[0].dataIndex];return ['สถานะ: '+lvStatus(r).l,'เหลือถึงวิกฤติ '+(r.warn-r.level).toFixed(2)+' ม.'];}}}},
@@ -718,6 +718,8 @@ async function loadRain(){
     all.forEach((r,i)=>{RAIN[r.id]=(arr[i]?.daily?.precipitation_sum||[]).reduce((a,b)=>a+(b||0),0);});
   }catch(e){}
 }
+/* SAFETY_UNMASK — กันม่านค้างถ้าเครือข่ายค้างหรือโค้ดสะดุด */
+setTimeout(function(){try{hideLoad();}catch(e){}},15000);
 function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
 function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{

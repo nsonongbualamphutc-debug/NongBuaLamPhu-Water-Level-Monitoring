@@ -64,15 +64,17 @@
 /* bottom */
 .bot{display:grid;grid-template-columns:1.75fr 1fr;gap:10px;min-height:0}
 .chartp{padding:6px 10px}
-.fc7{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:7px 9px;flex:1;min-height:0}
-.fd{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:5px 2px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:0}
+.fc7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:7px 9px;flex:1;min-height:0;overflow:hidden}
+.fc7>*{min-width:0}
+.fd{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:5px 1px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:0;min-width:0;overflow:hidden}
+.fd>*{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fd.today{background:linear-gradient(160deg,#0a1e3c,#12305c);color:#fff;border-color:#0a1e3c}
 .fd.today .fdl{color:rgba(255,255,255,.7)}
-.fd .fdn{font-family:var(--disp);font-weight:600;font-size:10px}
-.fd .fdl{font-size:8px;color:var(--muted)}
-.fd .fde{font-size:16px;line-height:1.2}
-.fd .fdv{font-family:var(--disp);font-weight:800;font-size:12.5px;line-height:1}
-.fd .fdp{font-size:8.5px;color:var(--info);font-weight:600}
+.fd .fdn{font-family:var(--disp);font-weight:600;font-size:clamp(8px,.85vw,10px)}
+.fd .fdl{font-size:clamp(6.5px,.7vw,8px);color:var(--muted)}
+.fd .fde{font-size:clamp(12px,1.35vw,16px);line-height:1.15}
+.fd .fdv{font-family:var(--disp);font-weight:800;font-size:clamp(9px,1.05vw,12.5px);line-height:1.1}
+.fd .fdp{font-size:clamp(7px,.72vw,8.5px);color:var(--info);font-weight:600}
 .fd.hv{border-color:#fbd5d5;background:#fff5f5}
 .skel{background:linear-gradient(90deg,#eef2f7,#f6f9fc,#eef2f7);background-size:200% 100%;animation:sh 1.3s infinite}
 @keyframes sh{to{background-position:-200% 0}}
@@ -396,8 +398,8 @@ function renderCharts(wx){
   const H=wx.hourly,today=wx.daily.time[0],idx=[];
   for(let i=0;i<H.time.length;i++)if(H.time[i].slice(0,10)===today)idx.push(i);
   hourlyC=new Chart(document.getElementById('hourly'),{data:{labels:idx.map(i=>H.time[i].slice(11,13)),datasets:[
-    {type:'bar',label:'ฝน (มม.)',data:idx.map(i=>H.precipitation[i]??0),backgroundColor:idx.map(i=>rc(H.precipitation[i]??0)),yAxisID:'y',borderRadius:3,maxBarThickness:12},
-    {type:'line',label:'เมฆ (%)',data:idx.map(i=>H.cloud_cover[i]??0),borderColor:'#94a3b8',backgroundColor:'rgba(148,163,184,.12)',fill:true,tension:.4,pointRadius:0,borderWidth:2,yAxisID:'y1'}]},
+    {type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,label:'ฝน (มม.)',data:idx.map(i=>H.precipitation[i]??0),backgroundColor:idx.map(i=>rc(H.precipitation[i]??0)),yAxisID:'y',borderRadius:3,maxBarThickness:12},
+    {type:'line',order:1,label:'เมฆ (%)',data:idx.map(i=>H.cloud_cover[i]??0),borderColor:'#94a3b8',backgroundColor:'rgba(148,163,184,.12)',fill:true,tension:.4,pointRadius:0,borderWidth:2,yAxisID:'y1'}]},
    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9},boxWidth:9,padding:5}}},
    scales:{y:{position:'left',beginAtZero:true,grid:{color:'#f1f5f9'},ticks:{font:{size:8.5}}},
            y1:{position:'right',min:0,max:100,grid:{display:false},ticks:{font:{size:8.5},callback:v=>v+'%'}},
@@ -405,8 +407,8 @@ function renderCharts(wx){
   const D=wx.daily,n=D.time.length;
   const past=D.time.map((t,i)=>({t,v:D.precipitation_sum[i]??0})).slice(0,14);
   dailyC=new Chart(document.getElementById('daily'),{data:{labels:past.map(x=>{const d=new Date(x.t+'T00:00');return d.getDate()+' '+MON[d.getMonth()]}),
-    datasets:[{type:'bar',label:'ฝนรายวัน (มม.)',data:past.map(x=>x.v),backgroundColor:past.map(x=>rc(x.v)),borderRadius:4,maxBarThickness:22},
-      {type:'line',label:'เกณฑ์ฝนหนัก 35 มม.',data:past.map(()=>35),borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.5}]},
+    datasets:[{type:'bar',order:2,categoryPercentage:0.82,barPercentage:0.9,label:'ฝนรายวัน (มม.)',data:past.map(x=>x.v),backgroundColor:past.map(x=>rc(x.v)),borderRadius:4,maxBarThickness:22},
+      {type:'line',order:1,label:'เกณฑ์ฝนหนัก 35 มม.',data:past.map(()=>35),borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.5}]},
    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9},boxWidth:9,padding:5}}},
    scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'},ticks:{font:{size:8.5}}},x:{grid:{display:false},ticks:{font:{size:8},maxRotation:0}}}}});
   // 7-day strip
@@ -421,6 +423,8 @@ function renderCharts(wx){
   document.getElementById('fc7').innerHTML=h;
 }
 
+/* SAFETY_UNMASK — กันม่านค้างถ้าเครือข่ายค้างหรือโค้ดสะดุด */
+setTimeout(function(){try{hideLoad();}catch(e){}},15000);
 function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
 function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{
