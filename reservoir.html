@@ -1,11 +1,12 @@
 <!DOCTYPE html><html lang="th"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>อ่างเก็บน้ำ · ปตร. · สถานีอุทกวิทยา · จ.หนองบัวลำภู</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0a1e3c">
+
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -80,7 +81,7 @@
 <aside class="side">
   <div class="brand"><a href="index.html" title="กลับหน้าปกนำเสนอ" style="display:contents"><img src="logo-nbp.png" alt="ตราจังหวัด"><div class="bt"><div class="kick">Water Command</div><div class="ttl">สถานการณ์น้ำจังหวัด</div><div class="en">NONG BUA LAM PHU</div></div></a></div>
   <nav class="menu"><a href="dashboard.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></span><span class="lbl"><b>ภาพรวมสถานการณ์</b><i>Executive Summary</i></span></a><a href="daily_briefing.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span><span class="lbl"><b>รายงานประจำวัน</b><i>Daily Briefing</i></span></a><a href="paneang.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพะเนียง</b><i>Phaneang</i></span></a><a href="mong.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำโมง</b><i>Mong</i></span></a><a href="mo.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำมอ</b><i>Mo</i></span></a><a href="phuay.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพวย</b><i>Phuay</i></span></a><a href="rainfall.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3.5 3.5 0 0 0 6 18z"/><path d="M8 20l1 2M12 20l1 2M16 20l1 2"/></svg></span><span class="lbl"><b>ปริมาณฝน</b><i>Rainfall</i></span></a><a href="reservoir.html" class="active"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6a8 8 0 0 1-16 0zM4 5c3 2 5 2 8 0s5-2 8 0"/></svg></span><span class="lbl"><b>อ่างเก็บน้ำ</b><i>Reservoir</i></span></a><a href="input.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="lbl"><b>บันทึกข้อมูล</b><i>Data Input</i></span></a></nav>
-  <div class="side-foot"><b>สำนักงานสถิติจังหวัดหนองบัวลำภู</b>ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2<br>ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000<div class="cp">© 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู<br>โทร 0 4231 6726</div></div>
+  <div class="side-foot"><b>สำนักงานสถิติจังหวัดหนองบัวลำภู</b>ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2<br>ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000<div class="cp">© 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู<br>โทร 0 4231 6736</div></div>
 </aside>
 <div class="main-col">
   <header class="topbar">
@@ -142,6 +143,15 @@ const BANDS=[{k:'crit',t:20,c:'#dc2626',l:'วิกฤติ <20%'},{k:'low',t:
 const SBANDS=[{k:'ok',c:'#16a34a',l:'ปกติ'},{k:'warn',c:'#f59e0b',l:'เฝ้าระวัง'},{k:'crit',c:'#dc2626',l:'วิกฤติ'}];
 function band(p){for(const b of BANDS)if(p<b.t)return b;return BANDS[3];}
 function pctOf(r){return r.cap>0?(r.cur/r.cap*100):0;}
+/* ช่วงสเกลของ ปตร./สถานีอุทกวิทยา — คำนวณจากค่าจริง กันค่าตกนอกช่วงแล้วถูกบีบเป็น 0 */
+let LVSCALE=2;                     /* ความลึกอ้างอิงร่วมของ ปตร./สถานีอุทกวิทยา */
+function recalcLvScale(){
+  let d=0.8;
+  FG.concat(HY).forEach(x=>{ if(x.level!=null&&x.warn!=null&&!isNaN(x.level)) d=Math.max(d,(+x.warn-+x.level)); });
+  LVSCALE=Math.min(Math.ceil((d+0.5)*2)/2,20);
+}
+function lvRange(x){ return {lo:+x.warn-LVSCALE, hi:+x.warn+LVSCALE*0.12}; }
+function lvPos(x,v){const r=lvRange(x);return Math.max(0,Math.min(100,(v-r.lo)/(r.hi-r.lo)*100));}
 function lvStatus(x){return x.level>x.warn?SBANDS[2]:(x.level>=x.normal?SBANDS[1]:SBANDS[0]);}
 function nf(v,d){return (v==null||isNaN(v))?'—':Number(v).toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d});}
 async function J(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
@@ -200,7 +210,7 @@ function tipRes(r){const p=pctOf(r),b=band(p);
  ${row('สถานะปัจจุบัน','<span style="color:'+b.c+'">'+b.l+'</span>')}</div></div>`;
 }
 function tipFg(g){const s=lvStatus(g);
- const sp=(g.warn-g.normal)||1,lo=g.normal-sp*2,hi=g.warn+sp,R=hi-lo,P=v=>Math.max(0,Math.min(100,(v-lo)/R*100));
+ const P=v=>lvPos(g,v);
  const p=P(g.level),w=P(g.normal),c=P(g.warn);
  const z=[{f:0,t:w,c:'#dcfce7'},{f:w,t:c,c:'#fef3c7'},{f:c,t:100,c:'#fee2e2'}];
  const tk=[{v:w,c:'#f59e0b',l:'เฝ้าระวัง '+nf(g.normal,2)},{v:c,c:'#dc2626',l:'วิกฤติ '+nf(g.warn,2)}];
@@ -216,7 +226,7 @@ function tipFg(g){const s=lvStatus(g);
  ${row('สถานะ','<span style="color:'+s.c+'">'+(g.open>0?'เปิดระบาย · ':'ปิดบาน · ')+s.l+'</span>')}</div></div>`;
 }
 function tipHy(h){const s=lvStatus(h);
- const sp=(h.warn-h.normal)||1,lo=h.normal-sp*2,hi=h.warn+sp,R=hi-lo,P=v=>Math.max(0,Math.min(100,(v-lo)/R*100));
+ const P=v=>lvPos(h,v);
  const p=P(h.level),w=P(h.normal),c=P(h.warn);
  const z=[{f:0,t:w,c:'#dcfce7'},{f:w,t:c,c:'#fef3c7'},{f:c,t:100,c:'#fee2e2'}];
  const tk=[{v:w,c:'#f59e0b',l:'เฝ้าระวัง '+nf(h.normal,2)},{v:c,c:'#dc2626',l:'วิกฤติ '+nf(h.warn,2)}];
@@ -231,6 +241,7 @@ function tipHy(h){const s=lvStatus(h);
  ${row('ห่างเกณฑ์วิกฤติ',nf(h.warn-h.level,2)+' ม.')}${row('สถานะ','<span style="color:'+s.c+'">'+s.l+'</span>')}</div></div>`;
 }
 function buildTips(){
+  recalcLvScale();
  RES.forEach(r=>TIPS[r.id]=tipRes(r));FG.forEach(g=>TIPS[g.id]=tipFg(g));HY.forEach(h=>TIPS[h.id]=tipHy(h));
 }
 function items(){return TAB==='res'?RES:TAB==='fg'?FG:HY;}
@@ -374,6 +385,7 @@ function setSort(s){SORT=s;document.querySelectorAll('#sortSeg button').forEach(
 
 /* ================= list ================= */
 function renderList(){
+  recalcLvScale();
   const list=[...items()];
   if(TAB==='res')list.sort((a,b)=>SORT==='pct'?pctOf(a)-pctOf(b):b.cap-a.cap);
   else list.sort((a,b)=>SORT==='lv'?b.level-a.level:String(a.id).localeCompare(String(b.id)));
@@ -383,11 +395,11 @@ function renderList(){
         <div class="rt"><div><div class="rn">${x.name}</div><div class="ra">อ.${x.amphoe} · จุ ${x.cap.toFixed(2)} ล.ลบ.ม.</div></div>
         <div class="rp" style="color:${b.c}">${p.toFixed(0)}%<small>${x.cur.toFixed(2)} ล.ลบ.ม.</small></div></div>
         <div class="rb"><i style="width:${Math.min(100,p)}%;background:${b.c}"></i><span class="mk" style="left:80%"></span></div></div>`;}
-    const s=lvStatus(x),span=(x.warn-x.normal)||1,p=Math.max(0,Math.min(100,((x.level-(x.normal-span*2))/(span*3))*100));
+    const s=lvStatus(x),p=lvPos(x,x.level);
     return `<div class="ri ${SEL===x.id?'sel':''}" data-tipid="${x.id}" onclick="focus('${x.id}')">
       <div class="rt"><div><div class="rn">${x.name}</div><div class="ra">${x.id} · อ.${x.amphoe}${TAB==='fg'?' · '+(x.open>0?'เปิด '+x.open+'/'+x.gates+' บาน':'ปิดบาน'):''}</div></div>
       <div class="rp" style="color:${s.c}">${x.level.toFixed(2)}<small>ม.รทก. · ${s.l}</small></div></div>
-      <div class="rb"><i style="width:${p}%;background:${s.c}"></i><span class="mk" style="left:66.7%"></span><span class="mk" style="left:33.3%;background:rgba(245,158,11,.65)"></span></div></div>`;}).join('');
+      <div class="rb"><i style="width:${p}%;background:${s.c}"></i><span class="mk" style="left:${lvPos(x,x.warn)}%"></span><span class="mk" style="left:${lvPos(x,x.normal)}%;background:rgba(245,158,11,.65)"></span></div></div>`;}).join('');
 }
 /* ================= summary / kpi / acts ================= */
 function renderSummary(){
