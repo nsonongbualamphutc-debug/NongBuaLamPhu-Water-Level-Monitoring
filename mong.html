@@ -99,6 +99,45 @@ table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:
 .gg.zone .gtk em{font-style:normal}
 .gg.zone .gtk b{font-family:var(--disp);font-weight:700;color:var(--ink)}
 .gg.zone .gtube{flex:0 0 25px}
+
+/* ═══════ การ์ดสถานี — ภาพตัดลำน้ำเคลื่อนไหวตามระดับน้ำจริง ═══════ */
+.pb .stcards{position:absolute;inset:0}
+.stcards{display:grid;grid-auto-flow:column;grid-auto-columns:216px;gap:11px;overflow-x:auto;overflow-y:hidden;
+ padding:11px 12px;flex:1;min-height:0;align-content:start;scroll-snap-type:x proximity}
+.stcards::-webkit-scrollbar{height:7px}
+.stcards::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9px}
+.stc{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;scroll-snap-align:start;
+ background:linear-gradient(168deg,#fff,#f7fbff);border:1px solid var(--line);
+ box-shadow:0 3px 12px rgba(15,40,80,.07);transition:transform .22s cubic-bezier(.2,.7,.3,1),box-shadow .22s,border-color .22s;
+ display:flex;flex-direction:column}
+.stc:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(15,40,80,.16)}
+.stc.sel{border-color:var(--navy);box-shadow:0 0 0 2px rgba(10,30,60,.14),0 14px 30px rgba(15,40,80,.16)}
+.stc.crit{background:linear-gradient(168deg,#fff,#fff5f5)}
+.stc.warn{background:linear-gradient(168deg,#fff,#fffbf2)}
+.stc-h{display:flex;align-items:flex-start;gap:6px;padding:9px 11px 6px}
+.stc-no{flex:0 0 20px;height:20px;border-radius:6px;background:var(--bg);color:var(--muted);
+ font-family:var(--disp);font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center}
+.stc-n{font-family:var(--disp);font-weight:700;font-size:12.5px;line-height:1.15;color:var(--navy);
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.stc-a{font-size:8.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stc-pill{font-family:var(--disp);font-size:8.5px;font-weight:700;color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.stc-lv{padding:0 11px 4px;display:flex;align-items:baseline;gap:5px}
+.stc-lv b{font-family:var(--disp);font-weight:800;font-size:23px;line-height:1;font-variant-numeric:tabular-nums}
+.stc-lv span{font-size:9px;color:var(--muted)}
+.stc-svg{width:100%;height:96px;display:block}
+.stc-f{display:flex;border-top:1px solid var(--line);background:rgba(255,255,255,.7)}
+.stc-f div{flex:1;padding:6px 9px;text-align:center}
+.stc-f div+div{border-left:1px solid var(--line)}
+.stc-f .k{font-size:8px;color:var(--muted);line-height:1.2}
+.stc-f .v{font-family:var(--disp);font-weight:700;font-size:12px;line-height:1.25}
+.wv1{animation:wvA 7s linear infinite}
+.wv2{animation:wvB 11s linear infinite}
+@keyframes wvA{from{transform:translateX(0)}to{transform:translateX(-80px)}}
+@keyframes wvB{from{transform:translateX(0)}to{transform:translateX(80px)}}
+.rise-up{animation:riseUp 1.4s ease-in-out infinite}
+@keyframes riseUp{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.wv1,.wv2,.rise-up{animation:none}}
+@media(max-width:820px){.stcards{grid-auto-columns:min(80vw,240px)}}
 </style></head>
 <body>
 <div class="app" id="app">
@@ -128,10 +167,15 @@ table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:
     <div class="mid">
       <div class="col">
         <div class="panel f1">
-          <div class="ph"><div><h3 data-tip="ภาพตัดตามยาวของลำน้ำ จากต้นน้ำไปปลายน้ำ — เส้นน้ำตาลคือท้องน้ำ เส้นประคือระดับตลิ่ง พื้นที่ฟ้าคือน้ำที่มีอยู่จริง ยิ่งฟ้าใกล้เส้นประ = ยิ่งใกล้ล้นตลิ่ง"><span class="hi">🌊</span>ฉากลำน้ำ — ภาพตัดตามยาว<span class="sub" id="profSub">ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.</span></h3></div>
-            <div class="seg"><button data-p="lv" class="on" onclick="setProf('lv')" data-tip="แสดงระดับน้ำจริงเทียบระดับน้ำทะเลปานกลาง">ระดับจริง</button><button data-p="gap" onclick="setProf('gap')" data-tip="แสดงระยะที่เหลือก่อนน้ำถึงตลิ่งของแต่ละสถานี">เหลือถึงตลิ่ง</button></div></div>
-          <div class="pb"><svg id="prof" preserveAspectRatio="none"></svg></div>
-          <div class="legend" id="profLg"></div>
+          <div class="ph"><div><h3 data-tip="การ์ดรายสถานี — ระดับน้ำในภาพขยับตามข้อมูลจริง เส้นประแดงคือสันตลิ่ง เส้นประส้มคือเกณฑ์เฝ้าระวัง · สลับดูภาพตัดตามยาวได้ที่ปุ่มขวา"><span class="hi">🌊</span>สถานการณ์รายสถานี<span class="sub" id="cardSub">—</span></h3></div>
+            <div class="seg">
+              <button data-v="card" class="on" onclick="setView('card')" data-tip="การ์ดรายสถานี พร้อมภาพตัดลำน้ำเคลื่อนไหวตามระดับน้ำจริง">🃏 การ์ด</button>
+              <button data-v="prof" onclick="setView('prof')" data-tip="ภาพตัดตามยาวของลำน้ำ ต้นน้ำ→ปลายน้ำ">📉 ภาพตัดตามยาว</button>
+              <button data-p="lv" class="on hideprof" onclick="setProf('lv')" style="display:none" data-tip="แสดงระดับน้ำจริง">ระดับจริง</button>
+              <button data-p="gap" class="hideprof" onclick="setProf('gap')" style="display:none" data-tip="แสดงระยะเหลือถึงตลิ่ง">เหลือถึงตลิ่ง</button>
+            </div></div>
+          <div class="pb"><div class="stcards" id="stcards"></div><svg id="prof" preserveAspectRatio="none" style="display:none"></svg></div>
+          <div class="legend" id="profLg" style="display:none"></div>
         </div>
       </div>
       <div class="col">
@@ -375,9 +419,85 @@ function drawProfile(){
     <span class="lg" data-tip="ท้องน้ำโดยประมาณ (ตลิ่งลบ ${PD} ม. — คำนวณให้ครอบคลุมทุกสถานีจากข้อมูลจริง)"><span class="sw" style="background:#e7dccb"></span>ท้องน้ำ</span>
     ${Object.keys(SB).map(k=>`<span class="lg" data-tip="สถานีสถานะ${SB[k].l}"><span class="dot" style="background:${SB[k].c}"></span>${SB[k].l}</span>`).join('')}
     <span class="note">ความยาวลำน้ำในเขตจังหวัด <b>${nf(VS.length?VS[VS.length-1].km:0,1)}</b> กม.</span>`;
-  document.getElementById('profSub').textContent=PROF==='lv'?'ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.':'ต้นน้ำ → ปลายน้ำ · ระยะเหลือถึงตลิ่ง (ม.)';
+  const _ps=document.getElementById('cardSub');
+  if(_ps)_ps.textContent=PROF==='lv'?'ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.':'ต้นน้ำ → ปลายน้ำ · ระยะเหลือถึงตลิ่ง (ม.)';
+}
+let VIEW='card';
+function setView(v){
+  VIEW=v;
+  document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('.hideprof').forEach(b=>b.style.display=(v==='prof'?'':'none'));
+  const cards=document.getElementById('stcards'), svg=document.getElementById('prof'), lg=document.getElementById('profLg');
+  if(cards) cards.style.display=(v==='card'?'':'none');
+  if(svg)   svg.style.display=(v==='prof'?'':'none');
+  if(lg)    lg.style.display=(v==='prof'?'':'none');
+  const sub=document.getElementById('cardSub');
+  if(v==='card'){ renderCards(); }
+  else { if(sub)sub.textContent='ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.'; drawProfile(); }
 }
 function setProf(p){PROF=p;document.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===p));drawProfile();}
+
+
+/* ═══════ การ์ดสถานี — ภาพตัดลำน้ำ ระดับน้ำขยับตามข้อมูลจริง ═══════ */
+function stationCardSvg(s,b){
+  const W=216,H=96, bedY=84, topY=14;           /* ท้องน้ำ / ขอบบน */
+  const p=posOf(s,s.cur);                        /* ตำแหน่งตามโซนเกณฑ์ */
+  const yOf=v=>bedY-(v/100)*(bedY-topY);
+  const wy=yOf(p), warnY=yOf(Z_OK), critY=yOf(Z_WARN);
+  const wave=(y,op,cls,amp)=>{
+    let d=`M -80 ${y}`;
+    for(let x=-80;x<=W+80;x+=40) d+=` q 10 ${-amp} 20 0 t 20 0`;
+    d+=` L ${W+80} ${bedY+6} L -80 ${bedY+6} Z`;
+    return `<path class="${cls}" d="${d}" fill="${b.c}" opacity="${op}"/>`;
+  };
+  const over=s.gap<=0;
+  return `<svg class="stc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <clipPath id="ch${s.id}"><path d="M 0 ${bedY} L 26 ${topY-2} L ${W-26} ${topY-2} L ${W} ${bedY} Z"/></clipPath>
+      <linearGradient id="sky${s.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f2f8ff"/><stop offset="100%" stop-color="#e6f1fb"/></linearGradient>
+    </defs>
+    <path d="M 0 ${bedY} L 26 ${topY-2} L ${W-26} ${topY-2} L ${W} ${bedY} Z" fill="url(#sky${s.id})"/>
+    <g clip-path="url(#ch${s.id})">
+      <rect x="0" y="${critY}" width="${W}" height="${bedY-critY}" fill="#fee2e2" opacity=".55"/>
+      <rect x="0" y="${warnY}" width="${W}" height="${critY-warnY}" fill="#fef3c7" opacity=".7"/>
+      <rect x="0" y="${critY}" width="${W}" height="0" fill="none"/>
+      ${wave(wy+3,.35,'wv2',2.2)}
+      ${wave(wy,.85,'wv1',2.8)}
+    </g>
+    <line x1="0" y1="${critY}" x2="${W}" y2="${critY}" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3"/>
+    <line x1="0" y1="${warnY}" x2="${W}" y2="${warnY}" stroke="#f59e0b" stroke-width="1.1" stroke-dasharray="4 3" opacity=".9"/>
+    <text x="4" y="${critY-3}" font-size="7.5" fill="#dc2626" font-family="Kanit">ตลิ่ง ${nf(s.crit,2)}</text>
+    <text x="${W-4}" y="${warnY-3}" font-size="7.5" fill="#b45309" font-family="Kanit" text-anchor="end">เฝ้าระวัง ${nf(s.warn,2)}</text>
+    <path d="M 0 ${bedY} L 26 ${topY-2}" stroke="#8a6d3b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M ${W} ${bedY} L ${W-26} ${topY-2}" stroke="#8a6d3b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M 0 ${bedY} L ${W} ${bedY} L ${W} ${H} L 0 ${H} Z" fill="#e7dccb"/>
+    <circle cx="${W/2}" cy="${wy}" r="3.2" fill="#fff" stroke="${b.c}" stroke-width="2"/>
+    ${over?`<text x="${W/2}" y="${wy-7}" font-size="8" fill="#dc2626" font-family="Kanit" text-anchor="middle" class="rise-up">▲ ล้นตลิ่ง</text>`:''}
+  </svg>`;
+}
+function renderCards(){
+  const box=document.getElementById('stcards'); if(!box) return;
+  const list=ST.filter(s=>!AMPF||s.amphoe===AMPF).sort((a,b)=>a.no-b.no);
+  const sub=document.getElementById('cardSub');
+  if(sub) sub.textContent=list.length+' สถานี · ระดับน้ำในภาพขยับตามข้อมูลจริง';
+  box.innerHTML=list.map(s=>{
+    const k=stOf(s), b=SB[k];
+    const rain=RAIN[s.id];
+    return `<div class="stc ${k==='normal'?'':k} ${SEL===s.id?'sel':''}" data-tipid="${s.id}" onclick="select('${s.id}')">
+      <div class="stc-h"><span class="stc-no">${s.no}</span>
+        <span style="flex:1;min-width:0"><span class="stc-n">${s.name}</span>
+          <span class="stc-a">อ.${s.amphoe} · กม.${nf(s.km,1)}</span></span>
+        <span class="stc-pill" style="background:${b.c}">${b.l}</span></div>
+      <div class="stc-lv"><b style="color:${b.c}">${nf(s.cur,2)}</b><span>ม.รทก.</span></div>
+      ${stationCardSvg(s,b)}
+      <div class="stc-f">
+        <div><div class="k">${s.gap<=0?'เกินตลิ่ง':'เหลือถึงตลิ่ง'}</div>
+             <div class="v" style="color:${b.c}">${nf(Math.abs(s.gap),2)} ม.</div></div>
+        <div><div class="k">ฝนคาด 7 วัน</div>
+             <div class="v" style="color:var(--info)">${rain!=null?nf(rain,0)+' มม.':'—'}</div></div>
+      </div></div>`;}).join('');
+}
 
 /* ===== map ===== */
 function initMap(){
@@ -403,7 +523,7 @@ function buildMarkers(){
   map.on('click',closeTips);
 }
 function closeTips(){try{if(ptLayer)ptLayer.eachLayer(m=>m.closeTooltip&&m.closeTooltip());}catch(e){}}
-function select(id){SEL=id;renderList();drawProfile();renderTrend();try{renderLadder();}catch(e){}
+function select(id){SEL=id;renderList();try{VIEW==='card'?renderCards():drawProfile();}catch(e){}renderTrend();try{renderLadder();}catch(e){}
   closeTips();
   if(ptLayer)ptLayer.eachLayer(m=>{if(m._id===id){map.flyTo(m.getLatLng(),12,{duration:.6});setTimeout(()=>{closeTips();m.openTooltip&&m.openTooltip();},620);}});}
 
@@ -529,7 +649,7 @@ function renderLadder(){
 /* ═══════ ตารางสรุป + ตัวกรองอำเภอ + สปาร์คไลน์ ═══════ */
 let SORT_K='no', SORT_D=1, AMPF='';
 function ampList(){return [...new Set(ST.map(s=>s.amphoe))].filter(Boolean).sort();}
-function setAmpF(v){AMPF=v;renderList();try{renderLadder();}catch(e){}drawProfile();}
+function setAmpF(v){AMPF=v;renderList();try{renderLadder();}catch(e){}try{VIEW==='card'?renderCards():drawProfile();}catch(e){}}
 function pctBank(s){return s.bank?(s.cur/s.bank*100):0;}
 function sparkSvg(arr,color,w=54,h=18){
   if(!arr||arr.length<2)return '<span class="sm">—</span>';
@@ -702,10 +822,10 @@ function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.displ
   try{ await loadLive(); }catch(e){}
   clearTimeout(slow); srcChip(); recalcScale();
   safe(buildTips,'tips'); safe(renderKPI,'kpi'); safe(renderList,'list'); safe(renderLadder,'ladder');
-  safe(renderTrend,'trend'); safe(initMap,'map'); safe(drawProfile,'profile'); safe(renderActs,'acts');
+  safe(renderTrend,'trend'); safe(initMap,'map'); safe(renderCards,'cards'); safe(drawProfile,'profile'); safe(setView.bind(null,'card'),'view'); safe(renderActs,'acts');
   hideLoad();
   await loadRain();
-  safe(buildTips,'tips2'); safe(renderKPI,'kpi2'); safe(renderActs,'acts2');
+  safe(buildTips,'tips2'); safe(renderKPI,'kpi2'); safe(renderActs,'acts2'); safe(renderCards,'cards2');
   window.addEventListener('resize',()=>safe(drawProfile,'profileR'));
   setTimeout(()=>{try{map.invalidateSize();}catch(e){} safe(drawProfile,'profileT');},250);
 })();
