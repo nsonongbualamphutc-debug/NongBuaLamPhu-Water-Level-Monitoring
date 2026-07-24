@@ -103,6 +103,14 @@ table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:
     <div class="tr"><span class="chip" id="src" data-tip="สถานะการเชื่อมต่อข้อมูลจากระบบหลังบ้าน">กำลังโหลด…</span><button class="btn" data-tip="พิมพ์หรือบันทึกหน้านี้เป็น PDF" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div>
   </header>
   <div class="content">
+      <div class="loadmask" id="loadmask">
+        <div class="lm-box">
+          <div class="lm-spin"></div>
+          <div class="lm-t">กำลังดึงข้อมูลล่าสุด…</div>
+          <div class="lm-s">เชื่อมต่อระบบบันทึกข้อมูลของสำนักงาน<br>จะแสดงตัวเลขเมื่อได้รับข้อมูลจริงเท่านั้น</div>
+          <div class="lm-warn" id="lmWarn">⏳ ระบบตอบช้ากว่าปกติ กำลังรอต่อ…</div>
+        </div>
+      </div>
     <div class="booterr" id="bootErr"></div>
     <div class="kpis" id="kpis"></div>
     <div class="mid">
@@ -646,15 +654,18 @@ function srcChip(){const el=document.getElementById('src');
   else{el.className='chip demo';el.textContent='● ชุดตัวอย่าง';el.dataset.tip='ยังเชื่อมต่อข้อมูลจริงไม่ได้ — ตัวเลขเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ';}}
 function safe(fn,name){try{return fn();}catch(e){console.error('['+name+']',e);
   const el=document.getElementById('bootErr');if(el){el.style.display='flex';el.textContent='⚠ ส่วน '+name+' แสดงผลไม่ได้: '+e.message;}}}
+function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
+function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{
-  safe(buildTips,'tips');
-  safe(renderKPI,'kpi'); safe(renderList,'list'); safe(renderLadder,'ladder');
+  /* รอข้อมูลจริงก่อนเสมอ แล้วค่อยวาดครั้งเดียว — ไม่ให้เห็นตัวเลขเก่าแวบขึ้นมา */
+  const slow=setTimeout(loadSlow,3000);
+  try{ await loadLive(); }catch(e){}
+  clearTimeout(slow); srcChip(); recalcScale();
+  safe(buildTips,'tips'); safe(renderKPI,'kpi'); safe(renderList,'list'); safe(renderLadder,'ladder');
   safe(renderTrend,'trend'); safe(initMap,'map'); safe(drawProfile,'profile'); safe(renderActs,'acts');
-  await loadLive(); srcChip();
-  safe(buildTips,'tips2'); safe(renderKPI,'kpi2'); safe(renderList,'list2'); safe(renderLadder,'ladder2');
-  safe(renderTrend,'trend2'); safe(drawProfile,'profile2'); safe(refreshMarkers,'markers');
+  hideLoad();
   await loadRain();
-  safe(buildTips,'tips3'); safe(renderKPI,'kpi3'); safe(renderActs,'acts2');
+  safe(buildTips,'tips2'); safe(renderKPI,'kpi2'); safe(renderActs,'acts2');
   window.addEventListener('resize',()=>safe(drawProfile,'profileR'));
   setTimeout(()=>{try{map.invalidateSize();}catch(e){} safe(drawProfile,'profileT');},250);
 })();

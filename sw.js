@@ -11,7 +11,7 @@
  *  ⚠️ เวลาแก้ไฟล์ HTML/CSS แล้ว deploy ใหม่ ให้ขยับเลข VERSION ทุกครั้ง
  *     เพื่อบังคับล้าง cache เก่าของผู้ใช้
  * ════════════════════════════════════════════════════════════ */
-const VERSION       = "wnb-v18";
+const VERSION       = "wnb-v19";
 const STATIC_CACHE  = VERSION + "-static";
 const RUNTIME_CACHE = VERSION + "-runtime";
 
@@ -94,8 +94,27 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  /* ── 2. ไฟล์ในโดเมนเดียวกัน (css/js/geojson) → stale-while-revalidate ── */
+  /* ── 2. ไฟล์ในโดเมนเดียวกัน ──
+   *  โค้ดและหน้าเว็บ (html/css/js) → network-first เสมอ
+   *    เพื่อให้ผู้ใช้ได้เวอร์ชันล่าสุดทันทีหลังอัปไฟล์ ไม่ต้องรอ cache หมดอายุ
+   *  ไฟล์ที่ไม่เปลี่ยน (รูป/ฟอนต์/geojson) → cache-first เพื่อความเร็ว
+   */
   if (url.origin === self.location.origin) {
+    const isCode = /\.(?:html|css|js|json)$/i.test(url.pathname) || url.pathname.endsWith("/");
+    if (isCode) {
+      event.respondWith(
+        fetch(req, { cache: "no-store" })
+          .then(function (res) {
+            if (res && res.ok) {
+              const copy = res.clone();
+              caches.open(STATIC_CACHE).then(function (c) { c.put(req, copy); });
+            }
+            return res;
+          })
+          .catch(function () { return caches.match(req); })
+      );
+      return;
+    }
     event.respondWith(
       caches.match(req).then(function (hit) {
         const fresh = fetch(req).then(function (res) {

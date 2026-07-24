@@ -164,6 +164,14 @@ table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:
     <div class="tr"><span class="chip" id="src" data-tip="สถานะการเชื่อมต่อข้อมูลจากระบบหลังบ้าน (Google Apps Script)">กำลังโหลด…</span><button class="btn" data-tip="พิมพ์หรือบันทึกหน้านี้เป็นไฟล์ PDF" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div>
   </header>
   <div class="content">
+      <div class="loadmask" id="loadmask">
+        <div class="lm-box">
+          <div class="lm-spin"></div>
+          <div class="lm-t">กำลังดึงข้อมูลล่าสุด…</div>
+          <div class="lm-s">เชื่อมต่อระบบบันทึกข้อมูลของสำนักงาน<br>จะแสดงตัวเลขเมื่อได้รับข้อมูลจริงเท่านั้น</div>
+          <div class="lm-warn" id="lmWarn">⏳ ระบบตอบช้ากว่าปกติ กำลังรอต่อ…</div>
+        </div>
+      </div>
     <div class="kpis" id="kpis"></div>
     <div class="mid">
       <div class="col">
@@ -710,13 +718,15 @@ async function loadRain(){
     all.forEach((r,i)=>{RAIN[r.id]=(arr[i]?.daily?.precipitation_sum||[]).reduce((a,b)=>a+(b||0),0);});
   }catch(e){}
 }
+function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
+function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
 (async()=>{
   await loadLive(); srcChip(); buildTips();
   document.getElementById('tdate').textContent=RES.length+' อ่าง · '+FG.length+' ปตร. · '+HY.length+' สถานีอุทกวิทยา';
   document.getElementById('cRes').textContent=RES.length;
   document.getElementById('cFg').textContent=FG.length;
   document.getElementById('cHy').textContent=HY.length;
-  initMap(); setTab('res');
+  initMap(); setTab('res'); hideLoad();
   await loadRain(); renderRain(); renderActs();
   setTimeout(()=>map.invalidateSize(),200);
 })();
