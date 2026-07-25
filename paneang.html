@@ -347,15 +347,35 @@ function recalcScale(){
    ══════════════════════════════════════════════════════════════════════ */
 const HEAD=112;                                   /* เผื่อหัวหลอดเหนือ 100% ให้เห็นโซนวิกฤติ */
 function tp(p){ return Math.max(0,Math.min(HEAD,p))/HEAD*100; }
-function depthOf(s){
-  var d=null;
-  if(s.depth!=null&&!isNaN(s.depth)) d=+s.depth;
-  else if(s.bed!=null&&!isNaN(s.bed)) d=+s.bank-(+s.bed);
-  return (d!=null&&d>0.2)?d:SCALE;
+/* One source of truth for every visual position: 0% is the station bed and
+   100% is its bank/critical level.  If surveyed bed/depth data is unavailable,
+   derive a fixed bed once from the supplied reference level + capacity. */
+function clampPct(v){ return Math.max(0,Math.min(100,Number(v)||0)); }
+function normalizeLevel(value,bottom,top){
+  const v=Number(value), lo=Number(bottom), hi=Number(top);
+  if(!isFinite(v)||!isFinite(lo)||!isFinite(hi)||hi<=lo) return 0;
+  return ((v-lo)/(hi-lo))*100;
 }
-function bedOf(s){ return +s.bank-depthOf(s); }
-function fillOf(s,v){ const bed=bedOf(s); return (v-bed)/Math.max(.001,(+s.bank-bed))*100; }
-function pctNow(s){   return (s.bank!=null&&s.cur!=null&&!isNaN(s.cur))?fillOf(s,s.cur):0; }
+function stationBounds(s){
+  const top=Number(s.bank);
+  let bottom=Number(s.bed);
+  if(!isFinite(bottom)){
+    const depth=Number(s.depth);
+    if(isFinite(depth)&&depth>0.2) bottom=top-depth;
+  }
+  if(!isFinite(bottom)){
+    const refLevel=Number(s._refCur), refPct=Number(s._refPct);
+    if(isFinite(refLevel)&&isFinite(refPct)&&refPct>=0&&refPct<100&&top>refLevel){
+      bottom=top-(top-refLevel)/(1-refPct/100);
+    }
+  }
+  if(!isFinite(bottom)||bottom>=top) bottom=top-SCALE;
+  return {bottom,top};
+}
+function depthOf(s){ const b=stationBounds(s); return b.top-b.bottom; }
+function bedOf(s){ return stationBounds(s).bottom; }
+function fillOf(s,v){ const b=stationBounds(s); return normalizeLevel(v,b.bottom,b.top); }
+function pctNow(s){ return (s.bank!=null&&s.cur!=null&&!isNaN(s.cur))?fillOf(s,s.cur):0; }
 function pctBarOf(s){ return Math.max(0,Math.min(100,pctNow(s))); }
 function warnPct(s){  return Math.max(0,Math.min(100,fillOf(s,(s.warn!=null?+s.warn:+s.bank-0.5)))); }
 function critPct(s){  return Math.max(0,Math.min(100,fillOf(s,(s.crit!=null?+s.crit:+s.bank)))); }
@@ -398,9 +418,16 @@ function arcGauge(s,color){
   </svg>`;
 }
 /* ── ปตร. ใช้ตรรกะเดียวกัน (g.normal = เฝ้าระวัง · g.warn = วิกฤติ/ล้นตลิ่ง) ── */
-function fgCrit(g){ return +g.warn; }
-function fgFill(g,v){ const crit=fgCrit(g), bed=crit-SCALE; return (v-bed)/Math.max(.001,(crit-bed))*100; }
+function fgStation(g){ return ST.find(s=>s.name===g.name)||null; }
+function fgCrit(g){ const s=fgStation(g); return s?+s.bank:+g.warn; }
+function fgFill(g,v){
+  const s=fgStation(g);
+  return s ? fillOf(s,v) : normalizeLevel(v,fgCrit(g)-SCALE,fgCrit(g));
+}
 function fgPct(g){ return fgFill(g,g.level); }
+/* Preserve the reference pair before live data replaces `cur`; it calibrates
+   stations that provide a capacity percentage but no surveyed river bed. */
+ST.forEach(s=>{ s._refCur=s.cur; s._refPct=s.pct; });
 
 /* ความลึกภาพตัดตามยาว — ลึกพอครอบคลุมทุกสถานีเสมอ */
 function profDepth(){ recalcScale(); return SCALE; }
@@ -467,7 +494,7 @@ function tipSt(s){
 function buildTips(){
   recalcScale();ST.forEach(s=>TIPS[s.id]=tipSt(s));
  FG.forEach(g=>{const k=g.level>g.warn?'crit':(g.level>=g.normal?'warn':'normal'),b=SB[k];
-  const pc=fgPct(g), wp=Math.max(0,Math.min(100,fgFill(g,g.normal))), cp=100;
+  const pc=fgPct(g), wp=clampPct(fgFill(g,g.normal)), cp=clampPct(fgFill(g,fgCrit(g)));
   const gap=fgCrit(g)-g.level;
   const st=ST.find(x=>x.name===g.name);
   TIPS[g.id]=`<div class="tth2" style="background:linear-gradient(135deg,${b.c},${b.c}cc)">
@@ -504,10 +531,10 @@ function drawProfile(){
   let lo,hi,bedArr,topArr,curArr;
   const PD=profDepth();
   if(PROF==='lv'){
-    bedArr=VS.map(s=>s.bank-PD);topArr=VS.map(s=>s.bank);curArr=VS.map(s=>s.cur);
+    bedArr=VS.map(s=>bedOf(s));topArr=VS.map(s=>s.bank);curArr=VS.map(s=>s.cur);
     lo=Math.min(...bedArr)-3;hi=Math.max(...topArr)+4;
   }else{
-    bedArr=VS.map(()=>0);topArr=VS.map(()=>PD);curArr=VS.map(s=>Math.max(0,Math.min(PD,PD-s.gap)));
+    bedArr=VS.map(()=>0);topArr=VS.map(()=>PD);curArr=VS.map(s=>pctBarOf(s)/100*PD);
     lo=0;hi=PD+.6;
   }
   const y=v=>P.t+ih-((v-lo)/(hi-lo))*ih;
@@ -928,6 +955,10 @@ async function loadLive(){
       const bk=_f(it,['bank','bank_level','crit','crit_level']); if(bk!==null)x.bank=bk;
       const wn=_f(it,['warn','warn_level']);                     if(wn!==null)x.warn=wn;
       const cr=_f(it,['crit','crit_level','bank','bank_level']); if(cr!==null)x.crit=cr;
+      const bed=_f(it,['bed','river_bed','bottom_level']);       if(bed!==null)x.bed=bed;
+      const dep=_f(it,['depth','river_depth']);                  if(dep!==null)x.depth=dep;
+      const pct=_f(it,['pct','capacity','capacity_pct','percent']);
+      if(pct!==null&&pct>=0&&pct<=100){ x.pct=pct; x._refCur=lv; x._refPct=pct; }
       x.gap=+(x.bank-x.cur).toFixed(2);
       const lu=_s(it,['last_update']); if(lu&&lu>DATE)DATE=lu.slice(0,16);
       n++;
