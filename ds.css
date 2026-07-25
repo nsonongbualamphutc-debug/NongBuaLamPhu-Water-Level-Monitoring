@@ -95,9 +95,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .ri .ra{font-size:8.5px;color:var(--muted);font-weight:400}
 .ri .rp{font-family:var(--disp);font-weight:800;font-size:13px;white-space:nowrap;text-align:right}
 .ri .rp small{font-size:8.5px;color:var(--muted);font-weight:400;display:block}
-.ri .rb{height:7px;border-radius:99px;background:#eef2f7;overflow:hidden;position:relative}
+.ri .rb{height:9px;border-radius:99px;background:#eef2f7;position:relative;overflow:visible}
 .ri .rb i{display:block;height:100%;border-radius:99px;transition:width .5s}
-.ri .rb .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:rgba(15,23,42,.3)}
+.ri .rb{isolation:isolate}
+.ri .rb i{position:relative;z-index:1}
+.ri .rb .mk{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:#f59e0b;box-shadow:0 0 0 1.5px #fff;z-index:2}
+.ri .rb .mk.crit{background:#dc2626}
 .acts{padding:6px 9px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
 .act{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:10px;border:1px solid var(--line);font-size:10.5px;line-height:1.4}
 .act.c{background:#fff5f5;border-color:#fbd5d5}
@@ -150,7 +153,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-
 .ldn .no{display:inline-block;background:var(--bg);color:var(--muted);font-size:8px;padding:0 4px;border-radius:99px;margin-right:3px;font-family:var(--disp)}
 .ldb{position:relative;height:13px;border-radius:7px;overflow:hidden;background:#eef2f7}
 .ldb .z{position:absolute;top:0;bottom:0}
-.ldb .pin{position:absolute;top:-2px;bottom:-2px;width:3px;border-radius:2px;background:#0f172a;box-shadow:0 0 0 1.5px #fff}
+.ldb .pin{position:absolute;top:-4px;bottom:-4px;width:4px;border-radius:2px;background:#0f172a;box-shadow:0 0 0 2px #fff;z-index:3}
 .ldv{font-family:var(--disp);font-weight:700;font-size:10.5px;text-align:right;white-space:nowrap}
 .ldv small{display:block;font-size:7.5px;color:var(--muted);font-weight:400}
 .ldlg{flex:0 0 auto;display:flex;gap:10px;padding:5px 11px;border-top:1px solid var(--line);font-size:9px;color:var(--muted)}
