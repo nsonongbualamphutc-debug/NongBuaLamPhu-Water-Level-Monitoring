@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0a1e3c">
 
-<link rel="stylesheet" href="ds.css?v=24">
+<link rel="stylesheet" href="ds.css?v=25">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html,body{height:100%;overflow:hidden}
@@ -159,10 +159,10 @@ h1 b{display:block;font-weight:800;background:linear-gradient(92deg,#fff 15%,#bf
       <div class="org">สำนักงานสถิติจังหวัดหนองบัวลำภู</div>
       <div class="addr">ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2 · ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000 · โทร 0 4231 6736</div>
     </div>
-    <div class="when"><span class="live"><span class="d"></span>ระบบพร้อมใช้งาน</span><b id="dt">—</b><span id="tm">—</span> <span class="ver-stamp" style="opacity:.6;font-size:9.5px">· รุ่น v24</span></div>
+    <div class="when"><span class="live"><span class="d"></span>ระบบพร้อมใช้งาน</span><b id="dt">—</b><span id="tm">—</span> <span class="ver-stamp" style="opacity:.6;font-size:9.5px">· รุ่น v25</span></div>
   </div>
 </div>
-<script src="ds.js?v=24" defer></script>
+<script src="ds.js?v=25" defer></script>
 <script>
 /* ถ้าไม่มีไฟล์พื้นหลัง ระบบจะใช้พื้นหลังไล่เฉด + ลายขอบเขตจังหวัดแทนอัตโนมัติ */
 (function(){
@@ -231,8 +231,8 @@ window.addEventListener('load',function(){
     var done=false;
     navigator.serviceWorker.addEventListener('controllerchange',function(){
       if(done) return; done=true;
-      if(!sessionStorage.getItem('wnb_reload_v24')){
-        sessionStorage.setItem('wnb_reload_v24','1');
+      if(!sessionStorage.getItem('wnb_reload_v25')){
+        sessionStorage.setItem('wnb_reload_v25','1');
         location.reload();
       }
     });
