@@ -1,0 +1,2365 @@
+/**
+ * ============================================================
+ *  ระบบแดชบอร์ดสถานการณ์น้ำจังหวัดหนองบัวลำภู
+ *  Google Apps Script Backend — v3 (+ PIN auth)
+ * ============================================================
+ *  PIN: ตั้งค่า APP_PIN ใน Script Properties
+ * ============================================================ */
+
+// ===== CONFIG =====
+const SHEET_STATIONS    = "Stations";
+const SHEET_WATER       = "WaterLevel";
+const SHEET_RAIN        = "Rainfall";
+const SHEET_RESERVOIR   = "Reservoir";
+const SHEET_FLOODGATE   = "Floodgates";        // ปตร. (กรมชลประทาน)
+const SHEET_HYDRO       = "HydroStations";     // สถานีอุทกวิทยา
+const SHEET_SETTINGS    = "Settings";
+const SHEET_PINS        = "StationPins";      // PIN รายสถานี
+const SHEET_AMPHOE_PINS = "AmphoePins";       // PIN รายอำเภอ (สำหรับฝน)
+const SHEET_RESERVOIR_PINS = "ReservoirPins"; // PIN รายอ่างเก็บน้ำ
+const SHEET_FLOODGATE_PINS = "FloodgatePins"; // PIN รายประตูระบายน้ำ
+const SHEET_HYDRO_PINS  = "HydroPins";         // PIN รายสถานีอุทกวิทยา
+
+// ===== Headers ของชีตใหม่ =====
+const HEADERS_FLOODGATE = [
+  "gate_id","name","village","tambon","amphoe","lat","lon",
+  "threshold_normal","threshold_warn","threshold_crit",
+  "date","time","water_level","gate_opening","flow_rate","recorder","remark"
+];
+const HEADERS_HYDRO = [
+  "station_code","name","village","tambon","amphoe","lat","lon",
+  "bank_height","channel_capacity_cms",
+  "threshold_normal","threshold_warn","threshold_crit",
+  "threshold_normal_height","threshold_warn_height","threshold_crit_height",
+  "date","time","water_level","water_height","flow_rate","recorder","remark"
+];
+
+// ===== Master ข้อมูล ปตร. — กรมชลประทาน 3 จุด =====
+const FLOODGATE_MASTER = [
+  { gate_id:"FG01", name:"ปตร.หนองหว้าใหญ่", village:"บ้านหนองหว้า",
+    tambon:"โพธิ์ชัย", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.179444, lon:102.386111,
+    threshold_normal:214,   threshold_warn:214.5, threshold_crit:214.5 },
+  { gate_id:"FG02", name:"ปตร.ปู่หลอด", village:"บ้านโนนคูณ",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.115278, lon:102.453611,
+    threshold_normal:203,   threshold_warn:203.5, threshold_crit:203.5 },
+  { gate_id:"FG03", name:"ปตร.หัวนา", village:"บ้านหัวนา",
+    tambon:"หัวนา", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.000556, lon:102.423889,
+    threshold_normal:190,   threshold_warn:191,   threshold_crit:191 }
+];
+
+// ===== Master ข้อมูลสถานีอุทกวิทยา 3 จุด =====
+const HYDRO_MASTER = [
+  { station_code:"E.64B", name:"สถานีอุทกวิทยา E.64B", village:"บ้านวังสามหาบ",
+    tambon:"เทพคีรี", amphoe:"นาวัง",
+    lat:17.309722, lon:102.107778,
+    bank_height:5.5, channel_capacity_cms:50,
+    threshold_normal:254.5, threshold_warn:255.5, threshold_crit:255.5,
+    threshold_normal_height:4.5, threshold_warn_height:5.5, threshold_crit_height:5.5 },
+  { station_code:"E.109", name:"สถานีอุทกวิทยา E.109", village:"บ้านวังหมื่น",
+    tambon:"หนองบัว", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.182778, lon:102.431944,
+    bank_height:4.5, channel_capacity_cms:115,
+    threshold_normal:208.5, threshold_warn:209.5, threshold_crit:209.5,
+    threshold_normal_height:3.5, threshold_warn_height:4.5, threshold_crit_height:4.5 },
+  { station_code:"E.68A", name:"สถานีอุทกวิทยา E.68A", village:"บ้านข้องโป้",
+    tambon:"บ้านขาม", amphoe:"เมืองหนองบัวลำภู",
+    lat:17.081667, lon:102.450833,
+    bank_height:5.2, channel_capacity_cms:130,
+    threshold_normal:199.2, threshold_warn:199.9, threshold_crit:199.9,
+    threshold_normal_height:4.5, threshold_warn_height:5.2, threshold_crit_height:5.2 }
+];
+
+// ===== FG ↔ PN mapping (ข้อมูลชุดเดียวกัน) =====
+// FG01=PN06, FG02=PN08, FG03=PN10
+const FG_PN_MAP = { "FG01":"PN06", "FG02":"PN08", "FG03":"PN10" };
+const PN_FG_MAP = { "PN06":"FG01", "PN08":"FG02", "PN10":"FG03" };
+
+
+
+// ===== PIN =====
+const PIN_PROPERTY_KEY   = "APP_PIN";           // legacy global PIN (เผื่อ reservoir.html, daily report)
+const ADMIN_PIN_KEY      = "ADMIN_PIN";         // master PIN สำหรับ Admin
+const PIN_REQUIRED       = true;                // false = ปิด PIN ระหว่าง dev
+const WRITE_ACTIONS      = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
+const AMPHOES = ["เมืองหนองบัวลำภู","นากลาง","นาวัง","ศรีบุญเรือง","สุวรรณคูหา","โนนสัง"];
+
+const RESERVOIR_HEADERS = [
+  "reservoir_id","reservoir_name","amphoe","capacity",
+  "current_volume","date","reporter","updated_at",
+  "level","inflow","outflow"
+];
+
+// ===== ENTRY POINTS =====
+
+/**
+ * ============================================================
+ * Code.gs — PATCH v3.1
+ * เพิ่ม / แก้ไข 3 ส่วน:
+ *   1. CacheService — cache GET read actions 60 วินาที
+ *   2. doPost() — sync PIN logic เหมือน doGet (แยกรายสถานี/อำเภอ)
+ *   3. clearCache() — helper เรียกใน Apps Script Editor เมื่อต้องการ flush
+ *
+ * วิธีใช้:
+ *   - นำส่วน REPLACE ไปแทนที่ฟังก์ชันเดิมใน Code.gs
+ *   - ส่วน "เพิ่มใหม่ท้ายไฟล์" ให้ paste ต่อท้าย Code.gs
+ * ============================================================
+ */
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 1: แทนที่ doGet() ทั้งหมด — เพิ่ม CacheService
+ * ══════════════════════════════════════════════════
+ * READ actions (summary, paneang, mong, mo, phuay, stations,
+ * stationlist, water, rain, reservoir, history, dailyreport)
+ * จะถูก cache ไว้ 60 วินาทีเพื่อลดการอ่าน Sheet ซ้ำๆ
+ */
+
+function doGet(e) {
+  const params   = (e && e.parameter) ? e.parameter : {};
+  const action   = (params.action || "summary").toLowerCase();
+  const callback = params.callback;
+
+  let data;
+
+  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
+
+  try {
+
+    /* ── WRITE via GET ── */
+    if (WRITE_ACTIONS.indexOf(action) !== -1) {
+      const pin = String(params.pin || "").trim();
+      let pinOk = false, pinError = "PIN ไม่ถูกต้อง";
+
+      if (PIN_REQUIRED) {
+        if (action === "savewater") {
+          const stid = String(params.station_id || "").toUpperCase();
+          if (!stid) { pinError = "ไม่ระบุรหัสสถานี (station_id)"; }
+          else {
+            const acc = verifyWaterAccess(stid, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "station") touchStationPinLastUsed(stid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
+          }
+        } else if (action === "saverain") {
+          const amphoe = String(params.amphoe || "");
+          if (!amphoe) { pinError = "ไม่ระบุอำเภอ"; }
+          else {
+            const acc = verifyRainAccess(amphoe, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "amphoe") touchAmphoePinLastUsed(amphoe); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+          }
+        } else if (action === "savereservoir") {
+          const rid = String(params.reservoir_id || "").toUpperCase();
+          if (!rid) { pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ (reservoir_id)"; }
+          else {
+            const acc = verifyReservoirAccess(rid, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
+          }
+        } else if (action === "savefloodgate") {
+          const gid = String(params.gate_id || "").toUpperCase();
+          if (!gid) { pinError = "ไม่ระบุรหัสประตูระบายน้ำ (gate_id)"; }
+          else {
+            const acc = verifyFloodgateAccess(gid, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "floodgate") touchFloodgatePinLastUsed(gid); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับประตูระบายน้ำ " + gid;
+          }
+        } else if (action === "savehydro") {
+          const code = String(params.station_code || "").toUpperCase();
+          if (!code) { pinError = "ไม่ระบุรหัสสถานีอุทกวิทยา (station_code)"; }
+          else {
+            const acc = verifyHydroAccess(code, pin);
+            if (acc.ok) { pinOk = true; if (acc.role === "hydro") touchHydroPinLastUsed(code); }
+            else pinError = "PIN ไม่ถูกต้องสำหรับสถานีอุทกวิทยา " + code;
+          }
+        } else if (verifyAdminPin(pin)) {
+          pinOk = true; // savedailyreport via admin
+        } else {
+          const expected = getAppPin();
+          if (expected && pin === expected) pinOk = true;
+          else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
+        }
+      } else {
+        pinOk = true;
+      }
+
+      if (!pinOk) return respond({ ok: false, error: pinError, code: "INVALID_PIN" }, callback);
+
+      const payload = {};
+      Object.keys(params).forEach(function(k) { if (k !== 'callback') payload[k] = params[k]; });
+
+      /* ครอบด้วย ScriptLock — กันบันทึกชนกันจนเกิดแถวซ้ำ */
+      data = withWriteLock_(function() {
+        switch (action) {
+          case "savewater":      return saveWaterLevel(payload);
+          case "saverain":       return saveRainfall(payload);
+          case "savereservoir":  return saveReservoir(payload);
+          case "savedailyreport":return saveDailyReport(payload);
+          case "savefloodgate":  return saveFloodgate(payload);
+          case "savehydro":      return saveHydro(payload);
+        }
+      });
+
+      /* Flush cache เมื่อมีข้อมูลใหม่ */
+      invalidateSummaryCache_();
+      return respond(data, callback);
+    }
+
+    /* ── LOGIN endpoints ── (ไม่ cache) */
+    if (action === "loginstation") {
+      const stid = String(params.station_id || "").toUpperCase();
+      const pin  = String(params.pin || "").trim();
+      if (!stid) return respond({ ok: false, error: "ไม่ระบุรหัสสถานี" }, callback);
+      const acc = verifyWaterAccess(stid, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, station: getStationContext(stid) }, callback);
+    }
+    if (action === "loginamphoe") {
+      const am  = String(params.amphoe || "");
+      const pin = String(params.pin || "").trim();
+      if (!am) return respond({ ok: false, error: "ไม่ระบุอำเภอ" }, callback);
+      const acc = verifyRainAccess(am, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, amphoe: getAmphoeContext(am) }, callback);
+    }
+    if (action === "loginreservoir") {
+      const rid = String(params.reservoir_id || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!rid) return respond({ ok: false, error: "ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+      const acc = verifyReservoirAccess(rid, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, reservoir: getReservoirContext(rid) }, callback);
+    }
+    if (action === "loginfloodgate") {
+      const gid = String(params.gate_id || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!gid) return respond({ ok: false, error: "ไม่ระบุรหัสประตูระบายน้ำ" }, callback);
+      const acc = verifyFloodgateAccess(gid, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, floodgate: getFloodgateContext(gid) }, callback);
+    }
+    if (action === "loginhydro") {
+      const code = String(params.station_code || "").toUpperCase();
+      const pin = String(params.pin || "").trim();
+      if (!code) return respond({ ok: false, error: "ไม่ระบุรหัสสถานีอุทกวิทยา" }, callback);
+      const acc = verifyHydroAccess(code, pin);
+      if (!acc.ok) return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: acc.role, hydro: getHydroContext(code) }, callback);
+    }
+    if (action === "loginwateradmin")   return respond(checkSubAdminRole("water",     String(params.pin||"")), callback);
+    if (action === "loginrainadmin")    return respond(checkSubAdminRole("rain",      String(params.pin||"")), callback);
+    if (action === "loginreservoiradmin") return respond(checkSubAdminRole("reservoir",String(params.pin||"")), callback);
+    if (action === "adminlogin") {
+      const pin = String(params.pin || "").trim();
+      if (!verifyAdminPin(pin)) return respond({ ok: false, error: "PIN ผู้ดูแลระบบไม่ถูกต้อง" }, callback);
+      return respond({ ok: true, role: "admin" }, callback);
+    }
+
+    /* ── ADMIN actions ── (ไม่ cache) */
+    const adminActions = [
+      "liststationpins","setstationpin","initstationpins",
+      "listamphoepins","setamphoepin","initamphoepins",
+      "listreservoirpins","setreservoirpin","initreservoirpins",
+      "listfloodgatepins","setfloodgatepin","initfloodgatepins",
+      "listhydropins","sethydropin","inithydropins",
+      "stationcontext","amphoecontext","reservoircontext","floodgatecontext","hydrocontext"
+    ];
+    if (adminActions.indexOf(action) !== -1) {
+      const adminpin = String(params.adminpin || params.pin || "").trim();
+      const isAdmin  = verifyAdminPin(adminpin);
+
+      if (action === "stationcontext") {
+        const stid = String(params.station_id || "").toUpperCase();
+        if (!stid) return respond({ ok: false, error: "ไม่ระบุรหัสสถานี" }, callback);
+        if (!isAdmin && !verifyWaterAdminPin(adminpin) && !verifyStationPin(stid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, station: getStationContext(stid) }, callback);
+      }
+      if (action === "amphoecontext") {
+        const am = String(params.amphoe || "");
+        if (!am) return respond({ ok: false, error: "ไม่ระบุอำเภอ" }, callback);
+        if (!isAdmin && !verifyRainAdminPin(adminpin) && !verifyAmphoePin(am, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, amphoe: getAmphoeContext(am) }, callback);
+      }
+      if (action === "reservoircontext") {
+        const rid = String(params.reservoir_id || "").toUpperCase();
+        if (!rid) return respond({ ok: false, error: "ไม่ระบุรหัสอ่างเก็บน้ำ" }, callback);
+        if (!isAdmin && !verifyReservoirAdminPin(adminpin) && !verifyReservoirPin(rid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, reservoir: getReservoirContext(rid) }, callback);
+      }
+      if (action === "floodgatecontext") {
+        const gid = String(params.gate_id || "").toUpperCase();
+        if (!gid) return respond({ ok: false, error: "ไม่ระบุรหัสประตูระบายน้ำ" }, callback);
+        if (!isAdmin && !verifyFloodgatePin(gid, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, floodgate: getFloodgateContext(gid) }, callback);
+      }
+      if (action === "hydrocontext") {
+        const code = String(params.station_code || "").toUpperCase();
+        if (!code) return respond({ ok: false, error: "ไม่ระบุรหัสสถานีอุทกวิทยา" }, callback);
+        if (!isAdmin && !verifyHydroPin(code, adminpin))
+          return respond({ ok: false, error: "PIN ไม่ถูกต้อง" }, callback);
+        return respond({ ok: true, hydro: getHydroContext(code) }, callback);
+      }
+      if (!isAdmin) return respond({ ok: false, error: "ต้องใช้ PIN ผู้ดูแลระบบ" }, callback);
+      switch (action) {
+        case "liststationpins":   data = listStationPins();                                                break;
+        case "setstationpin":     data = setStationPin_(params.station_id, params.new_pin, params.recorder_name); break;
+        case "initstationpins":   data = initStationPins();                                               break;
+        case "listamphoepins":    data = listAmphoePins();                                                break;
+        case "setamphoepin":      data = setAmphoePin_(params.amphoe, params.new_pin, params.recorder_name); break;
+        case "initamphoepins":    data = initAmphoePins();                                                break;
+        case "listreservoirpins": data = listReservoirPins();                                             break;
+        case "setreservoirpin":   data = setReservoirPin_(params.reservoir_id, params.new_pin, params.recorder_name); break;
+        case "initreservoirpins": data = initReservoirPins();                                             break;
+        case "listfloodgatepins": data = listFloodgatePins();                                             break;
+        case "setfloodgatepin":   data = setFloodgatePin_(params.gate_id, params.new_pin, params.recorder_name); break;
+        case "initfloodgatepins": data = initFloodgatePins();                                             break;
+        case "listhydropins":     data = listHydroPins();                                                 break;
+        case "sethydropin":       data = setHydroPin_(params.station_code, params.new_pin, params.recorder_name); break;
+        case "inithydropins":     data = initHydroPins();                                                 break;
+      }
+      return respond(data, callback);
+    }
+
+    /* ── READ actions (with CacheService) ── */
+    data = getCachedOrFresh_(action, params);
+
+  } catch (err) {
+    data = { ok: false, error: err.toString() };
+  }
+
+  return respond(data, callback);
+}
+
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 2: แทนที่ doPost() — sync PIN เหมือน doGet
+ * ══════════════════════════════════════════════════ */
+
+function doPost(e) {
+  let payload = {};
+  try {
+    if (e && e.postData && e.postData.contents) {
+      payload = JSON.parse(e.postData.contents);
+    } else if (e && e.parameter) {
+      payload = e.parameter;
+    }
+  } catch (err) {
+    return respond({ ok: false, error: "Invalid JSON: " + err.toString() });
+  }
+
+  const action = (payload.action || "").toLowerCase();
+  const WRITE_ACTIONS = ["savewater","saverain","savereservoir","savedailyreport","savefloodgate","savehydro"];
+
+  /* PIN CHECK — ใช้ logic เดียวกับ doGet (แยกรายสถานี/อำเภอ/อ่าง) */
+  if (PIN_REQUIRED && WRITE_ACTIONS.indexOf(action) !== -1) {
+    const pin = String(payload.pin || "").trim();
+    let pinOk = false, pinError = "PIN ไม่ถูกต้อง";
+
+    if (action === "savewater") {
+      const stid = String(payload.station_id || "").toUpperCase();
+      if (!stid) { pinError = "ไม่ระบุรหัสสถานี"; }
+      else {
+        const acc = verifyWaterAccess(stid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "station") touchStationPinLastUsed(stid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับสถานี " + stid;
+      }
+    } else if (action === "saverain") {
+      const amphoe = String(payload.amphoe || "");
+      if (!amphoe) { pinError = "ไม่ระบุอำเภอ"; }
+      else {
+        const acc = verifyRainAccess(amphoe, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "amphoe") touchAmphoePinLastUsed(amphoe); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับอำเภอ " + amphoe;
+      }
+    } else if (action === "savereservoir") {
+      const rid = String(payload.reservoir_id || "").toUpperCase();
+      if (!rid) { pinError = "ไม่ระบุรหัสอ่างเก็บน้ำ"; }
+      else {
+        const acc = verifyReservoirAccess(rid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "reservoir") touchReservoirPinLastUsed(rid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับอ่าง " + rid;
+      }
+    } else if (action === "savefloodgate") {
+      const gid = String(payload.gate_id || "").toUpperCase();
+      if (!gid) { pinError = "ไม่ระบุรหัสประตูระบายน้ำ"; }
+      else {
+        const acc = verifyFloodgateAccess(gid, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "floodgate") touchFloodgatePinLastUsed(gid); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับประตูระบายน้ำ " + gid;
+      }
+    } else if (action === "savehydro") {
+      const code = String(payload.station_code || "").toUpperCase();
+      if (!code) { pinError = "ไม่ระบุรหัสสถานีอุทกวิทยา"; }
+      else {
+        const acc = verifyHydroAccess(code, pin);
+        if (acc.ok) { pinOk = true; if (acc.role === "hydro") touchHydroPinLastUsed(code); }
+        else pinError = "PIN ไม่ถูกต้องสำหรับสถานีอุทกวิทยา " + code;
+      }
+    } else if (verifyAdminPin(pin)) {
+      pinOk = true;
+    } else {
+      /* fallback: legacy APP_PIN สำหรับ savedailyreport */
+      const expected = getAppPin();
+      if (expected && pin === expected) pinOk = true;
+      else pinError = "ต้องใช้ PIN ผู้ดูแลระบบสำหรับ " + action;
+    }
+
+    if (!pinOk) return respond({ ok: false, error: pinError, code: "INVALID_PIN" });
+  }
+
+  let result;
+  try {
+    const runAction = function() {
+      switch (action) {
+        case "savewater":      return saveWaterLevel(payload);
+        case "saverain":       return saveRainfall(payload);
+        case "savereservoir":  return saveReservoir(payload);
+        case "savedailyreport":return saveDailyReport(payload);
+        case "savefloodgate":  return saveFloodgate(payload);
+        case "savehydro":      return saveHydro(payload);
+        case "summary":        return getSummaryWithCache_();
+        case "reservoir":      return getReservoirs();
+        case "floodgate":      return getFloodgates();
+        case "hydro":          return getHydroStations();
+        default:               return { ok: false, error: "unknown action: " + action };
+      }
+    };
+    /* write actions ครอบด้วย ScriptLock — กันบันทึกชนกัน */
+    result = (WRITE_ACTIONS.indexOf(action) !== -1) ? withWriteLock_(runAction) : runAction();
+    /* Flush cache เมื่อมีการบันทึกข้อมูล */
+    if (WRITE_ACTIONS.indexOf(action) !== -1 && result && result.ok) {
+      invalidateSummaryCache_();
+    }
+  } catch (err) {
+    result = { ok: false, error: err.toString() };
+  }
+
+  return respond(result);
+}
+
+
+/* ══════════════════════════════════════════════════
+ *  ส่วน 3: เพิ่มใหม่ท้ายไฟล์ — CacheService helpers
+ * ══════════════════════════════════════════════════ */
+
+/** Cache TTL ในวินาที */
+const CACHE_TTL = {
+  summary:    60,   // 60 วินาที
+  paneang:    60,
+  mong:       60,
+  mo:         60,
+  phuay:      60,
+  stations:   300,  // 5 นาที (ข้อมูลคงที่กว่า)
+  stationlist:300,
+  rain:       120,  // 2 นาที
+  reservoir:  120,
+  history:    60,
+  dailyreport:120,
+};
+
+/** สร้าง cache key จาก action + params ที่เกี่ยวข้อง */
+function cacheKey_(action, params) {
+  params = params || {};
+  switch (action) {
+    case "water":   return "nbp_" + action + "_" + (params.station_id||"all") + "_" + (params.days||7);
+    case "rain":    return "nbp_" + action + "_" + (params.days||7);
+    case "history": return "nbp_" + action + "_" + (params.limit||20);
+    case "dailyreport": return "nbp_dailyreport_" + (params.date || "latest");
+    case "stations":    return "nbp_stations_" + (params.river||"all");
+    default:        return "nbp_" + action;
+  }
+}
+
+/**
+ * ดึงข้อมูลจาก Cache หรือคำนวณใหม่แล้ว cache ไว้
+ */
+function getCachedOrFresh_(action, params) {
+  const cache = CacheService.getScriptCache();
+  const key   = cacheKey_(action, params);
+  const ttl   = CACHE_TTL[action] || 60;
+
+  try {
+    const cached = cache.get(key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      parsed._cached    = true;
+      parsed._cache_key = key;
+      return parsed;
+    }
+  } catch (e) { /* cache miss หรือ parse error — คำนวณใหม่ */ }
+
+  let data;
+  switch (action) {
+    case "summary":     data = getSummary(); break;
+    case "paneang":     data = getRiverDashboard("paneang"); break;
+    case "mong":        data = getRiverDashboard("mong"); break;
+    case "mo":          data = getRiverDashboard("mo"); break;
+    case "phuay":       data = getRiverDashboard("phuay"); break;
+    case "stations":    data = getStations(params.river); break;
+    case "stationlist": data = getStationListPublic(); break;
+    case "water":       data = getWaterLevels(params.station_id, parseInt(params.days||"7")); break;
+    case "rain":        data = getRainfall(parseInt(params.days||"7")); break;
+    case "reservoir":   data = getReservoirs(); break;
+    case "floodgate":   data = getFloodgates(); break;
+    case "hydro":       data = getHydroStations(); break;
+    case "history":     data = getHistory(parseInt(params.limit||"20")); break;
+    case "dailyreport": data = getDailyReport(params.date); break;
+    case "ping":        return { ok: true, time: new Date().toISOString() };
+    default:            return { error: "unknown action: " + action };
+  }
+
+  try {
+    const str = JSON.stringify(data);
+    if (str.length < 100000) { /* CacheService limit ~100 KB */
+      cache.put(key, str, ttl);
+    }
+  } catch (e) { /* ข้ามถ้า JSON ใหญ่เกิน */ }
+
+  return data;
+}
+
+/**
+ * getSummaryWithCache_ — ใช้ใน doPost
+ */
+function getSummaryWithCache_() {
+  return getCachedOrFresh_("summary", {});
+}
+
+/**
+ * invalidateSummaryCache_ — flush cache ทุก key หลังบันทึกข้อมูล
+ */
+function invalidateSummaryCache_() {
+  try {
+    const cache = CacheService.getScriptCache();
+    const keys  = ["nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_reservoir","nbp_floodgate","nbp_hydro","nbp_history_20"];
+    cache.removeAll(keys);
+  } catch (e) { /* ignore */ }
+}
+
+/**
+ * clearCache — เรียกจาก Apps Script Editor เพื่อ flush ทั้งหมด
+ * (เรียกด้วยมือ: เปิด Editor → Run → clearCache)
+ */
+function clearCache() {
+  try {
+    CacheService.getScriptCache().removeAll([
+      "nbp_summary","nbp_paneang","nbp_mong","nbp_mo","nbp_phuay","nbp_reservoir","nbp_floodgate","nbp_hydro",
+      "nbp_stations_all","nbp_stationlist","nbp_rain_1","nbp_rain_7",
+      "nbp_reservoir","nbp_history_20","nbp_dailyreport_latest",
+    ]);
+    Logger.log("✅ Cache cleared successfully");
+  } catch (e) {
+    Logger.log("❌ Cache clear error: " + e.toString());
+  }
+}
+
+/* ══════════════════════════════════════════════════
+ *  WRITE SAFETY HELPERS (v5)
+ *  1. withWriteLock_  — กันบันทึกชนกัน (race condition → แถวซ้ำ)
+ *  2. mergeRowOnce_   — upsert เขียนทั้งแถวครั้งเดียว (เร็วกว่า setValue ทีละเซลล์)
+ * ══════════════════════════════════════════════════ */
+
+/**
+ * ครอบงานเขียนทั้งหมดด้วย ScriptLock
+ * ถ้ามี 2 คนกดบันทึกพร้อมกัน คนที่สองจะรอคิว (สูงสุด 20 วิ)
+ * → การสแกนหาแถวซ้ำ + appendRow เป็น atomic ไม่เกิดแถวซ้ำอีก
+ */
+function withWriteLock_(fn) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+  } catch (e) {
+    return { ok: false, code: "LOCK_TIMEOUT",
+             error: "ระบบกำลังบันทึกข้อมูลรายการอื่นอยู่ กรุณาลองใหม่อีกครั้งใน 1 นาที" };
+  }
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * อัปเดตแถวเดิมแบบเขียนครั้งเดียวด้วย setValues
+ * - field ใน patch ที่มีค่า (ไม่ว่าง) → ทับค่าเดิม
+ * - field ที่ไม่ได้ส่งมา/ว่าง → คงค่าเดิมไว้
+ * แทนการวน setValue ทีละเซลล์ (ช้า + เสี่ยง timeout เมื่อชีตโต)
+ */
+function mergeRowOnce_(sheet, rowNumber, headers, existingRow, patch) {
+  const merged = headers.map(function(h, col) {
+    const v = patch[h];
+    return (v !== undefined && v !== null && v !== "") ? v : existingRow[col];
+  });
+  sheet.getRange(rowNumber, 1, 1, headers.length).setValues([merged]);
+}
+
+/**
+ * Line Notify helper — ส่งแจ้งเตือนวิกฤติ
+ * ตั้ง Script Property: LINE_NOTIFY_TOKEN = <token>
+ * สร้าง Time-trigger ทุก 30 นาที เรียก checkAndNotify()
+ */
+function checkAndNotify() {
+  const token = PropertiesService.getScriptProperties().getProperty("LINE_NOTIFY_TOKEN");
+  if (!token) return;
+
+  const summary = getSummary();
+  if (!summary || !summary.stations) return;
+
+  const crit = summary.stations.filter(function(s) { return s.status === "วิกฤติ"; });
+  if (!crit.length) return;
+
+  /* ตรวจว่าแจ้งแล้วหรือยัง (ป้องกันแจ้งซ้ำทุก 30 นาที) */
+  const cache     = CacheService.getScriptCache();
+  const notifyKey = "nbp_last_notify_" + crit.map(function(s){return s.station_id;}).join("_");
+  if (cache.get(notifyKey)) return; /* แจ้งแล้วใน 2 ชม. */
+
+  const lines = crit.map(function(s) {
+    return "🔴 " + s.name + " (อ." + s.amphoe + ") ระดับน้ำ " +
+      (s.current_level || s.current || "?") + " ม. / ตลิ่ง " +
+      (s.bank_level || s.bank || "?") + " ม.";
+  });
+
+  const msg = "\n⚠️ แจ้งเตือนน้ำวิกฤติ\nจ.หนองบัวลำภู " +
+    Utilities.formatDate(new Date(), "Asia/Bangkok", "dd/MM/yyyy HH:mm") + " น.\n\n" +
+    lines.join("\n") +
+    "\n\nกรุณาดูข้อมูลเพิ่มเติม: https://nsonongbualamphutc-debug.github.io/NongBuaLamPhu-Water-Level-Monitoring/";
+
+  try {
+    UrlFetchApp.fetch("https://notify-api.line.me/api/notify", {
+      method: "post",
+      headers: { Authorization: "Bearer " + token },
+      payload: { message: msg },
+      muteHttpExceptions: true,
+    });
+    cache.put(notifyKey, "1", 7200); /* ไม่แจ้งซ้ำ 2 ชม. */
+    Logger.log("✅ Line Notify ส่งแล้ว: " + crit.length + " สถานีวิกฤติ");
+  } catch (err) {
+    Logger.log("❌ Line Notify error: " + err.toString());
+  }
+}
+
+// ===== READ =====
+
+function getStations(river) {
+  let rows = sheetToObjects(ss().getSheetByName(SHEET_STATIONS));
+  // Fallback: ถ้า Sheet Stations ว่าง → ใช้ master list 20 สถานี
+  if (!rows.length && typeof STATION_MASTER_LIST !== 'undefined') {
+    rows = STATION_MASTER_LIST.map(s => ({
+      station_id: s.station_id, name: s.name, river: s.river,
+      village: "", amphoe: s.amphoe,
+      lat: s.lat || "", lon: s.lon || "",
+      bank_level: s.bank_level || s.bank || 0,
+      warn_level: s.warn_level || s.warn || 0,
+      crit_level: s.crit_level || s.bank || 0,
+      active: true
+    }));
+  }
+  if (river) return rows.filter(r => String(r.river||"").indexOf(river)!==-1);
+  return rows;
+}
+
+function getSummary() {
+  const stations = getStations(), latest = getLatestWaterByStation();
+  let normal=0,warn=0,crit=0;
+  const merged = stations.map(st => {
+    const w=latest[st.station_id]||{}, level=parseFloat(w.level);
+    let status="ปกติ";
+    if(!isNaN(level)){
+      if(parseFloat(st.bank_level)&&level>=parseFloat(st.bank_level)) status="วิกฤติ";
+      else if(parseFloat(st.warn_level)&&level>=parseFloat(st.warn_level)) status="เฝ้าระวัง";
+    }
+    if(status==="วิกฤติ") crit++; else if(status==="เฝ้าระวัง") warn++; else normal++;
+    // Output ทั้ง field name ใหม่ (station_id, current_level, bank_level) และ alias เก่า (id, current, bank, warn, crit)
+    // เพื่อรองรับทั้ง dashboard เก่าและใหม่
+    return Object.assign({}, st, {
+      id: st.station_id,                                  // alias for frontend
+      current_level: isNaN(level) ? null : level,
+      current:       isNaN(level) ? null : level,         // alias
+      bank:  parseFloat(st.bank_level)  || 0,             // alias
+      warn:  parseFloat(st.warn_level)  || 0,             // alias
+      crit:  parseFloat(st.crit_level)  || parseFloat(st.bank_level) || 0,  // alias
+      flow: w.flow||null,
+      status,
+      last_update: w.date?(w.date+" "+(w.time||"")):null
+    });
+  });
+  const rain=getRainfall(1);
+  // Build rain summary by amphoe (frontend index.html ต้องการ field "rain24")
+  const rainByAmphoe = {};
+  rain.forEach(r => {
+    const am = r.amphoe; if(!am) return;
+    if (!rainByAmphoe[am] || String(r.date||"") > String(rainByAmphoe[am].date||"")) {
+      rainByAmphoe[am] = r;
+    }
+  });
+  const rainOut = Object.keys(rainByAmphoe).map(am => {
+    const r = rainByAmphoe[am];
+    return {
+      amphoe: am,
+      rain24:      parseFloat(r.rain_24hr)  || 0,  // alias for frontend
+      rain_24hr:   parseFloat(r.rain_24hr)  || 0,
+      rain_7day:   parseFloat(r.rain_7day)  || 0,
+      rain_month:  parseFloat(r.rain_month) || 0,
+      date: r.date, recorder: r.recorder
+    };
+  });
+  let avgRain=0;
+  if(rain.length>0) avgRain=rain.reduce((a,r)=>a+(parseFloat(r.rain_24hr)||0),0)/rain.length;
+  return {total:stations.length,normal,warn,crit,avg_rain_24hr:avgRain,stations:merged,rain:rainOut,updated:new Date().toISOString()};
+}
+
+function getRiverDashboard(riverKey) {
+  const key = String(riverKey || "").toLowerCase();
+  const stations = getStations().filter(st => {
+    const id = String(st.station_id || "").toUpperCase();
+    const river = String(st.river || "").toLowerCase();
+    if (key === "paneang") return id.indexOf("PN") === 0 || river.indexOf("paneang") !== -1 || river.indexOf("พะเนียง") !== -1;
+    if (key === "mong")    return id.indexOf("MG") === 0 || river.indexOf("mong") !== -1 || river.indexOf("โมง") !== -1;
+    if (key === "mo")      return id.indexOf("MO") === 0 || river.indexOf("mo") === 0 || river.indexOf("ลำน้ำมอ") !== -1;
+    if (key === "phuay")   return id.indexOf("PY") === 0 || river.indexOf("phuay") !== -1 || river.indexOf("พวย") !== -1;
+    return true;
+  });
+  const latestPN = getLatestWaterByStation();
+  // สำหรับ paneang — merge FG เข้า PN06/08/10
+  const latestFG = (key === "paneang") ? getLatestFloodgateByGate_() : {};
+  let normal = 0, warn = 0, crit = 0;
+  const merged = stations.map(st => {
+    const sid = String(st.station_id || "").toUpperCase();
+    const w    = latestPN[sid] || {};
+    let level  = parseFloat(w.level);
+    let flow   = w.flow || null;
+    let lastUpdate = w.date ? (w.date + " " + (w.time || "")) : null;
+    // ถ้าสถานีนี้เชื่อมกับ FG → เปรียบ timestamp เลือกค่าที่ใหม่กว่า
+    const fgId  = PN_FG_MAP[sid];
+    const fgRow = fgId ? latestFG[fgId] : null;
+    if (fgRow && fgRow.water_level !== null && fgRow.water_level !== undefined) {
+      const fgTs = parseDateTime_(fgRow.date, fgRow.time) || 0;
+      const pnTs = w.date ? (parseDateTime_(w.date, w.time) || 0) : 0;
+      if (fgTs >= pnTs) {
+        // FG ใหม่กว่าหรือเท่ากัน → ใช้ค่า FG
+        level      = parseFloat(fgRow.water_level);
+        flow       = fgRow.flow_rate || null;
+        lastUpdate = fgRow.date ? (fgRow.date + " " + (fgRow.time || "")) : lastUpdate;
+      }
+    }
+    const bank      = parseFloat(st.bank_level);
+    const warnLevel = parseFloat(st.warn_level);
+    let status = "ปกติ";
+    if (!isNaN(level)) {
+      if (!isNaN(bank) && level >= bank) status = "วิกฤติ";
+      else if (!isNaN(warnLevel) && level >= warnLevel) status = "เฝ้าระวัง";
+    }
+    if (status === "วิกฤติ") crit++;
+    else if (status === "เฝ้าระวัง") warn++;
+    else normal++;
+    return Object.assign({}, st, {
+      id: st.station_id,
+      current: isNaN(level) ? null : level,
+      current_level: isNaN(level) ? null : level,
+      bank:  parseFloat(st.bank_level)  || 0,
+      warn:  parseFloat(st.warn_level)  || 0,
+      crit:  parseFloat(st.crit_level)  || parseFloat(st.bank_level) || 0,
+      flow:  flow,
+      fg_id: fgId || null,
+      status: status,
+      last_update: lastUpdate
+    });
+  });
+  return {
+    river: key,
+    total: stations.length,
+    normal: normal,
+    warn: warn,
+    crit: crit,
+    stations: merged,
+    updated: new Date().toISOString()
+  };
+}
+
+function getWaterLevels(stationId,days) {
+  const rows=sheetToObjects(ss().getSheetByName(SHEET_WATER));
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-(days||7));
+  return rows.filter(r=>{if(stationId&&r.station_id!==stationId)return false;const d=parseDate(r.date);return d&&d>=cutoff;}).sort((a,b)=>parseDate(a.date)-parseDate(b.date));
+}
+
+function getLatestWaterByStation() {
+  const rows = sheetToObjects(ss().getSheetByName(SHEET_WATER));
+  const latest = {};
+  // สร้างค่าเปรียบเทียบจาก date + time (รวมเวลา) เพื่อหยิบแถวล่าสุดจริง
+  function ts(r) {
+    const d = parseDate(r.date);
+    if (!d) return 0;
+    let val = d.getTime();
+    // บวกเวลาเข้าไป (ถ้ามี) เช่น "14:34" หรือ "02:36 PM"
+    const t = String(r.time || "").trim();
+    if (t) {
+      let hh = 0, mm = 0;
+      const m24 = t.match(/^(\d{1,2}):(\d{2})/);
+      if (m24) { hh = +m24[1]; mm = +m24[2]; }
+      if (/pm/i.test(t) && hh < 12) hh += 12;
+      if (/am/i.test(t) && hh === 12) hh = 0;
+      val += (hh * 60 + mm) * 60000;
+    }
+    return val;
+  }
+  rows.forEach((r, idx) => {
+    const sid = r.station_id;
+    if (!sid) return;
+    r._ts = ts(r);
+    r._idx = idx;  // ลำดับแถว — ใช้ตัดสินเมื่อ ts เท่ากัน (แถวล่างกว่า = ใหม่กว่า)
+    const cur = latest[sid];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) {
+      latest[sid] = r;
+    }
+  });
+  return latest;
+}
+
+function getRainfall(days) {
+  const rows=sheetToObjects(ss().getSheetByName(SHEET_RAIN));
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-(days||7));
+  return rows.filter(r=>{const d=parseDate(r.date);return d&&d>=cutoff;}).sort((a,b)=>parseDate(b.date)-parseDate(a.date));
+}
+
+function getReservoirs() {
+  const sheet=getOrCreateReservoirSheet(), rows=sheetToObjects(sheet), latest={};
+  rows.forEach((r,idx)=>{const id=r.reservoir_id;if(!id)return;const d=parseDate(r.date);const cur=latest[id];const dCur=cur?parseDate(cur.date):null;if(!cur||(d&&dCur&&d>dCur)||(d&&dCur&&d.getTime()===dCur.getTime()&&idx>(cur._idx||0))){r._idx=idx;latest[id]=r;}});
+  // merge กับ master list — คืนครบทุกอ่าง แม้อ่างที่ยังไม่มีข้อมูลใน Sheet
+  return RESERVOIR_LIST.map(function(meta){
+    const rec = latest[meta.id];
+    if (rec) {
+      // เติม name/capacity จาก master ถ้า Sheet ไม่มี
+      if (!rec.reservoir_name) rec.reservoir_name = meta.name;
+      if (rec.capacity == null || rec.capacity === "") rec.capacity = meta.capacity;
+      if (!rec.amphoe) rec.amphoe = meta.amphoe;
+      return rec;
+    }
+    // ยังไม่มีข้อมูล — คืน record ว่างพร้อม metadata
+    return {
+      reservoir_id: meta.id, reservoir_name: meta.name, amphoe: meta.amphoe,
+      capacity: meta.capacity, current_volume: "", date: "", _no_data: true
+    };
+  });
+}
+
+function getHistory(limit) {
+  const water=sheetToObjects(ss().getSheetByName(SHEET_WATER)).map(r=>Object.assign({type:"water"},r));
+  const rain=sheetToObjects(ss().getSheetByName(SHEET_RAIN)).map(r=>Object.assign({type:"rain"},r));
+  return water.concat(rain).sort((a,b)=>(parseDate(b.date)||new Date(0))-(parseDate(a.date)||new Date(0))).slice(0,limit||20);
+}
+
+function getDailyReport(targetDate) {
+  const sheet=ss().getSheetByName("DailyReport");
+  if(!sheet) return null;
+  const rows=sheetToObjects(sheet);
+  if(!rows.length) return null;
+  if(targetDate) return rows.find(r=>String(r.date).slice(0,10)===targetDate)||null;
+  rows.sort((a,b)=>parseDate(b.date)-parseDate(a.date));
+  return rows[0];
+}
+
+// ===== WRITE =====
+
+function saveWaterLevel(p) {
+  const sid = String(p.station_id || "").toUpperCase();
+  const sheet = ensureSheet_(SHEET_WATER, HEADERS_WATER);
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("station_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // ── ถ้ามีแถวสถานีเดียวกัน + วันเดียวกันอยู่แล้ว → อัปเดตทับ (ไม่บวกเพิ่ม) ──
+  if (idIdx >= 0 && dateIdx >= 0 && p.station_id && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId   = String(data[i][idIdx]).trim() === String(p.station_id).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        // เขียนทับทุก field ที่ส่งมา (เขียนทั้งแถวครั้งเดียว)
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
+        // mirror PN → FG เมื่อ upsert ด้วย
+        const fgIdUps = PN_FG_MAP[sid];
+        const lvUps   = parseFloat(p.level);
+        if (fgIdUps && !isNaN(lvUps)) {
+          try { mirrorWaterToFloodgate_(fgIdUps, p, lvUps, sid); } catch(e) { Logger.log("FG mirror error: " + e); }
+        }
+        invalidateSummaryCache_();
+        return {
+          ok: true,
+          updated: true,
+          message: "อัปเดตข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)" + (fgIdUps ? " (sync → " + fgIdUps + ")" : ""),
+          station_id: p.station_id,
+          fg_mirrored: fgIdUps || null,
+          recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
+        };
+      }
+    }
+  }
+
+  // ── ไม่มีแถวเดิม → เพิ่มใหม่ ──
+  const row = headers.map(h => {
+    const v = p[h];
+    return (v === undefined || v === null) ? "" : v;
+  });
+  sheet.appendRow(row);
+
+  // ── MIRROR PN → FG (ถ้า PN06/08/10) ──
+  const fgIdMirror = PN_FG_MAP[sid];
+  const lvNum = parseFloat(p.level);
+  if (fgIdMirror && !isNaN(lvNum)) {
+    try { mirrorWaterToFloodgate_(fgIdMirror, p, lvNum, sid); } catch(e) { Logger.log("FG mirror error: " + e); }
+  }
+
+  invalidateSummaryCache_();
+  return {
+    ok: true,
+    updated: false,
+    message: "บันทึกข้อมูลระดับน้ำ " + (p.station_id||"") + " วันที่ " + dateStr + " เรียบร้อย" + (fgIdMirror ? " (sync → " + fgIdMirror + ")" : ""),
+    station_id: p.station_id,
+    fg_mirrored: fgIdMirror || null,
+    recorded: { date:p.date, time:p.time, level:p.level, recorder:p.recorder }
+  };
+}
+
+function saveRainfall(p) {
+  const sheet = ensureSheet_(SHEET_RAIN, HEADERS_RAIN);
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const amIdx   = headers.indexOf("amphoe");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // ── ทับแถวเดิม อำเภอ+วันเดียวกัน ──
+  if (amIdx >= 0 && dateIdx >= 0 && p.amphoe && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameAm   = String(data[i][amIdx]).trim() === String(p.amphoe).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameAm && sameDate) {
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
+        return {
+          ok: true, updated: true,
+          message: "อัปเดตข้อมูลฝน " + (p.amphoe||"") + " วันที่ " + dateStr + " (ทับค่าเดิม)",
+          amphoe: p.amphoe,
+          recorded: { date:p.date, rain_24hr:p.rain_24hr, recorder:p.recorder }
+        };
+      }
+    }
+  }
+
+  const row = headers.map(h => {
+    const v = p[h];
+    return (v === undefined || v === null) ? "" : v;
+  });
+  sheet.appendRow(row);
+  return {
+    ok: true, updated: false,
+    message: "บันทึกข้อมูลฝน " + (p.amphoe||"") + " วันที่ " + dateStr + " เรียบร้อย",
+    amphoe: p.amphoe,
+    recorded: { date:p.date, rain_24hr:p.rain_24hr, recorder:p.recorder }
+  };
+}
+
+function saveReservoir(p) {
+  const sheet=getOrCreateReservoirSheet(), payload=normalizeReservoirPayload(p);
+  if(!payload.reservoir_id&&!payload.reservoir_name) return {ok:false,error:"missing reservoir_id or reservoir_name"};
+  const data=sheet.getDataRange().getValues(), headers=data[0];
+  const idIdx=headers.indexOf("reservoir_id"), nmIdx=headerIndex(headers,["reservoir_name","name"]);
+  const curIdx=headerIndex(headers,["current_volume","current"]), dateIdx=headers.indexOf("date"), updIdx=headers.indexOf("updated_at");
+  const dateStr=String(payload.date||"").slice(0,10);
+
+  for(let i=1;i<data.length;i++){
+    const sameId  = idIdx>=0&&payload.reservoir_id  &&String(data[i][idIdx]).trim()===String(payload.reservoir_id).trim();
+    const sameName= nmIdx>=0&&payload.reservoir_name&&String(data[i][nmIdx]).trim()===String(payload.reservoir_name).trim();
+    const sameDate= dateIdx>=0&&String(data[i][dateIdx]).slice(0,10)===dateStr;
+    if((sameId||sameName)&&sameDate){
+      /* เขียนทั้งแถวครั้งเดียว: current_volume + updated_at + field อื่นที่ส่งมา (คง date เดิม) */
+      const patch = Object.assign({}, payload);
+      delete patch.date;
+      patch.updated_at = new Date();
+      if (curIdx >= 0) patch[headers[curIdx]] = payload.current_volume;
+      mergeRowOnce_(sheet, i+1, headers, data[i], patch);
+      return {ok:true,message:"อัปเดต "+(payload.reservoir_name||payload.reservoir_id)+" วันที่ "+dateStr};
+    }
+  }
+  const row=headers.map(h=>{if(h==="updated_at")return new Date();return payload[h]!==undefined?payload[h]:"";});
+  sheet.appendRow(row);
+  return {ok:true,message:"บันทึก "+(payload.reservoir_name||payload.reservoir_id)+" วันที่ "+dateStr};
+}
+
+function saveDailyReport(p) {
+  const ss_obj=ss(); let sheet=ss_obj.getSheetByName("DailyReport");
+  if(!sheet){
+    sheet=ss_obj.insertSheet("DailyReport");
+    sheet.appendRow(["date","reporter","dam_level","dam_use","dam_pct","dam_in","dam_out","dam_total","tmd_temp","tmd_cloud","tmd_rain_yest","tmd_pressure","tmd_humidity","tmd_wind","tmd_temp_min","tmd_visibility","tmd_rain_year","aqi_pm25","aqi_value","aqi_days_over","disaster_status","disaster_amphoe","disaster_note","saved_at"]);
+  }
+  const headers=getHeaders(sheet), dateStr=String(p.date||"").slice(0,10), dateIdx=headers.indexOf("date"), data=sheet.getDataRange().getValues();
+  for(let i=1;i<data.length;i++){
+    if(String(data[i][dateIdx]).slice(0,10)===dateStr){
+      const row=headers.map(h=>h==="saved_at"?new Date():(p[h]||data[i][headers.indexOf(h)]));
+      sheet.getRange(i+1,1,1,headers.length).setValues([row]);
+      return {ok:true,message:"อัปเดตรายงานวันที่ "+dateStr};
+    }
+  }
+  sheet.appendRow(headers.map(h=>h==="saved_at"?new Date():(p[h]||"")));
+  return {ok:true,message:"บันทึกรายงานวันที่ "+dateStr};
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FLOODGATES (ปตร.) + HYDRO STATIONS (สถานีอุทกวิทยา)
+// ═══════════════════════════════════════════════════════════════
+
+/* ── ปตร. ── */
+function getFloodgates() {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const rows = sheetToObjects(sheet);
+  // หา latest record ของแต่ละ gate_id (ตาม date+time + row index)
+  const latest = {};
+  rows.forEach((r, idx) => {
+    const id = String(r.gate_id || "").trim();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  // merge กับ master — คืนครบทุกจุดเสมอ
+  return FLOODGATE_MASTER.map(function(meta){
+    const rec = latest[meta.gate_id];
+    const r = Object.assign({}, meta);
+    if (rec) {
+      r.water_level = rec.water_level;
+      r.gate_opening = rec.gate_opening;
+      r.flow_rate = rec.flow_rate;
+      r.date = rec.date;
+      r.time = rec.time;
+      r.recorder = rec.recorder;
+      r.remark = rec.remark;
+    } else {
+      r.water_level = null;
+      r._no_data = true;
+    }
+    // คำนวณสถานะตามเกณฑ์
+    r.status = computeFloodgateStatus_(r);
+    return r;
+  });
+}
+
+function computeFloodgateStatus_(r) {
+  const lv = parseFloat(r.water_level);
+  if (isNaN(lv)) return "ไม่มีข้อมูล";
+  if (lv > parseFloat(r.threshold_warn)) return "วิกฤติ";    // ธงแดง
+  if (lv >= parseFloat(r.threshold_normal)) return "เฝ้าระวัง"; // ธงเหลือง
+  return "ปกติ";                                              // ธงเขียว
+}
+
+function saveFloodgate(p) {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx = headers.indexOf("gate_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // เติมข้อมูล meta จาก master ถ้า payload ไม่มี
+  const meta = FLOODGATE_MASTER.find(function(g){ return g.gate_id === p.gate_id; });
+  if (meta) {
+    Object.keys(meta).forEach(function(k){ if (!p[k]) p[k] = meta[k]; });
+  }
+
+  // upsert: ถ้ามี gate_id + date เดิม → ทับ
+  if (idIdx >= 0 && dateIdx >= 0 && p.gate_id && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId = String(data[i][idIdx]).trim() === String(p.gate_id).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
+        // mirror FG → PN เมื่อ upsert ด้วย
+        const pnIdUps = FG_PN_MAP[String(p.gate_id||"").toUpperCase()];
+        const fgLvUps = parseFloat(p.water_level);
+        if (pnIdUps && !isNaN(fgLvUps)) {
+          try { mirrorFloodgateToWater_(pnIdUps, p, fgLvUps); } catch(e) { Logger.log("PN mirror error: " + e); }
+        }
+        invalidateSummaryCache_();
+        return { ok: true, updated: true, message: "อัปเดต ปตร. " + p.gate_id + " วันที่ " + dateStr + " เรียบร้อย (ทับค่าเดิม)" + (pnIdUps ? " (sync → " + pnIdUps + ")" : ""), pn_mirrored: pnIdUps || null };
+      }
+    }
+  }
+
+  // ไม่มี → เพิ่มแถวใหม่
+  const row = headers.map(function(h){ return (p[h] === undefined || p[h] === null) ? "" : p[h]; });
+  sheet.appendRow(row);
+
+  // ── MIRROR FG → PN (ถ้า FG01/02/03) ──
+  const pnIdMirror = FG_PN_MAP[String(p.gate_id||"").toUpperCase()];
+  const fgLvNum = parseFloat(p.water_level);
+  if (pnIdMirror && !isNaN(fgLvNum)) {
+    try { mirrorFloodgateToWater_(pnIdMirror, p, fgLvNum); } catch(e) { Logger.log("PN mirror error: " + e); }
+  }
+
+  invalidateSummaryCache_();
+  return { ok: true, updated: false, message: "บันทึก ปตร. " + p.gate_id + " เรียบร้อย" + (pnIdMirror ? " (sync → " + pnIdMirror + ")" : ""), pn_mirrored: pnIdMirror || null };
+}
+
+/* ── สถานีอุทกวิทยา ── */
+function getHydroStations() {
+  const sheet = ensureSheet_(SHEET_HYDRO, HEADERS_HYDRO);
+  ensureMasterData_(sheet, HEADERS_HYDRO, HYDRO_MASTER, "station_code");
+  const rows = sheetToObjects(sheet);
+  const latest = {};
+  rows.forEach(function(r, idx){
+    const id = String(r.station_code || "").trim();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  return HYDRO_MASTER.map(function(meta){
+    const rec = latest[meta.station_code];
+    const r = Object.assign({}, meta);
+    if (rec) {
+      r.water_level = rec.water_level;
+      r.water_height = rec.water_height;
+      r.flow_rate = rec.flow_rate;
+      r.date = rec.date; r.time = rec.time;
+      r.recorder = rec.recorder; r.remark = rec.remark;
+    } else {
+      r.water_level = null; r.water_height = null;
+      r._no_data = true;
+    }
+    r.status = computeHydroStatus_(r);
+    return r;
+  });
+}
+
+function computeHydroStatus_(r) {
+  // ใช้ทั้ง ระดับน้ำ (รทก.) และ ความสูง — ใช้ตัวที่วิกฤติกว่า
+  const lv = parseFloat(r.water_level);
+  const ht = parseFloat(r.water_height);
+  let s1 = null, s2 = null;
+  if (!isNaN(lv)) {
+    if (lv > parseFloat(r.threshold_warn)) s1 = "วิกฤติ";
+    else if (lv >= parseFloat(r.threshold_normal)) s1 = "เฝ้าระวัง";
+    else s1 = "ปกติ";
+  }
+  if (!isNaN(ht)) {
+    if (ht > parseFloat(r.threshold_warn_height)) s2 = "วิกฤติ";
+    else if (ht >= parseFloat(r.threshold_normal_height)) s2 = "เฝ้าระวัง";
+    else s2 = "ปกติ";
+  }
+  if (!s1 && !s2) return "ไม่มีข้อมูล";
+  const rank = { "ปกติ":1, "เฝ้าระวัง":2, "วิกฤติ":3 };
+  if (s1 && !s2) return s1;
+  if (s2 && !s1) return s2;
+  return (rank[s1] >= rank[s2]) ? s1 : s2;
+}
+
+function saveHydro(p) {
+  const sheet = ensureSheet_(SHEET_HYDRO, HEADERS_HYDRO);
+  ensureMasterData_(sheet, HEADERS_HYDRO, HYDRO_MASTER, "station_code");
+  const headers = getHeaders(sheet);
+  const data = sheet.getDataRange().getValues();
+  const idIdx = headers.indexOf("station_code");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(p.date || "").slice(0,10);
+
+  // เติม meta
+  const meta = HYDRO_MASTER.find(function(h){ return h.station_code === p.station_code; });
+  if (meta) Object.keys(meta).forEach(function(k){ if (!p[k]) p[k] = meta[k]; });
+
+  if (idIdx >= 0 && dateIdx >= 0 && p.station_code && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      const sameId = String(data[i][idIdx]).trim() === String(p.station_code).trim();
+      const sameDate = String(data[i][dateIdx]).slice(0,10) === dateStr;
+      if (sameId && sameDate) {
+        mergeRowOnce_(sheet, i+1, headers, data[i], p);
+        invalidateSummaryCache_();
+        return { ok: true, updated: true, message: "อัปเดตสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย (ทับค่าเดิม)" };
+      }
+    }
+  }
+  const row = headers.map(function(h){ return (p[h] === undefined || p[h] === null) ? "" : p[h]; });
+  sheet.appendRow(row);
+  invalidateSummaryCache_();
+  return { ok: true, updated: false, message: "บันทึกสถานีอุทกวิทยา " + p.station_code + " เรียบร้อย" };
+}
+
+
+// ============================================================
+// FG ↔ PN MIRROR HELPERS (v4)
+// ============================================================
+
+/**
+ * getLatestFloodgateByGate_ — ดึง FG ล่าสุดจาก Sheet Floodgates
+ * (สำหรับ getRiverDashboard ใช้ merge ค่าเข้า PN)
+ */
+function getLatestFloodgateByGate_() {
+  const sheet = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const rows = sheetToObjects(sheet);
+  const latest = {};
+  rows.forEach(function(r, idx) {
+    const id = String(r.gate_id || "").trim().toUpperCase();
+    if (!id) return;
+    const ts = parseDateTime_(r.date, r.time);
+    r._ts = ts; r._idx = idx;
+    const cur = latest[id];
+    if (!cur || r._ts > cur._ts || (r._ts === cur._ts && r._idx > cur._idx)) latest[id] = r;
+  });
+  return latest;
+}
+
+/**
+ * mirrorFloodgateToWater_ — FG บันทึก → mirror ไปยัง WaterLevel PN
+ * ใช้ upsert (ทับถ้า station_id + date ซ้ำ)
+ */
+function mirrorFloodgateToWater_(pnId, fgPayload, lvNum) {
+  const sheet   = ensureSheet_(SHEET_WATER, HEADERS_WATER);
+  const headers = getHeaders(sheet);
+  const data    = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("station_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(fgPayload.date || "").slice(0,10);
+
+  const pnRow = {
+    station_id: pnId,
+    date:       fgPayload.date || "",
+    time:       fgPayload.time || "",
+    level:      lvNum,
+    flow:       fgPayload.flow_rate || "",
+    recorder:   fgPayload.recorder || "",
+    remark:     "[mirror from " + fgPayload.gate_id + "] " + (fgPayload.remark || "")
+  };
+
+  if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]).trim() === pnId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
+        mergeRowOnce_(sheet, i+1, headers, data[i], pnRow);
+        return;
+      }
+    }
+  }
+  sheet.appendRow(headers.map(function(h){ return pnRow[h] !== undefined ? pnRow[h] : ""; }));
+}
+
+/**
+ * mirrorWaterToFloodgate_ — PN บันทึก → mirror ไปยัง Floodgates FG
+ * ใช้ upsert (ทับถ้า gate_id + date ซ้ำ)
+ */
+function mirrorWaterToFloodgate_(fgId, pnPayload, lvNum, pnId) {
+  const sheet   = ensureSheet_(SHEET_FLOODGATE, HEADERS_FLOODGATE);
+  ensureMasterData_(sheet, HEADERS_FLOODGATE, FLOODGATE_MASTER, "gate_id");
+  const headers = getHeaders(sheet);
+  const data    = sheet.getDataRange().getValues();
+  const idIdx   = headers.indexOf("gate_id");
+  const dateIdx = headers.indexOf("date");
+  const dateStr = String(pnPayload.date || "").slice(0,10);
+
+  const meta = FLOODGATE_MASTER.find(function(g){ return g.gate_id === fgId; }) || {};
+  const fgRow = Object.assign({}, meta, {
+    gate_id:     fgId,
+    date:        pnPayload.date || "",
+    time:        pnPayload.time || "",
+    water_level: lvNum,
+    flow_rate:   pnPayload.flow || "",
+    recorder:    pnPayload.recorder || "",
+    remark:      "[mirror from " + pnId + "] " + (pnPayload.remark || "")
+  });
+
+  if (idIdx >= 0 && dateIdx >= 0 && dateStr) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]).trim() === fgId && String(data[i][dateIdx]).slice(0,10) === dateStr) {
+        mergeRowOnce_(sheet, i+1, headers, data[i], fgRow);
+        return;
+      }
+    }
+  }
+  sheet.appendRow(headers.map(function(h){ return fgRow[h] !== undefined ? fgRow[h] : ""; }));
+}
+
+/* ── helper: parse date+time string เป็น timestamp ── */
+function parseDateTime_(dateStr, timeStr) {
+  const d = parseDate(dateStr);
+  if (!d) return 0;
+  let val = d.getTime();
+  const t = String(timeStr || "").trim();
+  if (t) {
+    let hh = 0, mm = 0;
+    const m24 = t.match(/^(\d{1,2}):(\d{2})/);
+    if (m24) { hh = +m24[1]; mm = +m24[2]; }
+    if (/pm/i.test(t) && hh < 12) hh += 12;
+    if (/am/i.test(t) && hh === 12) hh = 0;
+    val += (hh * 60 + mm) * 60000;
+  }
+  return val;
+}
+
+/* ── helper: เติม master data ถ้าชีตยังว่าง ── */
+function ensureMasterData_(sheet, headers, master, idField) {
+  if (sheet.getLastRow() > 1) return; // มีข้อมูลแล้ว
+  master.forEach(function(meta){
+    const row = headers.map(function(h){ return meta[h] !== undefined ? meta[h] : ""; });
+    sheet.appendRow(row);
+  });
+}
+
+// ===== PIN MANAGEMENT =====
+/** ระบบ PIN แยกตามสถานี/อำเภอ + Admin master PIN */
+
+function ensureStationPinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_PINS);
+    sh.appendRow(["station_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#1e3a8a").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["station_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function ensureAmphoePinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_AMPHOE_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_AMPHOE_PINS);
+    sh.appendRow(["amphoe","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#065f46").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["amphoe","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function getAdminPin_() {
+  return PropertiesService.getScriptProperties().getProperty(ADMIN_PIN_KEY) || "";
+}
+
+function verifyAdminPin(pin) {
+  const expected = getAdminPin_();
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+
+// ===== SUB-ADMIN PINs (กรอกข้ามทุกจุดในประเภทของตน — ไม่ใช่ super admin) =====
+const WATER_ADMIN_PIN_KEY     = "WATER_ADMIN_PIN";     // กรอกระดับน้ำได้ทุกสถานี
+const RAIN_ADMIN_PIN_KEY      = "RAIN_ADMIN_PIN";      // กรอกฝนได้ทุกอำเภอ
+const RESERVOIR_ADMIN_PIN_KEY = "RESERVOIR_ADMIN_PIN"; // กรอกอ่างได้ทุกอ่าง
+
+function verifyWaterAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(WATER_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+function verifyRainAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(RAIN_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+function verifyReservoirAdminPin(pin) {
+  const expected = PropertiesService.getScriptProperties().getProperty(RESERVOIR_ADMIN_PIN_KEY) || "";
+  if (!expected) return false;
+  return String(pin || "").trim() === String(expected).trim();
+}
+
+/** ตรวจ PIN ทุกระดับสำหรับ savewater (station, water-admin, super-admin) */
+function verifyWaterAccess(stationId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyWaterAdminPin(pin)) return { ok:true, role:"water_admin" };
+  if (verifyStationPin(stationId, pin)) return { ok:true, role:"station" };
+  return { ok:false };
+}
+/** ตรวจ PIN สำหรับ saverain */
+function verifyRainAccess(amphoe, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyRainAdminPin(pin)) return { ok:true, role:"rain_admin" };
+  if (verifyAmphoePin(amphoe, pin)) return { ok:true, role:"amphoe" };
+  return { ok:false };
+}
+/** ตรวจ PIN สำหรับ savereservoir */
+function verifyReservoirAccess(reservoirId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyReservoirAdminPin(pin)) return { ok:true, role:"reservoir_admin" };
+  if (verifyReservoirPin(reservoirId, pin)) return { ok:true, role:"reservoir" };
+  return { ok:false };
+}
+
+/** API: ตรวจ PIN ว่าเป็น sub-admin หรือไม่ — สำหรับ frontend เรียกตอน login */
+function checkSubAdminRole(scope, pin) {
+  // scope: "water" | "rain" | "reservoir"
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin", scope:scope };
+  if (scope === "water" && verifyWaterAdminPin(pin))         return { ok:true, role:"water_admin", scope:"water" };
+  if (scope === "rain"  && verifyRainAdminPin(pin))          return { ok:true, role:"rain_admin",  scope:"rain" };
+  if (scope === "reservoir" && verifyReservoirAdminPin(pin)) return { ok:true, role:"reservoir_admin", scope:"reservoir" };
+  return { ok:false };
+}
+
+function getStationPinRow_(stationId) {
+  const sh = ensureStationPinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(stationId || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, station_id: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyStationPin(stationId, pin) {
+  const r = getStationPinRow_(stationId);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function touchStationPinLastUsed(stationId) {
+  try {
+    const r = getStationPinRow_(stationId);
+    if (r) ensureStationPinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function getAmphoePinRow_(amphoe) {
+  const sh = ensureAmphoePinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(amphoe || "").trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").trim() === target) {
+      return { row: i+2, amphoe: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyAmphoePin(amphoe, pin) {
+  const r = getAmphoePinRow_(amphoe);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function touchAmphoePinLastUsed(amphoe) {
+  try {
+    const r = getAmphoePinRow_(amphoe);
+    if (r) ensureAmphoePinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+/** Master list ของสถานีทั้งจังหวัด — ใช้เป็น fallback ถ้า Sheet Stations ว่าง
+ *  ครบทุก field สำหรับ Dashboard (bank, warn, lat, lon) */
+const STATION_MASTER_LIST = [
+  {station_id:"PN01",name:"วังปลาป้อม",       river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.42065,lon:101.99304,bank_level:290.0,warn_level:289.5,crit_level:290.0},
+  {station_id:"PN02",name:"โคกกระทอ",         river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.34314,lon:102.07167,bank_level:266.0,warn_level:265.5,crit_level:266.0},
+  {station_id:"PN03",name:"วังสามหาบ",        river:"ลำน้ำพะเนียง",amphoe:"นาวัง",            lat:17.30990,lon:102.10789,bank_level:258.0,warn_level:257.5,crit_level:258.0},
+  {station_id:"PN04",name:"บ้านหนองด่าน",     river:"ลำน้ำพะเนียง",amphoe:"นากลาง",           lat:17.27936,lon:102.16552,bank_level:249.0,warn_level:248.5,crit_level:249.0},
+  {station_id:"PN05",name:"บ้านฝั่งแดง",      river:"ลำน้ำพะเนียง",amphoe:"นากลาง",           lat:17.26730,lon:102.22728,bank_level:237.0,warn_level:236.5,crit_level:237.0},
+  {station_id:"PN06",name:"ปตร.หนองหว้าใหญ่", river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.17981,lon:102.38617,bank_level:216.0,warn_level:215.5,crit_level:216.0},
+  {station_id:"PN07",name:"วังหมื่น",          river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.18317,lon:102.43244,bank_level:210.0,warn_level:209.5,crit_level:210.0},
+  {station_id:"PN08",name:"ปตร.ปู่หลอด",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.11487,lon:102.45435,bank_level:203.0,warn_level:202.5,crit_level:203.0},
+  {station_id:"PN09",name:"บ้านข้องโป้",       river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.08217,lon:102.45068,bank_level:201.0,warn_level:200.5,crit_level:201.0},
+  {station_id:"PN10",name:"ปตร.หัวนา",         river:"ลำน้ำพะเนียง",amphoe:"เมืองหนองบัวลำภู",lat:17.00067,lon:102.42400,bank_level:191.0,warn_level:190.5,crit_level:191.0},
+  {station_id:"MG01",name:"คลองบุญทัน",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.54512,lon:102.16832,bank_level:231.0,warn_level:230.5,crit_level:231.0},
+  {station_id:"MG02",name:"บ้านโคก",           river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.54952,lon:102.20425,bank_level:218.0,warn_level:217.5,crit_level:218.0},
+  {station_id:"MG03",name:"บ้านนาตาแหลว",     river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.57567,lon:102.27326,bank_level:202.0,warn_level:201.5,crit_level:202.0},
+  {station_id:"MG04",name:"บ้านกุดผึ้ง",        river:"ลำน้ำโมง",    amphoe:"สุวรรณคูหา",      lat:17.56062,lon:102.31572,bank_level:192.0,warn_level:191.5,crit_level:192.0},
+  {station_id:"MO01",name:"อ่างเก็บน้ำมอ",      river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:17.16608,lon:102.18177,bank_level:242.0,warn_level:241.5,crit_level:242.0},
+  {station_id:"MO02",name:"บ้านวังคูณ",         river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:17.03214,lon:102.24920,bank_level:211.0,warn_level:210.5,crit_level:211.0},
+  {station_id:"MO03",name:"บ้านโนนสูงเปลือย",   river:"ลำน้ำมอ",     amphoe:"ศรีบุญเรือง",     lat:16.96934,lon:102.27002,bank_level:202.0,warn_level:201.5,crit_level:202.0},
+  {station_id:"PY01",name:"บ้านวังโปร่ง",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:17.01415,lon:102.19359,bank_level:212.0,warn_level:211.5,crit_level:212.0},
+  {station_id:"PY02",name:"บ้านทุ่งโพธิ์",      river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:16.97482,lon:102.22344,bank_level:197.0,warn_level:196.5,crit_level:197.0},
+  {station_id:"PY03",name:"บ้านโคกล่าม",       river:"ลำน้ำพวย",    amphoe:"ศรีบุญเรือง",     lat:16.91317,lon:102.23807,bank_level:193.0,warn_level:192.5,crit_level:193.0}
+];
+
+/** รายการสถานีที่ใช้สำหรับจัดการ PIN — รวมข้อมูลจาก Sheet Stations (ถ้ามี) กับ master list
+ *  เพื่อให้ initStationPins ทำงานได้แม้ Sheet ยังว่างเปล่า */
+function getStationsForPinAdmin_() {
+  const fromSheet = getStations(); // อ่านจาก Sheet Stations
+  const byId = {};
+  // master list มาก่อน (เป็น default)
+  STATION_MASTER_LIST.forEach(s => { byId[s.station_id] = Object.assign({}, s); });
+  // sheet override (กรณีเจ้าหน้าที่แก้ใน Sheet เอง)
+  fromSheet.forEach(s => {
+    const id = String(s.station_id||"").toUpperCase();
+    if (id) byId[id] = Object.assign(byId[id]||{}, s, {station_id:id});
+  });
+  return Object.keys(byId).sort().map(k => byId[k]);
+}
+
+function listStationPins() {
+  ensureStationPinsSheet_();
+  const stations = getStationsForPinAdmin_();
+  const out = [];
+  stations.forEach(s => {
+    const row = getStationPinRow_(s.station_id);
+    out.push({
+      station_id: s.station_id,
+      name: s.name,
+      river: s.river,
+      amphoe: s.amphoe,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    });
+  });
+  return out;
+}
+
+function setStationPin_(stationId, newPin, recorderName) {
+  if (!stationId) return { ok:false, error:"ไม่ระบุรหัสสถานี" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureStationPinsSheet_();
+  const row = getStationPinRow_(stationId);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(stationId).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + stationId + " เรียบร้อย", station_id: stationId };
+}
+
+function initStationPins() {
+  ensureStationPinsSheet_();
+  const stations = getStationsForPinAdmin_();
+  if (!stations.length) {
+    return { ok:false, error:"ไม่พบรายการสถานี (master list ว่าง — เป็นไปไม่ได้ในสภาวะปกติ)" };
+  }
+  const added = [];
+  stations.forEach(s => {
+    const existing = getStationPinRow_(s.station_id);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setStationPin_(s.station_id, pin, "");
+      added.push({station_id: s.station_id, name: s.name, pin: pin});
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " สถานี (จากทั้งหมด " + stations.length + " สถานี — ที่เหลือมี PIN อยู่แล้ว)", added: added };
+}
+
+function listAmphoePins() {
+  ensureAmphoePinsSheet_();
+  return AMPHOES.map(am => {
+    const row = getAmphoePinRow_(am);
+    return {
+      amphoe: am,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function setAmphoePin_(amphoe, newPin, recorderName) {
+  if (!amphoe) return { ok:false, error:"ไม่ระบุอำเภอ" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureAmphoePinsSheet_();
+  const row = getAmphoePinRow_(amphoe);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([amphoe, String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับอำเภอ " + amphoe + " เรียบร้อย", amphoe: amphoe };
+}
+
+function initAmphoePins() {
+  ensureAmphoePinsSheet_();
+  const added = [];
+  AMPHOES.forEach(am => {
+    const existing = getAmphoePinRow_(am);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setAmphoePin_(am, pin, "");
+      added.push({amphoe: am, pin: pin});
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " อำเภอ", added: added };
+}
+
+// ===== RESERVOIR PIN MANAGEMENT =====
+/** รายการอ่างเก็บน้ำในจังหวัด (master list) — sync กับ reservoir.html */
+const RESERVOIR_LIST = [
+  { id:"R01", name:"อ่างเก็บน้ำห้วยยางเงาะ",        amphoe:"เมืองหนองบัวลำภู", capacity:0.4000 },
+  { id:"R02", name:"อ่างเก็บน้ำห้วยซับม่วง",        amphoe:"ศรีบุญเรือง",       capacity:0.7500 },
+  { id:"R03", name:"อ่างเก็บน้ำห้วยเหล่ายาง",       amphoe:"เมืองหนองบัวลำภู", capacity:2.4690 },
+  { id:"R04", name:"อ่างเก็บน้ำห้วยน้ำบอง",         amphoe:"โนนสัง",            capacity:20.8000 },
+  { id:"R05", name:"อ่างเก็บน้ำบ้านสนามชัย",        amphoe:"นากลาง",            capacity:0.3300 },
+  { id:"R06", name:"อ่างเก็บน้ำห้วยผาวัง",          amphoe:"นาวัง",             capacity:2.1220 },
+  { id:"R07", name:"อ่างเก็บน้ำห้วยลาดกั่ว",        amphoe:"นาวัง",             capacity:0.8420 },
+  { id:"R08", name:"อ่างเก็บน้ำห้วยโซ่",            amphoe:"สุวรรณคูหา",        capacity:1.4300 },
+  { id:"R09", name:"อ่างเก็บน้ำห้วยไร่ 1",          amphoe:"นากลาง",            capacity:0.2000 },
+  { id:"R10", name:"อ่างเก็บน้ำห้วยไร่ 2",          amphoe:"นากลาง",            capacity:0.6950 },
+  { id:"R11", name:"อ่างเก็บน้ำห้วยลำไย",           amphoe:"นากลาง",            capacity:0.4500 },
+  { id:"R12", name:"อ่างเก็บน้ำห้วยโป่งซาง",        amphoe:"นากลาง",            capacity:0.3000 },
+  { id:"R13", name:"อ่างเก็บน้ำบ้านคลองเจริญ",      amphoe:"สุวรรณคูหา",        capacity:0.6230 },
+  { id:"R14", name:"อ่างเก็บน้ำผาจ้ำน้ำ",           amphoe:"นาวัง",             capacity:0.0850 },
+  { id:"R15", name:"อ่างเก็บน้ำสำนักสงฆ์เทพนิมิตร", amphoe:"เมืองหนองบัวลำภู", capacity:0.0684 }
+];
+
+function ensureReservoirPinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_RESERVOIR_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_RESERVOIR_PINS);
+    sh.appendRow(["reservoir_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#0c4a6e").setFontColor("#fff");
+  }
+  return sh;
+}
+
+function getReservoirPinRow_(reservoirId) {
+  const sh = ensureReservoirPinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(reservoirId || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, reservoir_id: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyReservoirPin(reservoirId, pin) {
+  const r = getReservoirPinRow_(reservoirId);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function touchReservoirPinLastUsed(reservoirId) {
+  try {
+    const r = getReservoirPinRow_(reservoirId);
+    if (r) ensureReservoirPinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function listReservoirPins() {
+  ensureReservoirPinsSheet_();
+  return RESERVOIR_LIST.map(r => {
+    const row = getReservoirPinRow_(r.id);
+    return {
+      reservoir_id: r.id, name: r.name, amphoe: r.amphoe, capacity: r.capacity,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function setReservoirPin_(reservoirId, newPin, recorderName) {
+  if (!reservoirId) return { ok:false, error:"ไม่ระบุรหัสอ่างเก็บน้ำ" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureReservoirPinsSheet_();
+  const row = getReservoirPinRow_(reservoirId);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(reservoirId).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + reservoirId + " เรียบร้อย", reservoir_id: reservoirId };
+}
+
+function initReservoirPins() {
+  ensureReservoirPinsSheet_();
+  const added = [];
+  RESERVOIR_LIST.forEach(r => {
+    const existing = getReservoirPinRow_(r.id);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setReservoirPin_(r.id, pin, "");
+      added.push({reservoir_id: r.id, name: r.name, pin: pin});
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " อ่าง", added: added };
+}
+
+// ===== FLOODGATE + HYDRO PIN MANAGEMENT =====
+function ensureFloodgatePinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_FLOODGATE_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_FLOODGATE_PINS);
+    sh.appendRow(["gate_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#92400e").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["gate_id","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function ensureHydroPinsSheet_() {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_HYDRO_PINS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_HYDRO_PINS);
+    sh.appendRow(["station_code","pin","recorder_name","phone","last_changed","last_used","note"]);
+    sh.getRange("A1:G1").setFontWeight("bold").setBackground("#0e7490").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(["station_code","pin","recorder_name","phone","last_changed","last_used","note"]);
+  }
+  return sh;
+}
+
+function getFloodgatePinRow_(gateId) {
+  const sh = ensureFloodgatePinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(gateId || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, gate_id: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function getHydroPinRow_(stationCode) {
+  const sh = ensureHydroPinsSheet_();
+  if (sh.getLastRow() < 2) return null;
+  const data = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+  const target = String(stationCode || "").toUpperCase().trim();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0] || "").toUpperCase().trim() === target) {
+      return { row: i+2, station_code: target, pin: String(data[i][1]||""), recorder_name: data[i][2]||"", phone: data[i][3]||"", last_changed: data[i][4]||"", last_used: data[i][5]||"", note: data[i][6]||"" };
+    }
+  }
+  return null;
+}
+
+function verifyFloodgatePin(gateId, pin) {
+  const r = getFloodgatePinRow_(gateId);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function verifyHydroPin(stationCode, pin) {
+  const r = getHydroPinRow_(stationCode);
+  if (!r || !r.pin) return false;
+  return String(pin||"").trim() === String(r.pin).trim();
+}
+
+function verifyFloodgateAccess(gateId, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyFloodgatePin(gateId, pin)) return { ok:true, role:"floodgate" };
+  return { ok:false };
+}
+
+function verifyHydroAccess(stationCode, pin) {
+  if (verifyAdminPin(pin)) return { ok:true, role:"super_admin" };
+  if (verifyHydroPin(stationCode, pin)) return { ok:true, role:"hydro" };
+  return { ok:false };
+}
+
+function touchFloodgatePinLastUsed(gateId) {
+  try {
+    const r = getFloodgatePinRow_(gateId);
+    if (r) ensureFloodgatePinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function touchHydroPinLastUsed(stationCode) {
+  try {
+    const r = getHydroPinRow_(stationCode);
+    if (r) ensureHydroPinsSheet_().getRange(r.row, 6).setValue(new Date());
+  } catch(e) {}
+}
+
+function listFloodgatePins() {
+  ensureFloodgatePinsSheet_();
+  return FLOODGATE_MASTER.map(g => {
+    const row = getFloodgatePinRow_(g.gate_id);
+    return {
+      gate_id: g.gate_id, name: g.name, village: g.village, tambon: g.tambon, amphoe: g.amphoe,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function listHydroPins() {
+  ensureHydroPinsSheet_();
+  return HYDRO_MASTER.map(h => {
+    const row = getHydroPinRow_(h.station_code);
+    return {
+      station_code: h.station_code, name: h.name, village: h.village, tambon: h.tambon, amphoe: h.amphoe,
+      pin: row ? row.pin : "",
+      recorder_name: row ? row.recorder_name : "",
+      phone: row ? row.phone : "",
+      last_changed: row ? (row.last_changed ? Utilities.formatDate(new Date(row.last_changed), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      last_used: row ? (row.last_used ? Utilities.formatDate(new Date(row.last_used), "Asia/Bangkok", "yyyy-MM-dd HH:mm") : "") : "",
+      note: row ? row.note : "",
+      has_pin: !!(row && row.pin)
+    };
+  });
+}
+
+function setFloodgatePin_(gateId, newPin, recorderName) {
+  if (!gateId) return { ok:false, error:"ไม่ระบุรหัสประตูระบายน้ำ" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureFloodgatePinsSheet_();
+  const row = getFloodgatePinRow_(gateId);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(gateId).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + gateId + " เรียบร้อย", gate_id: gateId };
+}
+
+function setHydroPin_(stationCode, newPin, recorderName) {
+  if (!stationCode) return { ok:false, error:"ไม่ระบุรหัสสถานีอุทกวิทยา" };
+  if (!newPin || String(newPin).trim().length < 3) return { ok:false, error:"PIN ต้องมีอย่างน้อย 3 ตัวอักษร" };
+  const sh = ensureHydroPinsSheet_();
+  const row = getHydroPinRow_(stationCode);
+  const now = new Date();
+  if (row) {
+    sh.getRange(row.row, 2).setValue(String(newPin).trim());
+    if (recorderName !== undefined && recorderName !== null) sh.getRange(row.row, 3).setValue(recorderName);
+    sh.getRange(row.row, 5).setValue(now);
+  } else {
+    sh.appendRow([String(stationCode).toUpperCase(), String(newPin).trim(), recorderName||"", "", now, "", ""]);
+  }
+  return { ok:true, message:"ตั้ง PIN สำหรับ " + stationCode + " เรียบร้อย", station_code: stationCode };
+}
+
+function initFloodgatePins() {
+  ensureFloodgatePinsSheet_();
+  const added = [];
+  FLOODGATE_MASTER.forEach(g => {
+    const existing = getFloodgatePinRow_(g.gate_id);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setFloodgatePin_(g.gate_id, pin, "");
+      added.push({ gate_id: g.gate_id, name: g.name, pin: pin });
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " จุด", added: added };
+}
+
+function initHydroPins() {
+  ensureHydroPinsSheet_();
+  const added = [];
+  HYDRO_MASTER.forEach(h => {
+    const existing = getHydroPinRow_(h.station_code);
+    if (!existing || !existing.pin) {
+      const pin = String(Math.floor(1000 + Math.random()*9000));
+      setHydroPin_(h.station_code, pin, "");
+      added.push({ station_code: h.station_code, name: h.name, pin: pin });
+    }
+  });
+  return { ok:true, message:"สร้าง PIN ใหม่ " + added.length + " สถานี", added: added };
+}
+
+function getFloodgateContext(gateId) {
+  const meta = FLOODGATE_MASTER.find(g => g.gate_id === String(gateId).toUpperCase());
+  if (!meta) return { ok:false, error:"ไม่พบประตูระบายน้ำ " + gateId };
+  const pinRow = getFloodgatePinRow_(gateId);
+  return Object.assign({ ok:true, recorder_name: pinRow ? pinRow.recorder_name : "" }, meta);
+}
+
+function getHydroContext(stationCode) {
+  const meta = HYDRO_MASTER.find(h => h.station_code.toUpperCase() === String(stationCode).toUpperCase());
+  if (!meta) return { ok:false, error:"ไม่พบสถานีอุทกวิทยา " + stationCode };
+  const pinRow = getHydroPinRow_(stationCode);
+  return Object.assign({ ok:true, recorder_name: pinRow ? pinRow.recorder_name : "" }, meta);
+}
+
+function getReservoirContext(reservoirId) {
+  const meta = RESERVOIR_LIST.find(r => r.id === String(reservoirId).toUpperCase());
+  if (!meta) return { error:"ไม่พบอ่างเก็บน้ำ " + reservoirId };
+  const pinRow = getReservoirPinRow_(reservoirId);
+  // Recent records from Reservoir sheet
+  const all = getReservoirs() || [];
+  const forThis = all.filter(r => String(r.reservoir_id||"").toUpperCase() === meta.id);
+  // Sort by date desc, take 10 most recent
+  forThis.sort((a,b) => String(b.date||"").localeCompare(String(a.date||"")));
+  const recent = forThis.slice(0, 10);
+  const last = recent.length ? recent[0] : null;
+  const lastVol = last ? parseFloat(last.current_volume) : null;
+  const pct = (lastVol != null && !isNaN(lastVol) && meta.capacity > 0) ? (lastVol / meta.capacity * 100) : null;
+  let status = "ไม่มีข้อมูล", statusColor = "#94a3b8";
+  if (pct != null) {
+    if (pct >= 100)     { status = "ล้นความจุ";   statusColor = "#dc2626"; }
+    else if (pct >= 80) { status = "น้ำมากเฝ้าระวัง"; statusColor = "#f59e0b"; }
+    else if (pct >= 30) { status = "ปกติ";       statusColor = "#10b981"; }
+    else                { status = "น้ำน้อย";     statusColor = "#0ea5e9"; }
+  }
+  return {
+    ok: true,
+    reservoir_id: meta.id, name: meta.name, amphoe: meta.amphoe, capacity: meta.capacity,
+    recorder_name: pinRow ? pinRow.recorder_name : "",
+    last_volume: lastVol, last_date: last ? last.date : "", last_reporter: last ? last.reporter : "",
+    last_pct: pct, status: status, status_color: statusColor,
+    recent: recent
+  };
+}
+
+/** ใช้ใน Login screen — รายชื่อสถานี + สถานะมี PIN หรือยัง */
+function getStationListPublic() {
+  const stations = getStations();
+  ensureStationPinsSheet_();
+  const pinMap = {};
+  try {
+    const sh = ensureStationPinsSheet_();
+    if (sh.getLastRow() >= 2) {
+      const data = sh.getRange(2,1,sh.getLastRow()-1,3).getValues();
+      data.forEach(r => pinMap[String(r[0]||"").toUpperCase().trim()] = { has_pin: !!String(r[1]||"").trim(), recorder: r[2]||"" });
+    }
+  } catch(e) {}
+  return stations.map(s => ({
+    station_id: s.station_id, name: s.name, river: s.river, amphoe: s.amphoe,
+    bank_level: s.bank_level, warn_level: s.warn_level,
+    has_pin: !!(pinMap[s.station_id] && pinMap[s.station_id].has_pin),
+    recorder_name: (pinMap[s.station_id] && pinMap[s.station_id].recorder) || ""
+  }));
+}
+
+/** Context หลังล็อกอินสำเร็จ — ข้อมูลสถานี + ระดับน้ำล่าสุด + ประวัติ 7 บันทึก */
+function getStationContext(stationId) {
+  // ลองหาใน Sheet Stations ก่อน — ถ้าไม่เจอใช้ master list (ที่ hard-code ไว้)
+  let station = getStations().find(s => String(s.station_id||"").toUpperCase() === String(stationId).toUpperCase());
+  if (!station) {
+    // fallback ไปยัง master list
+    const m = STATION_MASTER_LIST.find(s => String(s.station_id).toUpperCase() === String(stationId).toUpperCase());
+    if (m) {
+      // populate default values (เผื่อ Sheet ยังว่าง)
+      station = Object.assign({
+        bank_level:0, warn_level:0, crit_level:0, lat:"", lon:"", village:""
+      }, m);
+    }
+  }
+  if (!station) return { ok:false, error:"ไม่พบสถานี " + stationId };
+  const pinRow = getStationPinRow_(stationId);
+  let recent = [];
+  try { recent = getWaterLevels(stationId, 7) || []; } catch(e) { recent = []; }
+  const last = (recent && recent.length) ? recent[recent.length-1] : null;
+  const lv = last ? parseFloat(last.level) : null;
+  let status = "ไม่มีข้อมูล", statusColor = "#94a3b8";
+  if (lv !== null && !isNaN(lv)) {
+    const bk = parseFloat(station.bank_level)||0;
+    const wn = parseFloat(station.warn_level)||0;
+    if (bk > 0 && lv >= bk) { status = "วิกฤติ — ล้นตลิ่ง"; statusColor = "#dc2626"; }
+    else if (wn > 0 && lv >= wn) { status = "เฝ้าระวัง"; statusColor = "#f59e0b"; }
+    else { status = "ปกติ"; statusColor = "#10b981"; }
+  }
+  return {
+    ok: true,
+    station_id: station.station_id, name: station.name, river: station.river,
+    village: station.village, amphoe: station.amphoe,
+    bank_level: station.bank_level, warn_level: station.warn_level, crit_level: station.crit_level,
+    lat: station.lat, lon: station.lon,
+    recorder_name: pinRow ? pinRow.recorder_name : "",
+    last_level: lv, last_date: last ? last.date : "", last_time: last ? last.time : "",
+    last_recorder: last ? last.recorder : "", last_remark: last ? last.remark : "",
+    status: status, status_color: statusColor,
+    recent: recent.slice(-7).reverse()
+  };
+}
+
+function getAmphoeContext(amphoe) {
+  const pinRow = getAmphoePinRow_(amphoe);
+  let rain = [];
+  try { rain = getRainfall(7) || []; } catch(e) { rain = []; }
+  const forAmphoe = rain.filter(r => String(r.amphoe||"") === String(amphoe));
+  const last = forAmphoe.length ? forAmphoe[forAmphoe.length-1] : null;
+  return {
+    ok: true,
+    amphoe: amphoe,
+    recorder_name: pinRow ? pinRow.recorder_name : "",
+    last_rain_24hr: last ? last.rain_24hr : null,
+    last_rain_7day: last ? last.rain_7day : null,
+    last_rain_month: last ? last.rain_month : null,
+    last_date: last ? last.date : "",
+    last_recorder: last ? last.recorder : "",
+    recent: forAmphoe.slice(-7).reverse()
+  };
+}
+
+// ===== SETUP =====
+
+/** เรียกครั้งเดียวจาก Apps Script Editor หลังอัปเดต Code.gs
+ *  เพื่อ append สถานีใหม่ลง Sheet `Stations` โดยไม่กระทบของเดิม
+ *  ตรวจตาม station_id ถ้ามีแล้วจะข้าม ถ้ายังไม่มีจะเพิ่ม */
+function addMissingStations() {
+  const ALL_STATIONS = [
+    ["PN01","วังปลาป้อม","ลำน้ำพะเนียง","บ้านโคกเจริญ","นาวัง",17.42065,101.99304,290.0,289.5,290.0,true],
+    ["PN02","โคกกระทอ","ลำน้ำพะเนียง","บ้านโคกกระทอ","นาวัง",17.34314,102.07167,266.0,265.5,266.0,true],
+    ["PN03","วังสามหาบ","ลำน้ำพะเนียง","บ้านวังสามหาบ","นาวัง",17.30990,102.10789,258.0,257.5,258.0,true],
+    ["PN04","บ้านหนองด่าน","ลำน้ำพะเนียง","บ้านหนองด่าน","นากลาง",17.27936,102.16552,249.0,248.5,249.0,true],
+    ["PN05","บ้านฝั่งแดง","ลำน้ำพะเนียง","บ้านฝั่งแดง","นากลาง",17.26730,102.22728,237.0,236.5,237.0,true],
+    ["PN06","ปตร.หนองหว้าใหญ่","ลำน้ำพะเนียง","บ้านหนองหว้าใหญ่","เมืองหนองบัวลำภู",17.17981,102.38617,216.0,215.5,216.0,true],
+    ["PN07","วังหมื่น","ลำน้ำพะเนียง","บ้านวังหมื่น","เมืองหนองบัวลำภู",17.18317,102.43244,210.0,209.5,210.0,true],
+    ["PN08","ปตร.ปู่หลอด","ลำน้ำพะเนียง","บ้านโนนคูณ","เมืองหนองบัวลำภู",17.11487,102.45435,203.0,202.5,203.0,true],
+    ["PN09","บ้านข้องโป้","ลำน้ำพะเนียง","บ้านข้องโป้","เมืองหนองบัวลำภู",17.08217,102.45068,201.0,200.5,201.0,true],
+    ["PN10","ปตร.หัวนา","ลำน้ำพะเนียง","บ้านดอนหัน","เมืองหนองบัวลำภู",17.00067,102.42400,191.0,190.5,191.0,true],
+    ["MG01","คลองบุญทัน","ลำน้ำโมง","บ้านบุญทัน","สุวรรณคูหา",17.54512,102.16832,231.0,230.5,231.0,true],
+    ["MG02","บ้านโคก","ลำน้ำโมง","บ้านโคก","สุวรรณคูหา",17.54952,102.20425,218.0,217.5,218.0,true],
+    ["MG03","บ้านนาตาแหลว","ลำน้ำโมง","บ้านโคก","สุวรรณคูหา",17.57567,102.27326,202.0,201.5,202.0,true],
+    ["MG04","บ้านกุดผึ้ง","ลำน้ำโมง","บ้านกุดผึ้ง","สุวรรณคูหา",17.56062,102.31572,192.0,191.5,192.0,true],
+    ["MO01","อ่างเก็บน้ำมอ","ลำน้ำมอ","บ้านฝายหิน","ศรีบุญเรือง",17.16608,102.18177,242.0,241.5,242.0,true],
+    ["MO02","บ้านวังคูณ","ลำน้ำมอ","บ้านวังคูณ","ศรีบุญเรือง",17.03214,102.24920,211.0,210.5,211.0,true],
+    ["MO03","บ้านโนนสูงเปลือย","ลำน้ำมอ","บ้านโนนสูงเปลือย","ศรีบุญเรือง",16.96934,102.27002,202.0,201.5,202.0,true],
+    ["PY01","บ้านวังโปร่ง","ลำน้ำพวย","บ้านวังโปร่ง","ศรีบุญเรือง",17.01415,102.19359,212.0,211.5,212.0,true],
+    ["PY02","บ้านทุ่งโพธิ์","ลำน้ำพวย","บ้านทุ่งโพธิ์","ศรีบุญเรือง",16.97482,102.22344,197.0,196.5,197.0,true],
+    ["PY03","บ้านโคกล่าม","ลำน้ำพวย","บ้านโคกล่าม","ศรีบุญเรือง",16.91317,102.23807,193.0,192.5,193.0,true],
+  ];
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(SHEET_STATIONS);
+  if (!sh) {
+    sh = ss_obj.insertSheet(SHEET_STATIONS);
+    sh.appendRow(["station_id","name","river","village","amphoe","lat","lon","bank_level","warn_level","crit_level","active"]);
+  }
+  const data = sh.getDataRange().getValues();
+  const existing = {};
+  for (let i = 1; i < data.length; i++) {
+    const id = String(data[i][0] || "").trim().toUpperCase();
+    if (id) existing[id] = true;
+  }
+  let added = 0, skipped = 0;
+  const addedIds = [];
+  ALL_STATIONS.forEach(row => {
+    const id = String(row[0]).toUpperCase();
+    if (existing[id]) { skipped++; return; }
+    sh.appendRow(row);
+    added++;
+    addedIds.push(id);
+  });
+  const msg = "เพิ่มสถานีใหม่ " + added + " รายการ (ข้ามของเดิม " + skipped + " รายการ)" +
+              (addedIds.length ? " — " + addedIds.join(", ") : "");
+  Logger.log(msg);
+  return msg;
+}
+
+function runSetup() {
+  const ss_obj=ss();
+  function ensure(name,hdr){let sh=ss_obj.getSheetByName(name);if(!sh){sh=ss_obj.insertSheet(name);}if(sh.getLastRow()===0)sh.appendRow(hdr);return sh;}
+  ensure(SHEET_STATIONS,["station_id","name","river","village","amphoe","lat","lon","bank_level","warn_level","crit_level","active"]);
+  ensure(SHEET_WATER,   ["station_id","date","time","level","flow","recorder","remark"]);
+  ensure(SHEET_RAIN,    ["station_id","amphoe","date","rain_24hr","rain_7day","rain_month","recorder","remark"]);
+  ensure(SHEET_RESERVOIR,RESERVOIR_HEADERS);
+  ensure(SHEET_SETTINGS,["key","value"]);
+  const stSh=ss_obj.getSheetByName(SHEET_STATIONS);
+  if(stSh.getLastRow()<=1){
+    [["PN01","วังปลาป้อม","ลำน้ำพะเนียง","บ้านโคกเจริญ","นาวัง",17.42065,101.99304,290.0,289.5,290.0,true],
+     ["PN02","โคกกระทอ","ลำน้ำพะเนียง","บ้านโคกกระทอ","นาวัง",17.34314,102.07167,266.0,265.5,266.0,true],
+     ["PN03","วังสามหาบ","ลำน้ำพะเนียง","บ้านวังสามหาบ","นาวัง",17.30990,102.10789,258.0,257.5,258.0,true],
+     ["PN04","บ้านหนองด่าน","ลำน้ำพะเนียง","บ้านหนองด่าน","นากลาง",17.27936,102.16552,249.0,248.5,249.0,true],
+     ["PN05","บ้านฝั่งแดง","ลำน้ำพะเนียง","บ้านฝั่งแดง","นากลาง",17.26730,102.22728,237.0,236.5,237.0,true],
+     ["PN06","ปตร.หนองหว้าใหญ่","ลำน้ำพะเนียง","บ้านหนองหว้าใหญ่","เมืองหนองบัวลำภู",17.17981,102.38617,216.0,215.5,216.0,true],
+     ["PN07","วังหมื่น","ลำน้ำพะเนียง","บ้านวังหมื่น","เมืองหนองบัวลำภู",17.18317,102.43244,210.0,209.5,210.0,true],
+     ["PN08","ปตร.ปู่หลอด","ลำน้ำพะเนียง","บ้านโนนคูณ","เมืองหนองบัวลำภู",17.11487,102.45435,203.0,202.5,203.0,true],
+     ["PN09","บ้านข้องโป้","ลำน้ำพะเนียง","บ้านข้องโป้","เมืองหนองบัวลำภู",17.08217,102.45068,201.0,200.5,201.0,true],
+     ["PN10","ปตร.หัวนา","ลำน้ำพะเนียง","บ้านดอนหัน","เมืองหนองบัวลำภู",17.00067,102.42400,191.0,190.5,191.0,true],
+     ["MG01","คลองบุญทัน","ลำน้ำโมง","บ้านบุญทัน","สุวรรณคูหา",17.54512,102.16832,231.0,230.5,231.0,true],
+     ["MG02","บ้านโคก","ลำน้ำโมง","บ้านโคก","สุวรรณคูหา",17.54952,102.20425,218.0,217.5,218.0,true],
+     ["MG03","บ้านนาตาแหลว","ลำน้ำโมง","บ้านโคก","สุวรรณคูหา",17.57567,102.27326,202.0,201.5,202.0,true],
+     ["MG04","บ้านกุดผึ้ง","ลำน้ำโมง","บ้านกุดผึ้ง","สุวรรณคูหา",17.56062,102.31572,192.0,191.5,192.0,true],
+     ["MO01","อ่างเก็บน้ำมอ","ลำน้ำมอ","บ้านฝายหิน","ศรีบุญเรือง",17.16608,102.18177,242.0,241.5,242.0,true],
+     ["MO02","บ้านวังคูณ","ลำน้ำมอ","บ้านวังคูณ","ศรีบุญเรือง",17.03214,102.24920,211.0,210.5,211.0,true],
+     ["MO03","บ้านโนนสูงเปลือย","ลำน้ำมอ","บ้านโนนสูงเปลือย","ศรีบุญเรือง",16.96934,102.27002,202.0,201.5,202.0,true],
+     ["PY01","บ้านวังโปร่ง","ลำน้ำพวย","บ้านวังโปร่ง","ศรีบุญเรือง",17.01415,102.19359,212.0,211.5,212.0,true],
+     ["PY02","บ้านทุ่งโพธิ์","ลำน้ำพวย","บ้านทุ่งโพธิ์","ศรีบุญเรือง",16.97482,102.22344,197.0,196.5,197.0,true],
+     ["PY03","บ้านโคกล่าม","ลำน้ำพวย","บ้านโคกล่าม","ศรีบุญเรือง",16.91317,102.23807,193.0,192.5,193.0,true],
+    ].forEach(r=>stSh.appendRow(r));
+  }
+  const resSh=ss_obj.getSheetByName(SHEET_RESERVOIR);
+  if(resSh.getLastRow()<=1){
+    const today=Utilities.formatDate(new Date(),"Asia/Bangkok","yyyy-MM-dd");
+    [["R01","ห้วยยางเงาะ","เมืองหนองบัวลำภู",0.400,0.240],["R02","ห้วยซับม่วง","ศรีบุญเรือง",0.750,0.450],
+     ["R03","ห้วยเหล่ายาง","เมืองหนองบัวลำภู",2.469,1.481],["R04","อ่างน้ำบอง","โนนสัง",20.800,9.984],
+     ["R05","ห้วยสนามชัย","นากลาง",0.330,0.198],["R06","ผาวัง","นาวัง",2.122,1.273],
+     ["R07","ห้วยลาดกั่ว","นาวัง",0.842,0.505],["R08","ห้วยโซ่","สุวรรณคูหา",1.430,0.858],
+     ["R09","ห้วยไร่ 1","นากลาง",0.200,0.120],["R10","ห้วยไร่ 2","นากลาง",0.695,0.417],
+     ["R11","ห้วยลำใย","นากลาง",0.450,0.270],["R12","ห้วยโป่งซาง","นากลาง",0.300,0.180],
+     ["R13","ห้วยบ้านคลองเจริญ","สุวรรณคูหา",0.623,0.374],["R14","ผาจ้ำน้ำ","นาวัง",0.085,0.051],
+    ].forEach(d=>resSh.appendRow([d[0],d[1],d[2],d[3],d[4],today,"ระบบ",new Date()]));
+  }
+  Logger.log("Setup complete ✅");
+}
+
+// ===== HELPERS =====
+function getOrCreateReservoirSheet(){const ss_obj=ss();let sh=ss_obj.getSheetByName(SHEET_RESERVOIR);if(!sh){sh=ss_obj.insertSheet(SHEET_RESERVOIR);sh.appendRow(RESERVOIR_HEADERS);}if(sh.getLastRow()===0||sh.getLastColumn()===0)sh.appendRow(RESERVOIR_HEADERS);return sh;}
+function normalizeReservoirPayload(p){return{reservoir_id:p.reservoir_id||p.id||"",reservoir_name:p.reservoir_name||p.name||"",amphoe:p.amphoe||"",capacity:toNum(p.capacity),current_volume:toNum(p.current_volume!==undefined?p.current_volume:p.current),date:p.date||Utilities.formatDate(new Date(),"Asia/Bangkok","yyyy-MM-dd"),reporter:p.reporter||"",updated_at:new Date(),level:p.level!==undefined&&p.level!==""?toNum(p.level):"",inflow:p.inflow!==undefined&&p.inflow!==""?toNum(p.inflow):"",outflow:p.outflow!==undefined&&p.outflow!==""?toNum(p.outflow):""};}
+function toNum(v){if(v===""||v===null||v===undefined)return "";const n=parseFloat(v);return isNaN(n)?"":n;}
+function headerIndex(headers,names){for(let i=0;i<names.length;i++){const idx=headers.indexOf(names[i]);if(idx>=0)return idx;}return -1;}
+function ss(){return SpreadsheetApp.getActiveSpreadsheet();}
+function getHeaders(sheet){
+  if(!sheet) return [];
+  if(sheet.getLastColumn() < 1 || sheet.getLastRow() < 1) return [];
+  return sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+}
+function sheetToObjects(sheet){
+  if(!sheet)return[];
+  const data=sheet.getDataRange().getValues();
+  if(data.length<2)return[];
+  const headers=data[0];
+  // ระบุคอลัมน์ที่เป็น "เวลา" (HH:mm) แยกจาก "วันที่" (yyyy-MM-dd)
+  const TIME_COLS = ["time","start_time","end_time","updated_at","saved_at","created_at"];
+  return data.slice(1).map(row=>{
+    const obj={};
+    headers.forEach((h,i)=>{
+      let v=row[i];
+      if(v instanceof Date){
+        const hLower = String(h||"").toLowerCase();
+        if(hLower === "time" || hLower === "start_time" || hLower === "end_time"){
+          // คอลัมน์ "เวลา" → format เป็น HH:mm
+          v = Utilities.formatDate(v, "Asia/Bangkok", "HH:mm");
+        } else if(hLower.indexOf("_at") !== -1 || hLower === "timestamp" || hLower === "datetime"){
+          // คอลัมน์ timestamp → format เป็น yyyy-MM-dd HH:mm:ss
+          v = Utilities.formatDate(v, "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss");
+        } else {
+          // คอลัมน์ "วันที่" และอื่นๆ → yyyy-MM-dd
+          v = Utilities.formatDate(v, "Asia/Bangkok", "yyyy-MM-dd");
+        }
+      }
+      obj[h]=v;
+    });
+    return obj;
+  }).filter(o=>Object.values(o).some(v=>v!==""&&v!==null&&v!==undefined));
+}
+
+/** สร้าง sheet อัตโนมัติพร้อม header ถ้าไม่มี — เลี่ยง null.getRange() error */
+function ensureSheet_(name, headers) {
+  const ss_obj = ss();
+  let sh = ss_obj.getSheetByName(name);
+  if (!sh) {
+    sh = ss_obj.insertSheet(name);
+    if (headers && headers.length) {
+      sh.appendRow(headers);
+      sh.getRange(1,1,1,headers.length).setFontWeight("bold").setBackground("#0c4a6e").setFontColor("#fff");
+      sh.setFrozenRows(1);
+    }
+  } else if (sh.getLastRow() < 1 && headers && headers.length) {
+    // sheet exists but empty — add headers
+    sh.appendRow(headers);
+    sh.getRange(1,1,1,headers.length).setFontWeight("bold").setBackground("#0c4a6e").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+const HEADERS_WATER = ["station_id","date","time","level","flow","recorder","remark"];
+const HEADERS_RAIN  = ["station_id","amphoe","date","rain_24hr","rain_7day","rain_month","recorder","remark"];
+const HEADERS_RESERVOIR = ["reservoir_id","reservoir_name","amphoe","capacity","current_volume","date","reporter","updated_at","level","inflow","outflow"];
+const HEADERS_DAILY = ["date","reporter","summary","weather","notes","created_at"];
+function parseDate(v){if(!v)return null;if(v instanceof Date)return v;const d=new Date(v);return isNaN(d.getTime())?null:d;}
+function respond(data,callback){const json=JSON.stringify(data);if(callback)return ContentService.createTextOutput(callback+"("+json+");").setMimeType(ContentService.MimeType.JAVASCRIPT);return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);}
+function getAppPin(){return String(PropertiesService.getScriptProperties().getProperty(PIN_PROPERTY_KEY)||"").trim();}
+function installDefaultPinForSetup(){PropertiesService.getScriptProperties().setProperty(PIN_PROPERTY_KEY,"123456");Logger.log("ตั้งค่า APP_PIN เริ่มต้นแล้ว ควรเปลี่ยนก่อนใช้งานจริง");}
+
+// ===== TEST =====
+function testPin(){Logger.log(getAppPin()?"✅ ตั้งค่า APP_PIN แล้ว":"❌ ยังไม่ได้ตั้งค่า APP_PIN");}
+function testGetSummary(){Logger.log(JSON.stringify(getSummary(),null,2));}
+function testGetReservoirs(){Logger.log(JSON.stringify(getReservoirs(),null,2));}
+/**
+ * ============================================================
+ * Code.gs — เพิ่ม Gemini AI Proxy
+ * ============================================================
+ * วิธีใช้:
+ *   1. เปิด Apps Script Editor → Script Properties
+ *   2. เพิ่ม Key: GEMINI_API_KEY  Value: <your-gemini-key>
+ *      (รับ key ฟรีที่ https://aistudio.google.com/app/apikey)
+ *   3. Paste ฟังก์ชันด้านล่างต่อท้าย Code.gs
+ *   4. ใน doGet() เพิ่ม case "gemini" ตามที่ระบุ
+ * ============================================================
+ */
+
+/* ── ขั้นที่ 1: เพิ่มใน doGet() ในส่วน READ actions ──
+   วางก่อนบรรทัด  case "summary": data = getSummary(); break;
+
+    case "gemini": data = geminiProxy_(params.prompt||"", params.context||""); break;
+
+   ─────────────────────────────────────────────────── */
+
+
+/* ════════════════════════════════════════════════════
+ *  GEMINI PROXY — เพิ่มต่อท้าย Code.gs ทั้งหมด
+ * ════════════════════════════════════════════════════ */
+
+/**
+ * geminiProxy_(prompt, context)
+ * ─ อ่าน API key จาก Script Properties (ปลอดภัย)
+ * ─ Rate limit 1 ครั้ง / 25 นาที ต่อ session
+ * ─ Cache ผลไว้เพื่อประหยัด quota
+ */
+function geminiProxy_(prompt, context) {
+
+  // ── 1. ตรวจ API key ──
+  const key = PropertiesService.getScriptProperties()
+                               .getProperty("AIzaSyA6OnCaihPZB7HY3NjILliaoKhJ_KBY1Ec");
+  if (!key) {
+    return {
+      ok: false,
+      error: "ยังไม่ได้ตั้งค่า GEMINI_API_KEY ใน Script Properties",
+      hint: "เปิด Apps Script Editor → Project Settings → Script Properties → เพิ่ม GEMINI_API_KEY"
+    };
+  }
+
+  // ── 2. ตรวจ prompt ──
+  if (!prompt || String(prompt).trim().length < 20) {
+    return { ok: false, error: "prompt สั้นเกินไป — ต้องมีข้อมูลสภาพอากาศก่อน" };
+  }
+
+  // ── 3. Rate limit (CacheService) ──
+  const cache       = CacheService.getScriptCache();
+  const RATE_KEY    = "nbp_gemini_rate";
+  const RESULT_KEY  = "nbp_gemini_last";
+  const RATE_TTL    = 25 * 60;   // 25 นาที (วินาที)
+
+  if (cache.get(RATE_KEY)) {
+    // ยังอยู่ใน window → คืน cached result ถ้ามี
+    const cached = cache.get(RESULT_KEY);
+    if (cached) {
+      try {
+        const obj = JSON.parse(cached);
+        obj._cached = true;
+        return obj;
+      } catch(e) {}
+    }
+    return {
+      ok: false,
+      error: "Rate limit: กรุณารอให้ครบ 25 นาทีก่อนวิเคราะห์ใหม่",
+      _rate_limited: true
+    };
+  }
+
+  // ── 4. สร้าง system prompt ──
+  const systemPrompt =
+    "คุณเป็นผู้เชี่ยวชาญสภาพอากาศและสถานการณ์น้ำ จ.หนองบัวลำภู ประเทศไทย " +
+    "วิเคราะห์ข้อมูลที่ได้รับและสรุปสถานการณ์เป็นภาษาไทย " +
+    "ตอบกระชับ 3–5 ประโยค มุ่งเน้นผลกระทบต่อประชาชน " +
+    "ถ้ามีความเสี่ยงน้ำท่วมหรือภัยแล้ง ให้ระบุชัดเจน " +
+    "ห้ามใช้ markdown หรือ bullet ในการตอบ";
+
+  const fullPrompt = systemPrompt + "\n\n" + String(prompt).trim() +
+    (context ? "\n\nข้อมูลเพิ่มเติม: " + String(context).slice(0, 500) : "");
+
+  // ── 5. เรียก Gemini API ──
+  const MODEL = "gemini-1.5-flash-latest";
+  const url   = "https://generativelanguage.googleapis.com/v1beta/models/" +
+                MODEL + ":generateContent?key=" + key;
+
+  const payload = {
+    contents: [{
+      parts: [{ text: fullPrompt }]
+    }],
+    generationConfig: {
+      temperature:     0.45,
+      maxOutputTokens: 512,
+      topP:            0.90,
+    },
+    safetySettings: [
+      { category:"HARM_CATEGORY_HARASSMENT",        threshold:"BLOCK_NONE" },
+      { category:"HARM_CATEGORY_HATE_SPEECH",       threshold:"BLOCK_NONE" },
+      { category:"HARM_CATEGORY_DANGEROUS_CONTENT", threshold:"BLOCK_NONE" },
+    ]
+  };
+
+  let result;
+  try {
+    const res  = UrlFetchApp.fetch(url, {
+      method:            "post",
+      contentType:       "application/json",
+      payload:           JSON.stringify(payload),
+      muteHttpExceptions: true,
+    });
+
+    const code = res.getResponseCode();
+    const body = JSON.parse(res.getContentText());
+
+    if (code !== 200) {
+      return {
+        ok:    false,
+        error: "Gemini API error " + code + ": " +
+               (body.error && body.error.message || JSON.stringify(body))
+      };
+    }
+
+    const text = (body.candidates &&
+                  body.candidates[0] &&
+                  body.candidates[0].content &&
+                  body.candidates[0].content.parts &&
+                  body.candidates[0].content.parts[0] &&
+                  body.candidates[0].content.parts[0].text) || "";
+
+    if (!text) {
+      return { ok: false, error: "Gemini ไม่ได้ส่งข้อความกลับมา — อาจถูก safety filter" };
+    }
+
+    result = {
+      ok:        true,
+      text:      text.trim(),
+      model:     MODEL,
+      generated: new Date().toISOString(),
+      _cached:   false,
+    };
+
+  } catch (err) {
+    return { ok: false, error: "UrlFetch error: " + err.toString() };
+  }
+
+  // ── 6. cache ผลและตั้ง rate limit ──
+  try {
+    const resultStr = JSON.stringify(result);
+    if (resultStr.length < 100000) {
+      cache.put(RESULT_KEY, resultStr, RATE_TTL + 300);
+      cache.put(RATE_KEY,   "1",       RATE_TTL);
+    }
+  } catch(e) { /* ถ้า JSON ใหญ่เกิน ข้ามได้ */ }
+
+  Logger.log("[Gemini Proxy] สำเร็จ: " + result.text.slice(0, 80) + "…");
+  return result;
+}
+
+/**
+ * testGeminiProxy — เรียกจาก Apps Script Editor เพื่อทดสอบ
+ * Run → testGeminiProxy
+ */
+function testGeminiProxy() {
+  const fakePrompt =
+    "อุณหภูมิ 32°C ความชื้น 85% ฝน 48 มม. ใน 24 ชม. " +
+    "สถานี PN06 ระดับน้ำ 215.8 ม. (ตลิ่ง 216.0) สถานะ: เฝ้าระวัง " +
+    "อ่างเก็บน้ำเฉลี่ย 72% จากทั้งหมด 14 แห่ง";
+
+  const res = geminiProxy_(fakePrompt, "");
+  Logger.log(JSON.stringify(res, null, 2));
+}
