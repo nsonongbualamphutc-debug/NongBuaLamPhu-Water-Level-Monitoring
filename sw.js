@@ -11,7 +11,7 @@
  *  ⚠️ เวลาแก้ไฟล์ HTML/CSS แล้ว deploy ใหม่ ให้ขยับเลข VERSION ทุกครั้ง
  *     เพื่อบังคับล้าง cache เก่าของผู้ใช้
  * ════════════════════════════════════════════════════════════ */
-const VERSION       = "wnb-v23";
+const VERSION       = "wnb-v24";
 const STATIC_CACHE  = VERSION + "-static";
 const RUNTIME_CACHE = VERSION + "-runtime";
 
@@ -30,9 +30,9 @@ const PRECACHE_URLS = [
   "./input.html",
   "./theme.css",
   "./ds.css",
-  "./ds.css?v=22",
+  "./ds.css?v=24",
   "./ds.js",
-  "./ds.js?v=22",
+  "./ds.js?v=24",
   "./config.js",
   "./manifest.json",
   "./verdict.css",
