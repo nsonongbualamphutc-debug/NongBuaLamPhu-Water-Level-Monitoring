@@ -1,1233 +1,899 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ลำน้ำมอ | สถานการณ์น้ำ จ.หนองบัวลำภู</title>
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+<!DOCTYPE html><html lang="th"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ลำน้ำมอ · จ.หนองบัวลำภู</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="config.js"></script>
-<script src="date-range-picker.js"></script>
-<link rel="stylesheet" href="theme.css">
-<link rel="stylesheet" href="verdict.css">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0a1e3c">
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ds.css?v=22">
 <style>
-:root {
-  --bg: #f0faf4;
-  --card: #ffffff;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --line: #d1fae5;
-  --river: #10b981;
-  --river-deep: #047857;
-  --river-light: #a7f3d0;
-  --normal: #16a34a;
-  --warn: #f59e0b;
-  --crit: #dc2626;
-  --brand: #064e3b;
-  --shadow: 0 2px 12px rgba(6,78,59,.08);
+/* ═══════ ตารางสรุป (Data Table Overlay) ═══════ */
+.mini-i{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex:0 0 17px;
+ border-radius:50%;border:1.5px solid currentColor;font-family:var(--disp);font-size:10px;font-weight:700;
+ line-height:1;cursor:pointer;opacity:.55;transition:.15s;margin-left:6px}
+.mini-i:hover{opacity:1;transform:scale(1.18);box-shadow:0 0 0 4px rgba(10,30,60,.07)}
+.hbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:#fff;
+ font-family:var(--disp);font-size:10.5px;font-weight:600;color:var(--navy);padding:5px 10px;border-radius:8px;cursor:pointer;transition:.15s}
+.hbtn:hover{background:var(--navy);color:#fff;border-color:var(--navy);transform:translateY(-1px)}
+.fsel{font-family:var(--disp);font-size:10.5px;font-weight:500;color:var(--navy);background:var(--bg);
+ border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:132px}
+.dtwrap{position:fixed;inset:0;z-index:900;display:none;align-items:center;justify-content:center;padding:22px;
+ background:rgba(6,17,36,.55);backdrop-filter:blur(7px);animation:dtin .22s ease}
+.dtwrap.on{display:flex}
+@keyframes dtin{from{opacity:0}to{opacity:1}}
+@keyframes dtup{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.dtcard{background:var(--card);border-radius:18px;box-shadow:0 30px 70px rgba(3,12,28,.45);
+ width:min(1180px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;animation:dtup .3s cubic-bezier(.2,.7,.3,1)}
+.dth{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+ background:linear-gradient(120deg,#0a1e3c,#12305c);color:#fff}
+.dth h3{font-family:var(--disp);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.dth .sub{font-size:10px;opacity:.75;display:block;font-weight:400}
+.dth .grow{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.dth input,.dth select{font-family:var(--font);font-size:11.5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+ color:#fff;border-radius:9px;padding:6px 10px;outline:none}
+.dth input::placeholder{color:rgba(255,255,255,.55)}
+.dth select option{color:#0f172a}
+.dth .xb{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:9px;
+ width:32px;height:30px;cursor:pointer;font-size:15px;line-height:1;transition:.15s}
+.dth .xb:hover{background:#dc2626;border-color:#dc2626}
+.dtb{flex:1;min-height:0;overflow:auto}
+.dtb::-webkit-scrollbar{width:8px;height:8px}.dtb::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9px}
+table.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+table.dt thead th{position:sticky;top:0;z-index:2;background:#f6f9fc;color:var(--muted);font-family:var(--disp);
+ font-weight:600;font-size:10.5px;text-align:right;padding:9px 10px;border-bottom:2px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+table.dt thead th:first-child,table.dt thead th.l{text-align:left}
+table.dt thead th:hover{background:#eef4fa;color:var(--navy)}
+table.dt thead th .ar{opacity:.35;font-size:9px;margin-left:3px}
+table.dt thead th.act .ar{opacity:1;color:var(--gold)}
+table.dt tbody td{padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap}
+table.dt tbody td.l{text-align:left}
+table.dt tbody tr{cursor:pointer;transition:.12s}
+table.dt tbody tr:hover{background:#f0f7ff}
+table.dt tbody tr.crit{background:#fff6f6}table.dt tbody tr.warn{background:#fffbeb}
+table.dt .code{font-family:var(--disp);font-weight:700;color:var(--navy);font-size:11px}
+table.dt .nm{font-family:var(--disp);font-weight:600}
+table.dt .sm{font-size:9.5px;color:var(--muted)}
+table.dt .num{font-family:var(--disp);font-weight:700;font-variant-numeric:tabular-nums}
+table.dt .pill{display:inline-flex;align-items:center;gap:4px;font-family:var(--disp);font-size:9.5px;font-weight:600;
+ padding:2px 9px;border-radius:99px;color:#fff}
+table.dt .bar{position:relative;height:7px;width:76px;border-radius:99px;background:#eef2f7;overflow:hidden;display:inline-block;vertical-align:middle}
+table.dt .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+table.dt .bar .mk{position:absolute;top:-2px;bottom:-2px;width:1.5px;background:rgba(15,23,42,.35)}
+.dtf{display:flex;align-items:center;gap:10px;padding:9px 18px;border-top:1px solid var(--line);
+ font-size:10.5px;color:var(--muted);flex-wrap:wrap;background:#fbfdff}
+.dtf .k{display:inline-flex;align-items:center;gap:4px}
+.dtf .dot{width:9px;height:9px;border-radius:50%}
+.dtf .r{margin-left:auto;display:flex;gap:7px}
+.spark{display:inline-block;vertical-align:middle}
+@media(max-width:820px){
+  .dtwrap{padding:0}
+  .dtcard{border-radius:0;height:100%;width:100%}
+  .dth{padding:10px 12px}
+  .dth h3{font-size:13.5px}
+  .dth .grow{width:100%;margin-left:0}
+  .dth input{flex:1}
+  table.dt{font-size:11px}
+  table.dt tbody td,table.dt thead th{padding:7px 7px}
+  .hide-sm{display:none}
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
-
-/* HEADER */
-header {
-  background: linear-gradient(135deg, #022c22 0%, #064e3b 55%, #065f46 100%);
-  color: #fff; position: sticky; top: 0; z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
-}
-header::after {
-  content: ""; display: block; height: 3px;
-  background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7, #10b981);
-  background-size: 200% 100%; animation: shimmer 3s linear infinite;
-}
-@keyframes shimmer { to { background-position: -200% 0; } }
-.hdr-inner {
-  max-width: 1600px; margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px; gap: 16px; flex-wrap: wrap;
-}
-.hdr-brand { display: flex; align-items: center; gap: 14px; }
-.hdr-logo {
-  width: 50px; height: 50px; border-radius: 14px;
-  background: linear-gradient(135deg, rgba(16,185,129,.35), rgba(6,95,70,.2));
-  border: 1px solid rgba(110,231,183,.4);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 20px rgba(16,185,129,.3);
-}
-.hdr-title { font-size: 20px; font-weight: 800; font-family: 'Kanit', sans-serif; }
-.hdr-sub { font-size: 11px; color: #6ee7b7; opacity: .85; margin-top: 2px; letter-spacing: .5px; }
-.hdr-right { display: flex; align-items: center; gap: 12px; }
-.hdr-badge {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(0,0,0,.25); border: 1px solid rgba(110,231,183,.3);
-  padding: 7px 14px; border-radius: 10px; font-size: 12px; color: #d1fae5;
-}
-.hdr-badge .dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
-  box-shadow: 0 0 8px #22c55e; animation: blink 1.5s ease-in-out infinite;
-}
-@keyframes blink { 50% { opacity: .4; transform: scale(.8); } }
-.hdr-badge .dot.warn { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
-.hdr-badge .dot.crit { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-.hdr-time { font-family: 'Courier New', monospace; font-size: 13px; color: #6ee7b7; letter-spacing: 1px; }
-
-/* NAV */
-nav { background: #fff; border-bottom: 1px solid var(--line); }
-.nav-inner { max-width: 1600px; margin: 0 auto; display: flex; padding: 0 24px; overflow-x: auto; }
-nav a { padding: 14px 20px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; border-bottom: 3px solid transparent; transition: all .2s; }
-nav a:hover { color: var(--river); }
-nav a.active { color: var(--brand); border-bottom-color: var(--river); font-weight: 700; }
-
-/* MAIN */
-main { max-width: 1600px; margin: 0 auto; padding: 24px; }
-
-/* SUMMARY ROW */
-.summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
-.sc {
-  background: #fff; border-radius: 14px; padding: 16px 18px;
-  border: 1px solid var(--line); box-shadow: var(--shadow); position: relative; overflow: hidden;
-}
-.sc::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 14px 0 0 14px; }
-.sc.info::before   { background: var(--river); }
-.sc.normal::before { background: var(--normal); }
-.sc.warn::before   { background: var(--warn); }
-.sc.crit::before   { background: var(--crit); }
-.sc-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-.sc-value { font-size: 32px; font-weight: 800; line-height: 1; }
-.sc.info .sc-value   { color: var(--river-deep); }
-.sc.normal .sc-value { color: #15803d; }
-.sc.warn .sc-value   { color: #92400e; }
-.sc.crit .sc-value   { color: #991b1b; }
-.sc-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
-
-/* SCENE WRAP */
-.scene-wrap {
-  background: #fff; border-radius: 20px; overflow: hidden;
-  box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid #a7f3d0;
-}
-.scene-head {
-  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid #d1fae5; background: linear-gradient(180deg, #f0fdf4, #fff);
-}
-.scene-head h2 { font-size: 15px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 10px; }
-.scene-head h2::before { content: ""; width: 4px; height: 18px; background: var(--river); border-radius: 2px; }
-.scene-meta { font-size: 12px; color: var(--muted); }
-.river-scene-svg { width: 100%; display: block; }
-
-/* STATIONS SCROLLER */
-.stations-scroll-wrap { overflow-x: auto; padding: 18px 20px 20px; background: #fff; border-top: 1px solid #d1fae5; }
-.stations-row { display: flex; gap: 12px; min-width: max-content; }
-
-/* GAUGE CARD — same as paneang */
-.gauge-card {
-  background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px;
-  padding: 14px 12px 12px; width: 150px; flex-shrink: 0;
-  cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s;
-  position: relative;
-}
-.gauge-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(16,185,129,.18); border-color: var(--river); }
-.gauge-card.normal { border-top: 4px solid var(--normal); }
-.gauge-card.warn   { border-top: 4px solid var(--warn); }
-.gauge-card.crit   { border-top: 4px solid var(--crit); animation: cardPulse 2s ease-in-out infinite; }
-@keyframes cardPulse { 50% { box-shadow: 0 4px 20px rgba(220,38,38,.35); } }
-.gc-no { position: absolute; top: 10px; right: 10px; font-size: 10px; font-weight: 700; color: var(--muted); background: rgba(0,0,0,.06); padding: 2px 6px; border-radius: 5px; }
-.gc-name { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 2px; padding-right: 28px; line-height: 1.3; }
-.gc-loc { font-size: 10px; color: var(--muted); margin-bottom: 10px; }
-
-/* Tube gauge */
-.gc-tube-area { display: flex; justify-content: center; margin-bottom: 10px; }
-.gc-tube-inner { position: relative; }
-.gc-tube {
-  width: 32px; height: 110px; background: #e2e8f0; border-radius: 16px;
-  overflow: hidden; border: 2px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,.1);
-  position: relative;
-}
-.gc-fill {
-  position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0 0 14px 14px;
-  transition: height 1.4s cubic-bezier(.34,1.26,.64,1);
-}
-.gc-fill::after {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
-  background: rgba(255,255,255,.4); border-radius: 50%;
-  animation: waveTop 2.2s ease-in-out infinite;
-}
-@keyframes waveTop { 50% { transform: scaleX(1.1) translateY(2px); } }
-.gc-fill.normal { background: linear-gradient(180deg, #86efac, #16a34a); }
-.gc-fill.warn   { background: linear-gradient(180deg, #fde68a, #f59e0b); }
-.gc-fill.crit   { background: linear-gradient(180deg, #fca5a5, #dc2626); }
-.gc-line { position: absolute; left: 0; right: 0; height: 2px; z-index: 5; }
-.gc-line.warn-line { background: rgba(245,158,11,.75); }
-.gc-line.crit-line { background: rgba(220,38,38,.8); }
-.gc-ticks { position: absolute; top: 4px; right: 3px; bottom: 4px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
-.gc-tick { width: 5px; height: 1px; background: rgba(0,0,0,.18); }
-.gc-tick:nth-child(5n+1) { width: 8px; background: rgba(0,0,0,.3); }
-.gc-val-bbl {
-  position: absolute; right: -52px; top: 50%; transform: translateY(-50%);
-  background: var(--brand); color: #fff; font-size: 9.5px; font-weight: 700;
-  padding: 2px 7px; border-radius: 6px; white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0,0,0,.2); pointer-events: none;
-}
-.gc-val-bbl::before {
-  content: ""; position: absolute; left: -5px; top: 50%; transform: translateY(-50%);
-  border: 4px solid transparent; border-right-color: var(--brand);
-}
-.gc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.gc-stat { text-align: center; background: rgba(0,0,0,.03); border-radius: 7px; padding: 5px 3px; }
-.gc-stat .sv { font-size: 14px; font-weight: 800; color: var(--brand); line-height: 1; }
-.gc-stat .sv.up { color: var(--crit); }
-.gc-stat .sv.ok { color: var(--normal); }
-.gc-stat .sl { font-size: 9px; color: var(--muted); margin-top: 2px; }
-.gc-badge { display: flex; align-items: center; justify-content: center; width: 100%; padding: 5px; border-radius: 8px; margin-top: 8px; font-size: 11px; font-weight: 700; }
-.gc-badge.normal { background: #dcfce7; color: #15803d; }
-.gc-badge.warn   { background: #fef3c7; color: #a16207; }
-.gc-badge.crit   { background: #fee2e2; color: #b91c1c; }
-
-/* DETAIL PANEL */
-.detail-panel {
-  background: #fff; border-radius: 16px; border: 1px solid #a7f3d0;
-  box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; display: none;
-}
-.detail-panel.show { display: block; animation: slideIn .3s ease-out; }
-@keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } }
-.dp-head {
-  padding: 14px 20px; background: linear-gradient(135deg, #064e3b, #059669);
-  color: #fff; display: flex; align-items: center; justify-content: space-between;
-}
-.dp-head h3 { font-size: 15px; font-weight: 700; }
-.dp-close { width: 30px; height: 30px; background: rgba(255,255,255,.2); border: none; border-radius: 8px; color: #fff; font-size: 20px; cursor: pointer; }
-.dp-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-@media(max-width:800px) { .dp-body { grid-template-columns: 1fr; } }
-.dp-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.dp-info-item { background: #f0fdf4; border-radius: 10px; padding: 12px; border: 1px solid #d1fae5; }
-.dp-info-item .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-.dp-info-item .value { font-size: 18px; font-weight: 800; color: var(--brand); }
-.dp-info-item .unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
-.dp-chart-wrap { height: 190px; }
-.dp-trend { display: flex; flex-direction: column; gap: 7px; }
-.dp-trend-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: #f0fdf4; border-radius: 8px; }
-.dp-trend-item .ti-time { font-size: 11px; color: var(--muted); font-family: monospace; width: 42px; flex-shrink: 0; }
-.dp-trend-item .ti-bar-wrap { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-.dp-trend-item .ti-bar { height: 100%; border-radius: 4px; }
-.dp-trend-item .ti-val { font-size: 12px; font-weight: 700; color: var(--ink); font-family: monospace; }
-
-/* CHARTS ROW */
-.charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; margin-bottom: 24px; }
-@media(max-width:900px) { .charts-row { grid-template-columns: 1fr; } }
-.chart-panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; }
-.cp-head { padding: 13px 20px; border-bottom: 1px solid #d1fae5; background: linear-gradient(180deg, #f0fdf4, #fff); }
-.cp-head h3 { font-size: 13px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
-.cp-head h3::before { content: ""; width: 3px; height: 14px; background: var(--river); border-radius: 2px; }
-.cp-body { padding: 14px 18px; height: 250px; }
-
-/* TABLE */
-.table-panel { background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
-.tp-head { padding: 13px 20px; border-bottom: 1px solid #d1fae5; background: linear-gradient(180deg, #f0fdf4, #fff); }
-.tp-head h3 { font-size: 13px; font-weight: 700; color: var(--brand); display: flex; align-items: center; gap: 8px; }
-.tp-head h3::before { content: ""; width: 3px; height: 14px; background: var(--river); border-radius: 2px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { background: #f0fdf4; color: var(--muted); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 1px solid #d1fae5; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; position: sticky; top: 0; }
-td { padding: 9px 14px; border-bottom: 1px solid #f0fdf4; }
-tbody tr:hover { background: #f0fdf4; cursor: pointer; }
-.pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-.pill.normal { background: #dcfce7; color: #15803d; }
-.pill.warn   { background: #fef3c7; color: #a16207; }
-.pill.crit   { background: #fee2e2; color: #b91c1c; }
-.mini-bar-wrap { width: 72px; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
-.mini-bar { height: 100%; border-radius: 4px; }
-.mini-bar.normal { background: var(--normal); }
-.mini-bar.warn   { background: var(--warn); }
-.mini-bar.crit   { background: var(--crit); }
-
-/* Scene tooltip */
-
-/* ===== Amphoe filter bar ===== */
-.amphoe-filter-bar{display:flex;align-items:center;gap:8px;padding:0 0 16px;flex-wrap:wrap;}
-.amphoe-filter-bar .af-label{font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;}
-.af-btn{padding:5px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'Sarabun',sans-serif;}
-.af-btn:hover{border-color:var(--river);color:var(--river-deep,#0369a1);}
-.af-btn.active{background:var(--brand,#0c4a6e);border-color:var(--brand,#0c4a6e);color:#fff;}
-.af-btn .af-cnt{font-size:10px;opacity:.7;margin-left:3px;}
-.gc-tip{position:fixed;z-index:9999;pointer-events:none;background:#0f172a;color:#fff;border-radius:12px;padding:12px 14px;font-size:12px;min-width:200px;max-width:260px;box-shadow:0 10px 32px rgba(0,0,0,.32);opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;}
-.gc-tip.show{opacity:1;transform:translateY(0);}
-.gc-tip .tip-head{font-size:13px;font-weight:800;font-family:'Kanit',sans-serif;margin-bottom:2px;display:flex;align-items:center;gap:6px;}
-.gc-tip .tip-sub{font-size:10.5px;color:#94a3b8;margin-bottom:9px;}
-.gc-tip .tip-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11.5px;}
-.gc-tip .tip-row .k{color:#cbd5e1;}
-.gc-tip .tip-row .v{font-weight:700;font-family:'Kanit',sans-serif;}
-.gc-tip .tip-div{height:1px;background:rgba(255,255,255,.12);margin:7px 0;}
-.gc-tip .tip-th{display:flex;gap:6px;margin-top:7px;}
-.gc-tip .tip-th .th-item{flex:1;text-align:center;border-radius:7px;padding:5px 3px;font-size:9.5px;font-weight:700;}
-.gc-tip .tip-th .th-ok{background:rgba(22,163,74,.22);color:#86efac;}
-.gc-tip .tip-th .th-warn{background:rgba(245,158,11,.22);color:#fde68a;}
-.gc-tip .tip-th .th-crit{background:rgba(220,38,38,.22);color:#fca5a5;}
-.gc-tip .tip-th .th-item .thv{display:block;font-size:11px;margin-top:2px;}
-
-#sceneTip {
-  display: none; position: absolute; background: #fff; border: 1px solid #a7f3d0;
-  border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 600;
-  color: var(--brand); box-shadow: 0 4px 16px rgba(0,0,0,.15); pointer-events: none; z-index: 100;
-}
-
-/* FOOTER */
-footer { background: #022c22; color: #6ee7b7; padding: 24px; text-align: center; font-size: 12px; }
-footer strong { color: #fff; }
-
-::-webkit-scrollbar { width: 8px; height: 6px; }
-::-webkit-scrollbar-track { background: #f0fdf4; }
-::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 4px; }
-
-/* ═══════════════════════════════════════════
- *  RESPONSIVE — มือถือ & แท็บเล็ต
- * ═══════════════════════════════════════════ */
-@media(max-width:768px){
-  .hdr-inner{padding:12px 16px;gap:10px}
-  .hdr-logo{width:42px;height:42px}
-  .hdr-title{font-size:16px}
-  .hdr-sub{font-size:9.5px;letter-spacing:.2px}
-  .hdr-right{gap:8px}
-  .hdr-badge{padding:5px 10px;font-size:11px}
-  .hdr-time{font-size:11px}
-  .nav-inner{padding:0 12px;gap:0}
-  .nav-inner a{padding:11px 12px;font-size:12.5px;white-space:nowrap}
-  main{padding:16px 12px}
-  /* summary: 2 คอลัมน์บนมือถือ ใช้พื้นที่ดีขึ้น */
-  .summary-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
-  .summary-row>div{padding:13px 14px}
-  .scene-head{padding:12px 16px;flex-wrap:wrap;gap:6px}
-  .scene-head h2{font-size:14px}
-  .scene-meta{font-size:11px}
-  .stations-scroll-wrap{padding:14px 12px}
-  .charts-row{gap:14px;margin-bottom:18px}
-  /* ตาราง: เลื่อนแนวนอนได้ ไม่ล้น */
-  .table-wrap,.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table{font-size:12px}
-  th,td{padding:8px 10px;white-space:nowrap}
-  /* การ์ด ปตร. เต็มกว้าง */
-  .fg-cards-row{padding:14px 12px;gap:12px}
-  .fg-card{min-width:240px}
-  /* amphoe filter bar เลื่อนได้ */
-  .amphoe-filter-bar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;-webkit-overflow-scrolling:touch}
-  .af-btn{white-space:nowrap;flex-shrink:0}
-}
-@media(max-width:480px){
-  .hdr-inner{flex-direction:column;align-items:flex-start}
-  .hdr-right{width:100%;justify-content:space-between}
-  .hdr-title{font-size:15px}
-  /* summary 1 คอลัมน์เฉพาะจอเล็กมาก */
-  .summary-row{grid-template-columns:1fr 1fr;gap:8px}
-  .summary-row .sc-value{font-size:22px}
-  main{padding:12px 10px}
-  .scene-head h2{font-size:13px}
-  .gauge-card{min-width:150px}
-  .fg-card{min-width:210px}
-}
-/* อุปกรณ์สัมผัส — ปุ่มกดง่าย ไม่มี hover ค้าง */
-@media(hover:none){
-  .gauge-card:hover{transform:none}
-  .af-btn,.nav-inner a{min-height:40px;display:flex;align-items:center}
-  .fg-card:hover{transform:none}
-}
+@media print{.dtwrap{position:static;display:block!important;background:none;backdrop-filter:none;padding:0}
+ .dtcard{box-shadow:none;max-height:none;animation:none}.dth .grow,.dth .xb{display:none}
+ .dtb{overflow:visible}table.dt thead th{position:static}}
 
 
-/* ═══════════════════════════════════════════
- *  DARK MODE
- * ═══════════════════════════════════════════ */
-html[data-theme="dark"]{
-  --bg:#0b1220; --card:#131c2e; --ink:#e2e8f0; --muted:#94a3b8; --line:#1e293b;
-  --river-light:#164e63; --brand:#7dd3fc; --shadow:0 2px 14px rgba(0,0,0,.4);
-}
-html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
-html[data-theme="dark"] .sc,
-html[data-theme="dark"] .scene-wrap,
-html[data-theme="dark"] .chart-panel,
-html[data-theme="dark"] .table-panel,
-html[data-theme="dark"] .fg-section,
-html[data-theme="dark"] .panel,
-html[data-theme="dark"] .gauge-card,
-html[data-theme="dark"] .fg-card,
-html[data-theme="dark"] .detail-panel,
-html[data-theme="dark"] .chart-card{background:var(--card);border-color:var(--line)}
-html[data-theme="dark"] .scene-head,
-html[data-theme="dark"] .stations-scroll-wrap,
-html[data-theme="dark"] .chart-head,
-html[data-theme="dark"] .tp-head,
-html[data-theme="dark"] .cp-head{background:transparent;border-color:var(--line)}
-html[data-theme="dark"] th{background:#0f1a2e;color:var(--muted)}
-html[data-theme="dark"] td{border-color:var(--line)}
-html[data-theme="dark"] tbody tr:hover{background:#0f1a2e}
-html[data-theme="dark"] .gc-tube{background:#1e293b}
-html[data-theme="dark"] .gc-stat{background:#0f1a2e}
-html[data-theme="dark"] .gc-name,
-html[data-theme="dark"] .scene-head h2,
-html[data-theme="dark"] .panel-head h2,
-html[data-theme="dark"] .cp-head h3,
-html[data-theme="dark"] .tp-head h3,
-html[data-theme="dark"] .fg-section-title,
-html[data-theme="dark"] .gc-stat .sv{color:#7dd3fc}
-html[data-theme="dark"] .gc-val-bbl{background:#0369a1}
-html[data-theme="dark"] .af-btn{background:#131c2e;color:var(--muted);border-color:var(--line)}
-html[data-theme="dark"] .af-btn.active{background:#0369a1;border-color:#0369a1;color:#fff}
-html[data-theme="dark"] .gc-tip{background:#0f1a2e;border:1px solid #334155}
-html[data-theme="dark"] .fg-card-foot,
-html[data-theme="dark"] .gc-foot{border-color:var(--line)}
-html[data-theme="dark"] .data-banner.demo .data-banner-inner{background:#3d2e0a;color:#fcd34d;border-color:#92750a}
-html[data-theme="dark"] .data-banner.stale .data-banner-inner{background:#3d1518;color:#fca5a5;border-color:#7f1d1d}
+/* เกจแบบแบ่งโซน — ป้ายซ้าย/ขวา */
+.gg.zone{flex:0 0 auto;display:flex;align-items:stretch;gap:6px}
+.gg.zone .gticks{position:relative;width:82px;height:112px}
+.gg.zone .gtk{position:absolute;transform:translateY(50%);display:flex;align-items:center;gap:4px;
+ white-space:nowrap;font-size:8.5px;color:var(--muted);line-height:1.15}
+.gg.zone .gtk.gl{right:0;justify-content:flex-end;text-align:right}
+.gg.zone .gtk.gr{left:0}
+.gg.zone .gtk i{width:9px;height:2px;border-radius:1px;flex:0 0 9px}
+.gg.zone .gtk em{font-style:normal}
+.gg.zone .gtk b{font-family:var(--disp);font-weight:700;color:var(--ink)}
+.gg.zone .gtube{flex:0 0 25px}
 
-/* ── DATA BANNER ── */
-.data-banner{max-width:1600px;margin:0 auto;padding:0 24px;overflow:hidden;max-height:0;transition:max-height .3s,padding .3s}
-.data-banner.show{max-height:120px;padding:12px 24px 0}
-.data-banner-inner{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600}
-.data-banner.demo .data-banner-inner{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-.data-banner.stale .data-banner-inner{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
-.data-banner .db-icon{font-size:18px;flex-shrink:0}
-.data-banner .db-retry{margin-left:auto;background:rgba(0,0,0,.08);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;font-family:'Sarabun',sans-serif}
-.data-banner .db-retry:hover{background:rgba(0,0,0,.15)}
+/* ═══════ การ์ดสถานี — ภาพตัดลำน้ำเคลื่อนไหวตามระดับน้ำจริง ═══════ */
+.pb .stcards{position:absolute;inset:0}
+.stcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));
+ grid-auto-rows:min-content;gap:9px;overflow-y:auto;overflow-x:hidden;
+ padding:10px 11px;align-content:start}
+.stcards::-webkit-scrollbar{width:6px}
+.stcards::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9px}
+.stc{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;scroll-snap-align:start;
+ background:linear-gradient(168deg,#fff,#f7fbff);border:1px solid var(--line);
+ box-shadow:0 3px 12px rgba(15,40,80,.07);transition:transform .22s cubic-bezier(.2,.7,.3,1),box-shadow .22s,border-color .22s;
+ display:flex;flex-direction:column}
+.stc:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(15,40,80,.16)}
+.stc.sel{border-color:var(--navy);box-shadow:0 0 0 2px rgba(10,30,60,.14),0 14px 30px rgba(15,40,80,.16)}
+.stc.crit{background:linear-gradient(168deg,#fff,#fff5f5)}
+.stc.warn{background:linear-gradient(168deg,#fff,#fffbf2)}
+.stc-h{display:flex;align-items:flex-start;gap:6px;padding:9px 11px 6px}
+.stc-no{flex:0 0 20px;height:20px;border-radius:6px;background:var(--bg);color:var(--muted);
+ font-family:var(--disp);font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center}
+.stc-n{font-family:var(--disp);font-weight:700;font-size:12.5px;line-height:1.15;color:var(--navy);
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.stc-a{font-size:8.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stc-pill{font-family:var(--disp);font-size:8.5px;font-weight:700;color:#fff;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.stc-lv{padding:0 11px 4px;display:flex;align-items:baseline;gap:5px}
+.stc-lv b{font-family:var(--disp);font-weight:800;font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
+.stc-lv span{font-size:9px;color:var(--muted)}
+.stc-svg{width:100%;height:74px;display:block}
+.stc-f{display:flex;border-top:1px solid var(--line);background:rgba(255,255,255,.7)}
+.stc-f div{flex:1;padding:6px 9px;text-align:center}
+.stc-f div+div{border-left:1px solid var(--line)}
+.stc-f .k{font-size:8px;color:var(--muted);line-height:1.2}
+.stc-f .v{font-family:var(--disp);font-weight:700;font-size:12px;line-height:1.25}
+.wv1{animation:wvA 7s linear infinite}
+.wv2{animation:wvB 11s linear infinite}
+@keyframes wvA{from{transform:translateX(0)}to{transform:translateX(-80px)}}
+@keyframes wvB{from{transform:translateX(0)}to{transform:translateX(80px)}}
+.rise-up{animation:riseUp 1.4s ease-in-out infinite}
+@keyframes riseUp{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.wv1,.wv2,.rise-up{animation:none}}
+@media(max-width:820px){.stcards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 
-/* ── HEADER ACTION BUTTONS ── */
-.hdr-actions{display:flex;align-items:center;gap:8px}
-.hdr-icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .2s}
-.hdr-icon-btn:hover{background:rgba(255,255,255,.25)}
-.hdr-icon-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
-@keyframes spin360{to{transform:rotate(360deg)}}
-.spinning{animation:spin360 .8s linear infinite}
-
-/* ── EXPORT TOOLBAR ── */
-.tp-actions{display:flex;align-items:center;gap:7px}
-.tp-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--river-deep);font-size:12px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;transition:all .2s}
-.tp-btn:hover{background:var(--river-light);border-color:var(--river)}
-.tp-btn:focus-visible{outline:2px solid var(--river);outline-offset:2px}
-html[data-theme="dark"] .tp-btn{color:#7dd3fc}
-
-/* ── A11Y ── */
-.skip-link{position:absolute;left:-999px;top:0;z-index:10000;background:var(--brand);color:#fff;padding:10px 16px;border-radius:0 0 8px 0;font-size:13px;font-weight:700}
-.skip-link:focus{left:0}
-a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--river);outline-offset:2px}
-@media print{
-  .app-header,.app-nav,.data-banner,.scene-wrap,.tp-actions,.hdr-actions,.amphoe-filter-bar,footer{display:none!important}
-  body{background:#fff}
-  .table-panel,.chart-panel{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
-}
-
-</style>
+/* ═══ CSS เกจ/ทูลทิป ฝังในหน้า — ทำงานได้แม้ ds.css ยังไม่ถูกอัปโหลด ═══ */
+.tipbox{position:fixed;z-index:9999;display:none;max-width:376px;overflow:hidden;pointer-events:none;
+ background:#fff;color:#0f172a;border:1px solid #e4eaf2;border-radius:12px;font-size:11.5px;
+ font-family:'Sarabun',system-ui,sans-serif;box-shadow:0 12px 32px rgba(10,30,60,.22)}
+.tipbox .simple{padding:9px 12px;line-height:1.55}
+.tipbox .tth{font-family:'Kanit',sans-serif;font-weight:600;color:#fff;padding:9px 13px;font-size:13px;line-height:1.25}
+.tipbox .tth small{display:block;font-size:9.5px;opacity:.85;font-weight:400}
+.tipbox .body{display:flex;gap:13px;padding:12px 13px;align-items:flex-start}
+.tipbox .dt{flex:1;min-width:0}
+.tipbox .row{display:flex;justify-content:space-between;gap:16px;padding:3.5px 0;border-bottom:1px dashed #eef2f7}
+.tipbox .row:last-child{border-bottom:0}
+.tipbox .row span{color:#64748b;white-space:nowrap}
+.tipbox .row b{font-family:'Kanit',sans-serif;font-weight:600;text-align:right}
+.tipbox .seprow,.leaflet-tooltip .seprow{font-family:'Kanit',sans-serif;font-size:9px;font-weight:700;color:#c9a24b;
+ text-transform:uppercase;letter-spacing:.5px;padding:6px 0 2px;border-top:1px solid #e4eaf2;margin-top:5px}
+/* เกจแบ่งโซน — ป้ายวิกฤติซ้าย / เฝ้าระวังขวา */
+.gg.zone{flex:0 0 auto;display:flex;align-items:stretch;gap:6px}
+.gg.zone .gticks{position:relative;width:84px;height:116px;flex:0 0 84px}
+.gg.zone .gtube{position:relative;flex:0 0 26px;width:26px;height:116px;border-radius:13px;
+ background:#e8eef6;border:1px solid #dbe4ef;overflow:hidden;box-shadow:inset 0 2px 5px rgba(15,40,80,.09)}
+.gg.zone .gz{position:absolute;left:0;right:0}
+.gg.zone .gfill{position:absolute;left:0;right:0;bottom:0;border-radius:0 0 12px 12px;transition:height .5s cubic-bezier(.2,.7,.3,1)}
+.gg.zone .gline{position:absolute;left:-2px;right:-2px;height:2px;opacity:.95}
+.gg.zone .gnow{position:absolute;left:-4px;right:-4px;height:0;border-top:2px dashed rgba(15,23,42,.6)}
+.gg.zone .gtk{position:absolute;transform:translateY(50%);display:flex;align-items:center;gap:4px;
+ white-space:nowrap;font-size:8.5px;color:#64748b;line-height:1.15}
+.gg.zone .gtk.gl{right:0;justify-content:flex-end;text-align:right}
+.gg.zone .gtk.gr{left:0}
+.gg.zone .gtk i{width:9px;height:2px;border-radius:1px;flex:0 0 9px}
+.gg.zone .gtk em{font-style:normal}
+.gg.zone .gtk b{font-family:'Kanit',sans-serif;font-weight:700;color:#0f172a}
+.leaflet-tooltip.lft{background:#fff;border:1px solid #e4eaf2;border-radius:12px;padding:0;max-width:376px;
+ font-family:'Sarabun',system-ui,sans-serif;font-size:11.5px;overflow:hidden;box-shadow:0 12px 30px rgba(10,30,60,.22)}
+.leaflet-tooltip.lft::before{display:none}
+.leaflet-tooltip.lft .tth{font-family:'Kanit',sans-serif;font-weight:600;color:#fff;padding:9px 13px;font-size:13px;line-height:1.25}
+.leaflet-tooltip.lft .tth small{display:block;font-size:9.5px;opacity:.85;font-weight:400}
+.leaflet-tooltip.lft .body{display:flex;gap:13px;padding:12px 13px;align-items:flex-start}
+.leaflet-tooltip.lft .dt{flex:1;min-width:0}
+.leaflet-tooltip.lft .row{display:flex;justify-content:space-between;gap:16px;padding:3.5px 0;border-bottom:1px dashed #eef2f7}
+.leaflet-tooltip.lft .row:last-child{border-bottom:0}
+.leaflet-tooltip.lft .row span{color:#64748b;white-space:nowrap}
+.leaflet-tooltip.lft .row b{font-family:'Kanit',sans-serif;font-weight:600;text-align:right}
+</style></head>
+<body>
+<div class="app" id="app">
+<div class="scrim" onclick="document.getElementById('app').classList.remove('navopen')"></div>
+<aside class="side">
+  <div class="brand"><a href="index.html" title="กลับหน้าปกนำเสนอ" style="display:contents"><img src="logo-nbp.png" alt="ตราจังหวัด"><div class="bt"><div class="kick">Water Command</div><div class="ttl">สถานการณ์น้ำจังหวัด</div><div class="en">NONG BUA LAM PHU</div></div></a></div>
+  <nav class="menu"><a href="dashboard.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></span><span class="lbl"><b>ภาพรวมสถานการณ์</b><i>Executive Summary</i></span></a><a href="daily_briefing.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span><span class="lbl"><b>รายงานประจำวัน</b><i>Daily Briefing</i></span></a><a href="paneang.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพะเนียง</b><i>Phaneang</i></span></a><a href="mong.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำโมง</b><i>Mong</i></span></a><a href="mo.html" class="active"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำมอ</b><i>Mo</i></span></a><a href="phuay.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c3-2 6-2 9 0s6 2 9 0M2 14c3-2 6-2 9 0s6 2 9 0"/></svg></span><span class="lbl"><b>ลำน้ำพวย</b><i>Phuay</i></span></a><a href="rainfall.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.6 2A3.5 3.5 0 0 0 6 18z"/><path d="M8 20l1 2M12 20l1 2M16 20l1 2"/></svg></span><span class="lbl"><b>ปริมาณฝน</b><i>Rainfall</i></span></a><a href="reservoir.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v6a8 8 0 0 1-16 0zM4 5c3 2 5 2 8 0s5-2 8 0"/></svg></span><span class="lbl"><b>อ่างเก็บน้ำ</b><i>Reservoir</i></span></a><a href="input.html" class=""><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="lbl"><b>บันทึกข้อมูล</b><i>Data Input</i></span></a></nav>
+  <div class="side-foot"><b>สำนักงานสถิติจังหวัดหนองบัวลำภู</b>ศาลากลางจังหวัดหนองบัวลำภู ชั้น 2<br>ถ.หนองบัวลำภู - เลย ต.ลำภู อ.เมือง จ.หนองบัวลำภู 39000<div class="cp">© 2025 จัดทำโดย สำนักงานสถิติจังหวัดหนองบัวลำภู<br>โทร 0 4231 6736<br><span class="ver-stamp" style="opacity:.65;font-size:9px">รุ่น v22</span></div></div>
+</aside>
+<div class="main-col">
+  <header class="topbar">
+    <button class="burger" data-tip="พับ/ขยายเมนูด้านข้าง" onclick="var a=document.getElementById('app');window.innerWidth<=820?a.classList.toggle('navopen'):a.classList.toggle('collapsed');setTimeout(()=>{window._m&&window._m.invalidateSize();drawProfile();},300)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <div class="tt">ลำน้ำมอ<i id="tsub">—</i></div>
+    <div class="tr"><span class="chip" id="src" data-tip="สถานะการเชื่อมต่อข้อมูลจากระบบหลังบ้าน">กำลังโหลด…</span><button class="btn" data-tip="พิมพ์หรือบันทึกหน้านี้เป็น PDF" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div>
+  </header>
+  <div class="content">
+      <div class="loadmask" id="loadmask">
+        <div class="lm-box">
+          <div class="lm-spin"></div>
+          <div class="lm-t">กำลังดึงข้อมูลล่าสุด…</div>
+          <div class="lm-s">เชื่อมต่อระบบบันทึกข้อมูลของสำนักงาน<br>จะแสดงตัวเลขเมื่อได้รับข้อมูลจริงเท่านั้น</div>
+          <div class="lm-warn" id="lmWarn">⏳ ระบบตอบช้ากว่าปกติ กำลังรอต่อ…</div>
+        </div>
+      </div>
+    <div class="booterr" id="bootErr"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="mid">
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><div><h3 data-tip="การ์ดรายสถานี — ระดับน้ำในภาพขยับตามข้อมูลจริง เส้นประแดงคือสันตลิ่ง เส้นประส้มคือเกณฑ์เฝ้าระวัง · สลับดูภาพตัดตามยาวได้ที่ปุ่มขวา"><span class="hi">🌊</span>สถานการณ์รายสถานี<span class="sub" id="cardSub">—</span></h3></div>
+            <div class="seg">
+              <button data-v="card" class="on" onclick="setView('card')" data-tip="การ์ดรายสถานี พร้อมภาพตัดลำน้ำเคลื่อนไหวตามระดับน้ำจริง">🃏 การ์ด</button>
+              <button data-v="prof" onclick="setView('prof')" data-tip="ภาพตัดตามยาวของลำน้ำ ต้นน้ำ→ปลายน้ำ">📉 ภาพตัดตามยาว</button>
+              <button data-p="lv" class="on hideprof" onclick="setProf('lv')" style="display:none" data-tip="แสดงระดับน้ำจริง">ระดับจริง</button>
+              <button data-p="gap" class="hideprof" onclick="setProf('gap')" style="display:none" data-tip="แสดงระยะเหลือถึงตลิ่ง">เหลือถึงตลิ่ง</button>
+            </div></div>
+          <div class="pb"><div class="stcards" id="stcards"></div><svg id="prof" preserveAspectRatio="none" style="display:none"></svg></div>
+          <div class="legend" id="profLg" style="display:none"></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><div><h3 data-tip="ตำแหน่งจริงของสถานีตรวจวัดตลอดลำน้ำ · ชี้ที่หมุดเพื่อดูรายละเอียด"><span class="hi">🗺️</span>แผนที่สถานี<span class="sub" id="mapSub">—</span></h3></div></div>
+          <div class="pb"><div id="map"></div></div>
+          <div class="legend" id="mapLg"></div>
+        </div>
+      </div>
+      <div class="col c3">
+        <div class="panel f1">
+          <div class="ltabs">
+            <button data-l="st" class="on" onclick="setLTab('st')" data-tip="จุดตรวจวัดระดับน้ำตลอดลำน้ำ">📍 สถานีตรวจวัด <span class="cnt" id="cSt">0</span></button>
+            <button data-l="fg" onclick="setLTab('fg')" data-tip="ประตูระบายน้ำ กรมชลประทาน ในลำน้ำนี้">🚪 ปตร. <span class="cnt" id="cFg">0</span></button>
+          </div>
+          <div class="ph" style="border-top:1px solid var(--line)"><div><h3 data-tip="แตะรายการเพื่อดูบนแผนที่ กราฟ และฉากลำน้ำ" id="listH"><span class="hi">📍</span>สถานีตรวจวัด<span class="sub" id="listSub">เลื่อนดูได้ในกรอบ</span></h3></div>
+            <select class="fsel" id="ampF" onchange="setAmpF(this.value)" data-tip="กรองดูเฉพาะอำเภอที่ต้องการ"></select><button class="hbtn" onclick="openTable()" data-tip="เปิดตารางสรุปทุกสถานี — ค้นหา เรียงลำดับ และดาวน์โหลดเป็น CSV ได้ (กด / เพื่อเปิดเร็ว)">⊞ ตาราง</button><div class="seg" id="sortSeg"><button data-s="no" class="on" onclick="setSort('no')" data-tip="เรียงตามลำดับจากต้นน้ำไปปลายน้ำ">ตามลำน้ำ</button><button data-s="gap" onclick="setSort('gap')" data-tip="เรียงจากสถานีที่ใกล้ล้นตลิ่งที่สุด">ใกล้ตลิ่ง</button></div></div>
+          <div class="rlist" id="rlist"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bot">
+      <div class="panel">
+        <div class="ph"><div><h3 data-tip="แนวโน้มระดับน้ำย้อนหลัง เทียบกับระดับตลิ่งและเกณฑ์เฝ้าระวังของสถานีที่เลือก"><span class="hi">📈</span>แนวโน้มระดับน้ำ<span class="sub" id="trendSub">—</span></h3></div>
+          <div class="seg"><button data-d="7" class="on" onclick="setDays(7)" data-tip="ดูย้อนหลัง 7 วัน">7 วัน</button><button data-d="14" onclick="setDays(14)" data-tip="ดูย้อนหลัง 14 วัน">14 วัน</button><button data-d="30" onclick="setDays(30)" data-tip="ดูย้อนหลัง 30 วัน">30 วัน</button></div></div>
+        <div class="pb chartp"><canvas id="trend"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h3 data-tip="แถบเกณฑ์ของแต่ละสถานี — เขียวคือช่วงปกติ เหลืองคือเฝ้าระวัง แดงคือวิกฤติ/ล้นตลิ่ง · ขีดดำคือระดับน้ำปัจจุบัน"><span class="hi">📊</span>ระดับน้ำเทียบเกณฑ์ — ทุกสถานี<span class="sub" id="ldSub">—</span></h3></div></div>
+        <div class="ldl" id="ladder"></div>
+        <div class="ldlg">
+          <span class="lg" data-tip="ระดับน้ำต่ำกว่าเกณฑ์เฝ้าระวัง"><span class="sw" style="background:#bbf7d0"></span>ปกติ</span>
+          <span class="lg" data-tip="ระดับน้ำอยู่ระหว่างเกณฑ์เฝ้าระวังถึงสันตลิ่ง"><span class="sw" style="background:#fde68a"></span>เฝ้าระวัง</span>
+          <span class="lg" data-tip="ระดับน้ำสูงกว่าสันตลิ่ง = น้ำล้นตลิ่ง"><span class="sw" style="background:#fecaca"></span>วิกฤติ</span>
+          <span class="lg" data-tip="ตำแหน่งระดับน้ำที่ตรวจวัดได้ล่าสุด"><span class="sw" style="background:#0f172a;width:4px"></span>ปัจจุบัน</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h3 data-tip="ประเด็นที่ระบบประเมินว่าควรติดตามหรือดำเนินการ"><span class="hi">⚠️</span>เฝ้าระวัง / ดำเนินการ<span class="sub">ประเมินอัตโนมัติ</span></h3></div></div>
+        <div class="acts" id="acts"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="dtwrap" id="dtwrap" onclick="if(event.target===this)closeTable()">
+  <div class="dtcard">
+    <div class="dth">
+      <h3>📋 <span id="dtTitle">ตารางสรุปสถานีตรวจวัด</span><span class="sub" id="dtSub">—</span></h3>
+      <div class="grow">
+        <input id="dtSearch" placeholder="🔍 ค้นหาชื่อ / รหัส / ตำบล" oninput="renderTable()">
+        <select id="dtAmp" onchange="renderTable()"><option value="">ทุกอำเภอ</option></select>
+        <button class="hbtn" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.22)" onclick="exportCSV()" title="ดาวน์โหลดเป็นไฟล์ CSV เปิดใน Excel ได้">⭳ CSV</button>
+        <button class="hbtn" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.22)" onclick="window.print()" title="พิมพ์ตารางนี้">⎙ พิมพ์</button>
+        <button class="xb" onclick="closeTable()" title="ปิด (Esc)">✕</button>
+      </div>
+    </div>
+    <div class="dtb"><table class="dt" id="dtTable"></table></div>
+    <div class="dtf" id="dtFoot"></div>
+  </div>
+</div>
+<div class="tipbox" id="tipbox"></div>
 <script>
-(function(){
-  const m={name:"ลำน้ำมอ จ.หนองบัวลำภู",short_name:"มอ",start_url:"./mo.html",display:"standalone",background_color:"#f0faf4",theme_color:"#047857",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="36" fill="#047857"/><text x="96" y="130" font-size="100" text-anchor="middle">💧</text></svg>'),sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
-  const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(l);
+const GAS="https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec",ACTION="mo",RIVER="ลำน้ำมอ",RCOL="#0d9488";
+const TAM={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"tam_code":"390101","tam_th":"หนองบัว","amp_th":"เมืองหนองบัวลำภู","area_sqkm":75.97},"geometry":{"type":"Polygon","coordinates":[[[102.3648795937923,17.125727930643876],[102.3876035732825,17.162295312605625],[102.42370807378363,17.190659348249298],[102.4377185572238,17.211217523297037],[102.50363592872552,17.195067019545544],[102.50889919166332,17.18169349109859],[102.491484146976,17.15069220412278],[102.43991635978038,17.138447148312228],[102.3768225383614,17.130616272397923],[102.3648795937923,17.125727930643876]]]}},{"type":"Feature","properties":{"tam_code":"390102","tam_th":"หนองภัยศูนย์","amp_th":"เมืองหนองบัวลำภู","area_sqkm":44.03},"geometry":{"type":"Polygon","coordinates":[[[102.43882821128854,17.283996552562282],[102.42157391492032,17.233059161481],[102.41123869380223,17.22929380020624],[102.39551999553292,17.226797853845145],[102.37548576696142,17.240062007459404],[102.37158458009004,17.251461238247973],[102.36111793480619,17.257705829960816],[102.34451610973304,17.28864066134052],[102.43882821128854,17.283996552562282]]]}},{"type":"Feature","properties":{"tam_code":"390103","tam_th":"โพธิ์ชัย","amp_th":"เมืองหนองบัวลำภู","area_sqkm":42.15},"geometry":{"type":"Polygon","coordinates":[[[102.41123869380223,17.22929380020624],[102.40577397838027,17.215040547454656],[102.40724430598591,17.20709523619808],[102.42303802438555,17.19730597568257],[102.42370807378363,17.190659348249298],[102.3876035732825,17.162295312605625],[102.38371473485391,17.182141757838135],[102.36107094541823,17.194546180355253],[102.36502845204706,17.207091184134633],[102.3541455876132,17.210493030906758],[102.34943129700166,17.218563433420137],[102.33897319855916,17.223349888979754],[102.34284680095794,17.23836674277724],[102.35706527013923,17.248581290381136],[102.36111793480619,17.257705829960816],[102.37158458009004,17.251461238247973],[102.37548576696142,17.240062007459404],[102.39551999553292,17.226797853845145],[102.41123869380223,17.22929380020624]]]}},{"type":"Feature","properties":{"tam_code":"390104","tam_th":"หนองสวรรค์","amp_th":"เมืองหนองบัวลำภู","area_sqkm":39.14},"geometry":{"type":"Polygon","coordinates":[[[102.30293444339355,17.226731992338937],[102.31608222464413,17.226098133068525],[102.32577379523632,17.217922352486205],[102.33897319855916,17.223349888979754],[102.34943129700166,17.218563433420137],[102.3541455876132,17.210493030906758],[102.36502845204706,17.207091184134633],[102.36107094541823,17.194546180355253],[102.32625649803202,17.171662433444073],[102.27581157665597,17.206886056629717],[102.26987170772237,17.222414561158892],[102.27894010509156,17.23916677595884],[102.30293444339355,17.226731992338937]]]}},{"type":"Feature","properties":{"tam_code":"390105","tam_th":"หัวนา","amp_th":"เมืองหนองบัวลำภู","area_sqkm":101.55},"geometry":{"type":"Polygon","coordinates":[[[102.43859122589599,17.075167465045443],[102.43829619013292,17.06633831813471],[102.4340145820131,17.065623367160484],[102.43133947199829,17.057151485280325],[102.43754719272071,17.04311930009054],[102.43064517128559,17.034522562506123],[102.43702965157279,17.02145554094293],[102.44872982391274,17.015064414767693],[102.41822612024136,16.96314217397279],[102.39384608151103,16.98771764955288],[102.36442751721611,17.001854160644598],[102.34539773576044,17.022687972808342],[102.32893789084262,17.029880730734607],[102.32733189188187,17.043574800438325],[102.32263263435327,17.053928857969268],[102.33024586390592,17.07033661627407],[102.41660527616204,17.07723060603762],[102.43859122589599,17.075167465045443]]]}},{"type":"Feature","properties":{"tam_code":"390106","tam_th":"บ้านขาม","amp_th":"เมืองหนองบัวลำภู","area_sqkm":69.4},"geometry":{"type":"Polygon","coordinates":[[[102.50693842862903,17.139160645911563],[102.52021691134266,17.100316143957194],[102.50893941907934,17.089944406319095],[102.46357983369876,17.07018729099312],[102.44620598094365,17.0570337084367],[102.43133947199829,17.057151485280325],[102.4340145820131,17.065623367160484],[102.43829619013292,17.06633831813471],[102.43991635978038,17.138447148312228],[102.491484146976,17.15069220412278],[102.50889919166332,17.18169349109859],[102.52055413180548,17.151130434689232],[102.52059498813789,17.145365968700503],[102.50693842862903,17.139160645911563]]]}},{"type":"Feature","properties":{"tam_code":"390107","tam_th":"นามะเฟือง","amp_th":"เมืองหนองบัวลำภู","area_sqkm":92.11},"geometry":{"type":"Polygon","coordinates":[[[102.5805075854595,17.040515943744158],[102.57473501931837,17.032685945047348],[102.54496419598999,17.01392451595184],[102.52297609980957,17.01193989857631],[102.50368129473802,17.002009130535882],[102.49544563765198,17.003943522116813],[102.48521716331894,17.022348540535987],[102.47118394987298,17.028138446999172],[102.45936278475308,17.024498491633913],[102.44872982391274,17.015064414767693],[102.43702965157279,17.02145554094293],[102.43064517128559,17.034522562506123],[102.43754719272071,17.04311930009054],[102.43133947199829,17.057151485280325],[102.44620598094365,17.0570337084367],[102.46357983369876,17.07018729099312],[102.50893941907934,17.089944406319095],[102.52021691134266,17.100316143957194],[102.54382769946864,17.067215144824896],[102.5805075854595,17.040515943744158]]]}},{"type":"Feature","properties":{"tam_code":"390108","tam_th":"บ้านพร้าว","amp_th":"เมืองหนองบัวลำภู","area_sqkm":64.52},"geometry":{"type":"Polygon","coordinates":[[[102.43859122589599,17.075167465045443],[102.41660527616204,17.07723060603762],[102.33024586390592,17.07033661627407],[102.33133478689031,17.084610374809845],[102.34732271457965,17.100696330505627],[102.3502964581927,17.115702398145654],[102.3648795937923,17.125727930643876],[102.3768225383614,17.130616272397923],[102.43991635978038,17.138447148312228],[102.43859122589599,17.075167465045443]]]}},{"type":"Feature","properties":{"tam_code":"390109","tam_th":"โนนขมิ้น","amp_th":"เมืองหนองบัวลำภู","area_sqkm":54.9},"geometry":{"type":"Polygon","coordinates":[[[102.31922612469747,17.117800062489938],[102.28213828288418,17.127240713863063],[102.27457581096586,17.13476114294748],[102.25567665626188,17.13959826203462],[102.24932015089517,17.13554576404955],[102.24222886199006,17.1373207263256],[102.24513103788352,17.1461209747766],[102.24033729493753,17.151438371158644],[102.24289228698008,17.163140863705728],[102.27581157665597,17.206886056629717],[102.32625649803202,17.171662433444073],[102.32171696527828,17.162277169701127],[102.31922612469747,17.117800062489938]]]}},{"type":"Feature","properties":{"tam_code":"390110","tam_th":"ลำภู","amp_th":"เมืองหนองบัวลำภู","area_sqkm":31.56},"geometry":{"type":"Polygon","coordinates":[[[102.47206198806363,17.202173186066855],[102.4377185572238,17.211217523297037],[102.42370807378363,17.190659348249298],[102.42303802438555,17.19730597568257],[102.40724430598591,17.20709523619808],[102.40577397838027,17.215040547454656],[102.41123869380223,17.22929380020624],[102.42157391492032,17.233059161481],[102.43866964603613,17.2826679614135],[102.45914560295759,17.241026663229302],[102.47206198806363,17.202173186066855]]]}},{"type":"Feature","properties":{"tam_code":"390111","tam_th":"กุดจิก","amp_th":"เมืองหนองบัวลำภู","area_sqkm":112.16},"geometry":{"type":"Polygon","coordinates":[[[102.42166283971396,17.3750629349253],[102.43782386252451,17.339368002824948],[102.44140439575716,17.322298450321448],[102.43882821128854,17.283996552562282],[102.34451610973304,17.28864066134052],[102.33362774696118,17.324251535269802],[102.30663604153403,17.34918009066155],[102.30820877942381,17.359494252609664],[102.30279706873583,17.377227858367934],[102.31478847071425,17.367024052879465],[102.34243999783828,17.359871070816915],[102.38054979529282,17.38228047355957],[102.42166283971396,17.3750629349253]]]}},{"type":"Feature","properties":{"tam_code":"390112","tam_th":"โนนทัน","amp_th":"เมืองหนองบัวลำภู","area_sqkm":78.71},"geometry":{"type":"Polygon","coordinates":[[[102.52176409255947,17.274724242333868],[102.53664517299883,17.258316582158763],[102.5709748885678,17.255119865613963],[102.59293332450996,17.265497854041417],[102.57321969400117,17.236169639467622],[102.55181854715394,17.235938700270076],[102.54192853616314,17.217101998061587],[102.53546676844029,17.228830961113616],[102.52176038491986,17.225259502317897],[102.50363592872552,17.195067019545544],[102.47206198806363,17.202173186066855],[102.45914560295759,17.241026663229302],[102.43945658158367,17.280462317692653],[102.45835557611022,17.281710011077934],[102.46260096006043,17.275378591166938],[102.47826804769767,17.27508834804902],[102.48990677472749,17.284274889903536],[102.5033255300522,17.28603771471704],[102.52176409255947,17.274724242333868]]]}},{"type":"Feature","properties":{"tam_code":"390113","tam_th":"นาคำไฮ","amp_th":"เมืองหนองบัวลำภู","area_sqkm":102.37},"geometry":{"type":"Polygon","coordinates":[[[102.34451610973304,17.28864066134052],[102.36111793480619,17.257705829960816],[102.35706527013923,17.248581290381136],[102.34284680095794,17.23836674277724],[102.33897319855916,17.223349888979754],[102.32577379523632,17.217922352486205],[102.31608222464413,17.226098133068525],[102.30293444339355,17.226731992338937],[102.27894010509156,17.23916677595884],[102.27689947528935,17.24945032171817],[102.24944032319556,17.277382216439403],[102.26137733959713,17.288075278912707],[102.2358358645084,17.324935983917605],[102.24048534410903,17.33942631305585],[102.24515327806762,17.34166272417388],[102.26553321203274,17.310769574432513],[102.27413405378292,17.314030085984385],[102.28971284373934,17.308075330484304],[102.29453656978978,17.331382519722194],[102.30421405484118,17.339351567659378],[102.30663604153403,17.34918009066155],[102.33362774696118,17.324251535269802],[102.34451610973304,17.28864066134052]]]}},{"type":"Feature","properties":{"tam_code":"390114","tam_th":"ป่าไม้งาม","amp_th":"เมืองหนองบัวลำภู","area_sqkm":63.02},"geometry":{"type":"Polygon","coordinates":[[[102.41822612024136,16.96314217397279],[102.40996343334919,16.927546780945278],[102.38694361642483,16.92713668716011],[102.37342896818366,16.9301597428517],[102.37488328330056,16.95230034362282],[102.35718515119898,16.94842099727171],[102.34407665193362,16.963421006217207],[102.32981096272684,16.9552798765299],[102.32147985981378,16.96364717169362],[102.32048016657724,16.976365474036278],[102.32893789084262,17.029880730734607],[102.34539773576044,17.022687972808342],[102.36442751721611,17.001854160644598],[102.39384608151103,16.98771764955288],[102.41822612024136,16.96314217397279]]]}},{"type":"Feature","properties":{"tam_code":"390115","tam_th":"หนองหว้า","amp_th":"เมืองหนองบัวลำภู","area_sqkm":51.28},"geometry":{"type":"Polygon","coordinates":[[[102.38371473485391,17.182141757838135],[102.3876035732825,17.162295312605625],[102.3648795937923,17.125727930643876],[102.3502964581927,17.115702398145654],[102.34732271457965,17.100696330505627],[102.33133478689031,17.084610374809845],[102.31922612469747,17.117800062489938],[102.32171696527828,17.162277169701127],[102.32625649803202,17.171662433444073],[102.36107094541823,17.194546180355253],[102.38371473485391,17.182141757838135]]]}},{"type":"Feature","properties":{"tam_code":"390201","tam_th":"นากลาง","amp_th":"นากลาง","area_sqkm":50.3},"geometry":{"type":"Polygon","coordinates":[[[102.23164009880928,17.34101157665343],[102.24060305974479,17.345089037862778],[102.24515327806762,17.34166272417388],[102.24048534410903,17.33942631305585],[102.2358358645084,17.324935983917605],[102.26137733959713,17.288075278912707],[102.24944032319556,17.277382216439403],[102.23210419396983,17.27252683001493],[102.22897896424448,17.279370289496804],[102.21386197400862,17.27771842425251],[102.19750108312017,17.29648770157016],[102.1878098611529,17.292601056879583],[102.18143950338101,17.296282903956392],[102.18429207342382,17.30759449667593],[102.17409594800003,17.31127266521046],[102.17312594488837,17.320391457300072],[102.15799761525999,17.332574634468912],[102.15768921220321,17.34335318368356],[102.19302751304554,17.330861912302687],[102.19404252568059,17.335912477684758],[102.20009096686194,17.337022110020516],[102.20246356973874,17.349866491639524],[102.20965083555502,17.351096303439668],[102.23164009880928,17.34101157665343]]]}},{"type":"Feature","properties":{"tam_code":"390202","tam_th":"ด่านช้าง","amp_th":"นากลาง","area_sqkm":62.91},"geometry":{"type":"Polygon","coordinates":[[[102.1271975304891,17.376892244242576],[102.13282445973975,17.36831536999346],[102.14968369122961,17.359647401862293],[102.14629578906626,17.35541588157068],[102.14248406787081,17.35688310465272],[102.14196273253994,17.348290991681335],[102.15559123839135,17.349293951307903],[102.15768921220321,17.34335318368356],[102.15799761525999,17.332574634468912],[102.17312594488837,17.320391457300072],[102.17409594800003,17.31127266521046],[102.18429207342382,17.30759449667593],[102.18143950338101,17.296282903956392],[102.1878098611529,17.292601056879583],[102.18816011107246,17.27965763315276],[102.17909748451238,17.282321358880957],[102.17488206129424,17.27754245155374],[102.13989938610008,17.275321443566877],[102.11675304403752,17.263629645156644],[102.10521829113497,17.263103056176504],[102.10588042509401,17.28623352564061],[102.12595940038446,17.303674276713824],[102.1207092938874,17.305070856697697],[102.11998051339472,17.32233621599333],[102.10657156286605,17.331828111521066],[102.11644271855712,17.337848754126703],[102.1073514623801,17.384630167825847],[102.10987456034066,17.39027525159733],[102.113510594808,17.378541689040826],[102.1271975304891,17.376892244242576]]]}},{"type":"Feature","properties":{"tam_code":"390205","tam_th":"กุดดินจี่","amp_th":"นากลาง","area_sqkm":85.51},"geometry":{"type":"Polygon","coordinates":[[[102.23651866820201,17.38312298064335],[102.28775880666431,17.38503056647799],[102.29316960505312,17.389414146414488],[102.30279706873583,17.377227858367934],[102.30820877942381,17.359494252609664],[102.30663604153403,17.34918009066155],[102.30421405484118,17.339351567659378],[102.29453656978978,17.331382519722194],[102.28971284373934,17.308075330484304],[102.27413405378292,17.314030085984385],[102.26553321203274,17.310769574432513],[102.24515327806762,17.34166272417388],[102.24060305974479,17.345089037862778],[102.23164009880928,17.34101157665343],[102.20965083555502,17.351096303439668],[102.1898297756144,17.36911350740927],[102.18425483134513,17.39216893448592],[102.16725896974752,17.40989029693313],[102.18807647702715,17.415545916274883],[102.1959599730138,17.42515020129646],[102.2249882400101,17.40456917260231],[102.23651866820201,17.38312298064335]]]}},{"type":"Feature","properties":{"tam_code":"390206","tam_th":"ฝั่งแดง","amp_th":"นากลาง","area_sqkm":109.96},"geometry":{"type":"Polygon","coordinates":[[[102.19750108312017,17.29648770157016],[102.21386197400862,17.27771842425251],[102.22897896424448,17.279370289496804],[102.23210419396983,17.27252683001493],[102.24944032319556,17.277382216439403],[102.27689947528935,17.24945032171817],[102.27894010509156,17.23916677595884],[102.26987170772237,17.222414561158892],[102.27581157665597,17.206886056629717],[102.24289228698008,17.163140863705728],[102.24033729493753,17.151438371158644],[102.23297530278917,17.161508059952872],[102.2169265456732,17.16654579236323],[102.21121166887129,17.178943750441583],[102.17212460520321,17.20980373934531],[102.17856300718648,17.221334541976212],[102.16890502952998,17.224195275766334],[102.16733998704969,17.23119849926426],[102.18216493986627,17.25455630926101],[102.18872793528963,17.255665316716286],[102.18459007270584,17.260910656123407],[102.19297212734674,17.27518121822912],[102.18816011107246,17.27965763315276],[102.1878098611529,17.292601056879583],[102.19750108312017,17.29648770157016]]]}},{"type":"Feature","properties":{"tam_code":"390207","tam_th":"เก่ากลอย","amp_th":"นากลาง","area_sqkm":77.83},"geometry":{"type":"Polygon","coordinates":[[[102.33685853369553,17.42876024133506],[102.34647859698269,17.432080702962377],[102.35303548323033,17.425965528908197],[102.36684284518343,17.424195776483874],[102.37601978393693,17.415534281932214],[102.39929284365193,17.414609314286515],[102.42166283971396,17.3750629349253],[102.38054979529282,17.38228047355957],[102.34243999783828,17.359871070816915],[102.31478847071425,17.367024052879465],[102.30279706873583,17.377227858367934],[102.29316960505312,17.389414146414488],[102.28775880666431,17.38503056647799],[102.26699660282985,17.384380919241867],[102.26627670910814,17.42199273014314],[102.27614988736912,17.417627351209273],[102.28395439961415,17.427149746420426],[102.29487871067506,17.413357882722266],[102.30971203058283,17.409609627055683],[102.31633242681303,17.419821573080206],[102.31643455940396,17.431454142171756],[102.3292428601264,17.433959571352375],[102.33685853369553,17.42876024133506]]]}},{"type":"Feature","properties":{"tam_code":"390209","tam_th":"โนนเมือง","amp_th":"นากลาง","area_sqkm":36.59},"geometry":{"type":"Polygon","coordinates":[[[102.21121166887129,17.178943750441583],[102.2169265456732,17.16654579236323],[102.23297530278917,17.161508059952872],[102.24513103788352,17.1461209747766],[102.24222886199006,17.1373207263256],[102.22996349230355,17.128345241316023],[102.22812441266962,17.14324746294095],[102.2193565060047,17.150706520235968],[102.19202023290919,17.15467606706687],[102.18082504688903,17.167780673509395],[102.16777065860329,17.164421184628292],[102.14169905651445,17.176600392998743],[102.1307131619051,17.17256073360424],[102.12395788121715,17.182415994675274],[102.14318541366497,17.194378404040503],[102.16169038582406,17.193394809345932],[102.17212460520321,17.20980373934531],[102.21121166887129,17.178943750441583]]]}},{"type":"Feature","properties":{"tam_code":"390210","tam_th":"อุทัยสวรรค์","amp_th":"นากลาง","area_sqkm":77.8},"geometry":{"type":"Polygon","coordinates":[[[102.18816011107246,17.27965763315276],[102.19297212734674,17.27518121822912],[102.18459007270584,17.260910656123407],[102.18872793528963,17.255665316716286],[102.18216493986627,17.25455630926101],[102.16733998704969,17.23119849926426],[102.16890502952998,17.224195275766334],[102.17856300718648,17.221334541976212],[102.16169038582406,17.193394809345932],[102.14318541366497,17.194378404040503],[102.12395788121715,17.182415994675274],[102.1095892394027,17.177691747853018],[102.09991259161009,17.180525577467517],[102.09488396844101,17.19446489623603],[102.10081380959276,17.213230657869655],[102.09390765709938,17.25077558571703],[102.10521829113497,17.263103056176504],[102.11675304403752,17.263629645156644],[102.13989938610008,17.275321443566877],[102.17488206129424,17.27754245155374],[102.17909748451238,17.282321358880957],[102.18816011107246,17.27965763315276]]]}},{"type":"Feature","properties":{"tam_code":"390211","tam_th":"ดงสวรรค์","amp_th":"นากลาง","area_sqkm":106.91},"geometry":{"type":"Polygon","coordinates":[[[102.13331733340857,17.49781802287861],[102.15011448939788,17.48676035246572],[102.15828167361502,17.485820335146013],[102.16119356899067,17.492805506161954],[102.17800332237614,17.492016802374632],[102.19865731971144,17.47408131054178],[102.20703119307866,17.471581086761276],[102.2090321211618,17.462747003463857],[102.22039102334351,17.465393349508112],[102.23929323806765,17.458607943460876],[102.25566569938805,17.440578463602765],[102.25630990804721,17.426477698964465],[102.26627670910814,17.42199273014314],[102.26699660282985,17.384380919241867],[102.23651866820201,17.38312298064335],[102.2249882400101,17.40456917260231],[102.1959599730138,17.42515020129646],[102.18807647702715,17.415545916274883],[102.16725896974752,17.40989029693313],[102.15091901984863,17.417765508790733],[102.13103445451262,17.44272561004185],[102.12026035885461,17.46725834289668],[102.11179690490417,17.48183271732555],[102.12856177433834,17.492206546276293],[102.1272855910542,17.498309293452845],[102.13331733340857,17.49781802287861]]]}},{"type":"Feature","properties":{"tam_code":"390213","tam_th":"กุดแห่","amp_th":"นากลาง","area_sqkm":72.46},"geometry":{"type":"Polygon","coordinates":[[[102.18425483134513,17.39216893448592],[102.1898297756144,17.36911350740927],[102.20965083555502,17.351096303439668],[102.20246356973874,17.349866491639524],[102.20009096686194,17.337022110020516],[102.19404252568059,17.335912477684758],[102.19302751304554,17.330861912302687],[102.15768921220321,17.34335318368356],[102.15559123839135,17.349293951307903],[102.14196273253994,17.348290991681335],[102.14248406787081,17.35688310465272],[102.14629578906626,17.35541588157068],[102.14968369122961,17.359647401862293],[102.13282445973975,17.36831536999346],[102.1271975304891,17.376892244242576],[102.113510594808,17.378541689040826],[102.10987456034066,17.39027525159733],[102.10725123235838,17.393271751918736],[102.11120298750507,17.393416666041166],[102.1158581920626,17.403961121278133],[102.10323151249308,17.41780993395044],[102.09674224092443,17.435907682364633],[102.10076916213953,17.444437619535314],[102.11052441914426,17.448923553605123],[102.12026035885461,17.46725834289668],[102.13103445451262,17.44272561004185],[102.15091901984863,17.417765508790733],[102.16725896974752,17.40989029693313],[102.18425483134513,17.39216893448592]]]}},{"type":"Feature","properties":{"tam_code":"390301","tam_th":"โนนสัง","amp_th":"โนนสัง","area_sqkm":35.9},"geometry":{"type":"Polygon","coordinates":[[[102.58259548265389,16.905363612248703],[102.58386075175109,16.899802415964682],[102.58832760234195,16.902616536402398],[102.59986535002122,16.899973639870748],[102.57813219216901,16.867083576938047],[102.58533469800456,16.838801103190363],[102.56248514632432,16.838662218253607],[102.55538139931507,16.841257226197975],[102.5522698281033,16.85181530366568],[102.52237542166138,16.862053774905213],[102.51816393381179,16.87163217038134],[102.52177177498248,16.88386161702881],[102.5238225965103,16.886523774530122],[102.5267050905093,16.881886979903385],[102.5318790301104,16.88289997885235],[102.57414340816018,16.906626150658326],[102.58259548265389,16.905363612248703]]]}},{"type":"Feature","properties":{"tam_code":"390302","tam_th":"บ้านถิ่น","amp_th":"โนนสัง","area_sqkm":47.64},"geometry":{"type":"Polygon","coordinates":[[[102.50368129473802,17.002009130535882],[102.52297609980957,17.01193989857631],[102.54496419598999,17.01392451595184],[102.54781880400134,17.0045957704975],[102.55605881926736,17.00259833603686],[102.57051906149469,16.98427144130705],[102.58570677762982,16.973430801697678],[102.59239374769768,16.958521381006186],[102.57164734295763,16.970741323284596],[102.55614900010168,16.971928492180584],[102.55638744043459,16.94662480391083],[102.53887972355557,16.955621710335727],[102.5349611960773,16.962797065723954],[102.51398801943776,16.958995648724763],[102.49916606838181,16.980770845348776],[102.48380227982369,16.984128946024974],[102.47905370467073,16.99196094663186],[102.47118394987298,17.028138446999172],[102.48521716331894,17.022348540535987],[102.49544563765198,17.003943522116813],[102.50368129473802,17.002009130535882]]]}},{"type":"Feature","properties":{"tam_code":"390303","tam_th":"หนองเรือ","amp_th":"โนนสัง","area_sqkm":77.69},"geometry":{"type":"Polygon","coordinates":[[[102.52237542166138,16.862053774905213],[102.5522698281033,16.85181530366568],[102.55538139931507,16.841257226197975],[102.56248514632432,16.838662218253607],[102.54240668390608,16.832757694704277],[102.53583943446846,16.825587538606918],[102.53783275317427,16.784634719116465],[102.496531165195,16.803600873033126],[102.47897170482534,16.807329791488666],[102.47121032252036,16.802499095327583],[102.46336969299456,16.807054058154254],[102.46651973060234,16.84860116806449],[102.47553806631481,16.8617017312409],[102.46895564448722,16.864720723875937],[102.47258519370517,16.86857755791248],[102.46375400091536,16.867972303217915],[102.48026590637171,16.898255786881627],[102.4979066898846,16.908020588919054],[102.52177177498248,16.88386161702881],[102.51816393381179,16.87163217038134],[102.52237542166138,16.862053774905213]]]}},{"type":"Feature","properties":{"tam_code":"390304","tam_th":"กุดดู่","amp_th":"โนนสัง","area_sqkm":73.88},"geometry":{"type":"Polygon","coordinates":[[[102.66942017245347,16.993672297582332],[102.67623928853205,16.98183033711849],[102.67953076106623,16.96800696418852],[102.67104441718352,16.94134826657839],[102.66268146518307,16.94710260001342],[102.628736837469,16.935754169326927],[102.61889906918954,16.927383714589403],[102.60979615401143,16.929138834289674],[102.60213174161528,16.925516543859466],[102.59870080778177,16.920551385655447],[102.59986535002122,16.899973639870748],[102.58832760234195,16.902616536402398],[102.58386075175109,16.899802415964682],[102.58259548265389,16.905363612248703],[102.57414340816018,16.906626150658326],[102.57375980794528,16.927121749631702],[102.56098017745636,16.934201805826113],[102.55638744043459,16.94662480391083],[102.55614900010168,16.971928492180584],[102.57164734295763,16.970741323284596],[102.59239374769768,16.958521381006186],[102.61885305940726,16.97866206518293],[102.63827068885912,17.006621010927613],[102.66942017245347,16.993672297582332]]]}},{"type":"Feature","properties":{"tam_code":"390305","tam_th":"บ้านค้อ","amp_th":"โนนสัง","area_sqkm":80.34},"geometry":{"type":"Polygon","coordinates":[[[102.67104441718352,16.94134826657839],[102.62438924708465,16.84357801456701],[102.61303840072277,16.798915523815523],[102.61498563699486,16.77707202690649],[102.61084094612455,16.771284366764828],[102.6023098805099,16.772282164718316],[102.57813219216901,16.867083576938047],[102.59986535002122,16.899973639870748],[102.59870080778177,16.920551385655447],[102.60213174161528,16.925516543859466],[102.60979615401143,16.929138834289674],[102.61889906918954,16.927383714589403],[102.628736837469,16.935754169326927],[102.66268146518307,16.94710260001342],[102.67104441718352,16.94134826657839]]]}},{"type":"Feature","properties":{"tam_code":"390306","tam_th":"โนนเมือง","amp_th":"โนนสัง","area_sqkm":57.2},"geometry":{"type":"Polygon","coordinates":[[[102.47258519370517,16.86857755791248],[102.46895564448722,16.864720723875937],[102.47553806631481,16.8617017312409],[102.46651973060234,16.84860116806449],[102.46336969299456,16.807054058154254],[102.45360987705783,16.810895283019317],[102.4535826468619,16.805803958748783],[102.44774389848135,16.802848944647327],[102.45001555802217,16.79484311025635],[102.44543734773919,16.79187922354442],[102.43299685534983,16.794725164767055],[102.42054358164582,16.795154973669863],[102.40568711579894,16.813751046856964],[102.40534374375349,16.826849470104897],[102.3906179496588,16.84722449310787],[102.41472921314275,16.876446338911578],[102.4217509231532,16.865269761568488],[102.43223849575054,16.86484046700252],[102.48026590637171,16.898255786881627],[102.46375400091536,16.867972303217915],[102.47258519370517,16.86857755791248]]]}},{"type":"Feature","properties":{"tam_code":"390307","tam_th":"โคกใหญ่","amp_th":"โนนสัง","area_sqkm":38.76},"geometry":{"type":"Polygon","coordinates":[[[102.58533469800456,16.838801103190363],[102.6023098805099,16.772282164718316],[102.53783275317427,16.784634719116465],[102.53583943446846,16.825587538606918],[102.54240668390608,16.832757694704277],[102.56248514632432,16.838662218253607],[102.58533469800456,16.838801103190363]]]}},{"type":"Feature","properties":{"tam_code":"390308","tam_th":"โคกม่วง","amp_th":"โนนสัง","area_sqkm":129.08},"geometry":{"type":"Polygon","coordinates":[[[102.4979066898846,16.908020588919054],[102.48026590637171,16.898255786881627],[102.43223849575054,16.86484046700252],[102.4217509231532,16.865269761568488],[102.41472921314275,16.876446338911578],[102.3906179496588,16.84722449310787],[102.38628473173505,16.862561011402263],[102.39088870812785,16.868014697672873],[102.37716947157875,16.87083083374182],[102.37760165893,16.87542950067388],[102.3677657932994,16.877982433001293],[102.37883534525076,16.901104279998933],[102.37455870965907,16.908445784556765],[102.38159217265834,16.91146061547426],[102.38694361642483,16.92713668716011],[102.40996343334919,16.927546780945278],[102.41822612024136,16.96314217397279],[102.44872982391274,17.015064414767693],[102.45936278475308,17.024498491633913],[102.47118394987298,17.028138446999172],[102.47905370467073,16.99196094663186],[102.4840860955341,16.929234564458813],[102.4979066898846,16.908020588919054]]]}},{"type":"Feature","properties":{"tam_code":"390309","tam_th":"นิคมพัฒนา","amp_th":"โนนสัง","area_sqkm":66.39},"geometry":{"type":"Polygon","coordinates":[[[102.49916606838181,16.980770845348776],[102.51398801943776,16.958995648724763],[102.5349611960773,16.962797065723954],[102.53887972355557,16.955621710335727],[102.55638744043459,16.94662480391083],[102.56098017745636,16.934201805826113],[102.57375980794528,16.927121749631702],[102.57414340816018,16.906626150658326],[102.5318790301104,16.88289997885235],[102.5267050905093,16.881886979903385],[102.5238225965103,16.886523774530122],[102.52177177498248,16.88386161702881],[102.4979066898846,16.908020588919054],[102.4840860955341,16.929234564458813],[102.47905370467073,16.99196094663186],[102.48380227982369,16.984128946024974],[102.49916606838181,16.980770845348776]]]}},{"type":"Feature","properties":{"tam_code":"390310","tam_th":"ปางกู่","amp_th":"โนนสัง","area_sqkm":46.29},"geometry":{"type":"Polygon","coordinates":[[[102.61885305940726,16.97866206518293],[102.59239374769768,16.958521381006186],[102.58570677762982,16.973430801697678],[102.57051906149469,16.98427144130705],[102.55605881926736,17.00259833603686],[102.54781880400134,17.0045957704975],[102.54496419598999,17.01392451595184],[102.57473501931837,17.032685945047348],[102.5805075854595,17.040515943744158],[102.60855252455303,17.0275134867562],[102.63827068885912,17.006621010927613],[102.61885305940726,16.97866206518293]]]}},{"type":"Feature","properties":{"tam_code":"390401","tam_th":"เมืองใหม่","amp_th":"ศรีบุญเรือง","area_sqkm":60.74},"geometry":{"type":"Polygon","coordinates":[[[102.32893789084262,17.029880730734607],[102.32048016657724,16.976365474036278],[102.32147985981378,16.96364717169362],[102.32956530927768,16.955510687310404],[102.29813313842037,16.951809210908472],[102.27210569311812,16.938661504687996],[102.2639365429373,17.004005910868422],[102.25270295219136,17.020388928901063],[102.26706437635575,17.021306182082693],[102.30023472974882,17.0414196194201],[102.32733189188187,17.043574800438325],[102.32893789084262,17.029880730734607]]]}},{"type":"Feature","properties":{"tam_code":"390402","tam_th":"ศรีบุญเรือง","amp_th":"ศรีบุญเรือง","area_sqkm":59.59},"geometry":{"type":"Polygon","coordinates":[[[102.2488050993284,16.949487542227068],[102.27210569311812,16.938661504687996],[102.29813313842037,16.951809210908472],[102.32981096272684,16.9552798765299],[102.31745496316431,16.907620250223136],[102.30968881251331,16.896867407200695],[102.29612856591999,16.89086553250036],[102.25464548250969,16.89476480945836],[102.25011592474387,16.891484231720362],[102.23617470725851,16.90258798413688],[102.24310732011836,16.90391466618807],[102.23909923252903,16.911808491944807],[102.22854341906657,16.91614627464304],[102.23046477020087,16.93723041076596],[102.22221330790784,16.9649291006735],[102.22376495213881,16.967695240994765],[102.23450665280025,16.964597855043632],[102.2488050993284,16.949487542227068]]]}},{"type":"Feature","properties":{"tam_code":"390403","tam_th":"หนองบัวใต้","amp_th":"ศรีบุญเรือง","area_sqkm":41.73},"geometry":{"type":"Polygon","coordinates":[[[102.35718515119898,16.94842099727171],[102.37488328330056,16.95230034362282],[102.37342896818366,16.9301597428517],[102.38694361642483,16.92713668716011],[102.38159217265834,16.91146061547426],[102.37455870965907,16.908445784556765],[102.37883534525076,16.901104279998933],[102.3677657932994,16.877982433001293],[102.37760165893,16.87542950067388],[102.37716947157875,16.87083083374182],[102.36075577303046,16.87303027327349],[102.33920871650426,16.902831650131674],[102.31745496316431,16.907620250223136],[102.32981096272684,16.9552798765299],[102.34407665193362,16.963421006217207],[102.35718515119898,16.94842099727171]]]}},{"type":"Feature","properties":{"tam_code":"390404","tam_th":"กุดสะเทียน","amp_th":"ศรีบุญเรือง","area_sqkm":60.24},"geometry":{"type":"Polygon","coordinates":[[[102.24637512032734,17.117009089576246],[102.2552326358238,17.112860835500523],[102.25600929812221,17.09922834837112],[102.26599460773464,17.08263560423101],[102.26685350956512,17.064155344488817],[102.27718684001164,17.027935065477042],[102.26706437635575,17.021306182082693],[102.25270295219136,17.020388928901063],[102.22609638273838,17.00592081884718],[102.21332341283194,17.027334722625934],[102.20440778051722,17.02548377963431],[102.19843888625097,17.03250327458614],[102.19900420436059,17.061496148652544],[102.23161120086242,17.08802121657595],[102.23246731649901,17.099587600201104],[102.24045187923649,17.114538032595007],[102.24637512032734,17.117009089576246]]]}},{"type":"Feature","properties":{"tam_code":"390405","tam_th":"นากอก","amp_th":"ศรีบุญเรือง","area_sqkm":98.48},"geometry":{"type":"Polygon","coordinates":[[[102.23046477020087,16.93723041076596],[102.22854341906657,16.91614627464304],[102.23909923252903,16.911808491944807],[102.24310732011836,16.90391466618807],[102.23617470725851,16.90258798413688],[102.25011592474387,16.891484231720362],[102.24934809610052,16.8787484471103],[102.24477975697,16.88143098724947],[102.24209736574868,16.875724049549074],[102.23419187747118,16.8801744212828],[102.23325010086099,16.875079652662937],[102.22763209565491,16.875147961742574],[102.22570120080917,16.86876533310445],[102.21331397534443,16.861383431490022],[102.2153155663464,16.85826227880913],[102.20361666789704,16.862454965513376],[102.1877309852218,16.858030706402523],[102.18031614072592,16.871789508747167],[102.17134208364475,16.865203840615447],[102.1675456994134,16.870423268155093],[102.15837560001562,16.871722725941446],[102.15575676025472,16.881248353944137],[102.14415869991488,16.880720334413812],[102.14416615815809,16.87653560603947],[102.13776721331253,16.879060118833415],[102.12390675523243,16.881047267501298],[102.10473877817631,16.897317148089826],[102.0967735290771,16.890765728190054],[102.09934734660145,16.882023181062443],[102.08124186794191,16.889385161734747],[102.0702483072699,16.885019044896616],[102.06600150705256,16.895689332289056],[102.05390496855908,16.90171422516045],[102.08230887486796,16.907573260462254],[102.10979898386474,16.919219096215866],[102.14397850909833,16.912481219114035],[102.15906620501306,16.91585873005782],[102.18568529012664,16.928954738064526],[102.22221330790784,16.9649291006735],[102.23046477020087,16.93723041076596]]]}},{"type":"Feature","properties":{"tam_code":"390406","tam_th":"โนนสะอาด","amp_th":"ศรีบุญเรือง","area_sqkm":164.17},"geometry":{"type":"Polygon","coordinates":[[[102.18845508560717,17.029446309292084],[102.19470815415698,17.00635981091694],[102.20894096919034,17.005310857669514],[102.21588361902216,16.997518647553044],[102.21371093367351,16.995380678289198],[102.22167333698657,16.991603100876137],[102.22376495213881,16.967695240994765],[102.22221330790784,16.9649291006735],[102.18568529012664,16.928954738064526],[102.15906620501306,16.91585873005782],[102.14397850909833,16.912481219114035],[102.10979898386474,16.919219096215866],[102.08230887486796,16.907573260462254],[102.05390496855908,16.90171422516045],[102.04566963297343,16.907243127102422],[102.02986112557831,16.95048121473536],[102.05851155156358,16.965204127337618],[102.06522780673114,16.960946613991275],[102.07175143157932,16.962457814920192],[102.08927431941117,16.97882943559043],[102.12544360200869,16.991320305517124],[102.13583503563723,17.011273243899733],[102.14084635454489,17.011691331552164],[102.15346076672394,17.027409331831763],[102.15619463462525,17.024796127369985],[102.17529250993486,17.032385679048502],[102.18845508560717,17.029446309292084]]]}},{"type":"Feature","properties":{"tam_code":"390407","tam_th":"ยางหล่อ","amp_th":"ศรีบุญเรือง","area_sqkm":76.32},"geometry":{"type":"Polygon","coordinates":[[[102.14353638931107,17.10104801092092],[102.15352121239422,17.10767392351642],[102.16823236553118,17.102432466683144],[102.19900420436059,17.061496148652544],[102.19843888625097,17.03250327458614],[102.20440778051722,17.02548377963431],[102.21332341283194,17.027334722625934],[102.22910542046687,17.001381842872256],[102.22167333698657,16.991603100876137],[102.21371093367351,16.995380678289198],[102.21588361902216,16.997518647553044],[102.20894096919034,17.005310857669514],[102.19470815415698,17.00635981091694],[102.18845508560717,17.029446309292084],[102.17529250993486,17.032385679048502],[102.15619463462525,17.024796127369985],[102.15346076672394,17.027409331831763],[102.1252633763192,17.040964295338622],[102.1171586675603,17.0579245539852],[102.10583500886375,17.102435782675236],[102.1106831867608,17.11360732255474],[102.12046722312832,17.118689674106356],[102.14353638931107,17.10104801092092]]]}},{"type":"Feature","properties":{"tam_code":"390408","tam_th":"โนนม่วง","amp_th":"ศรีบุญเรือง","area_sqkm":108.08},"geometry":{"type":"Polygon","coordinates":[[[102.1307131619051,17.17256073360424],[102.14169905651445,17.176600392998743],[102.16777065860329,17.164421184628292],[102.18082504688903,17.167780673509395],[102.19202023290919,17.15467606706687],[102.2193565060047,17.150706520235968],[102.22812441266962,17.14324746294095],[102.22996349230355,17.128345241316023],[102.24222886199006,17.1373207263256],[102.24932015089517,17.13554576404955],[102.25567665626188,17.13959826203462],[102.27457581096586,17.13476114294748],[102.2552326358238,17.112860835500523],[102.24637512032734,17.117009089576246],[102.24045187923649,17.114538032595007],[102.23246731649901,17.099587600201104],[102.23161120086242,17.08802121657595],[102.19900420436059,17.061496148652544],[102.16823236553118,17.102432466683144],[102.15352121239422,17.10767392351642],[102.14353638931107,17.10104801092092],[102.12046722312832,17.118689674106356],[102.12897397243377,17.149227185722594],[102.10613577370097,17.15876731245429],[102.09293164492597,17.174756389968923],[102.09991259161009,17.180525577467517],[102.1095892394027,17.177691747853018],[102.12395788121715,17.182415994675274],[102.1307131619051,17.17256073360424]]]}},{"type":"Feature","properties":{"tam_code":"390409","tam_th":"หนองกุงแก้ว","amp_th":"ศรีบุญเรือง","area_sqkm":81.62},"geometry":{"type":"Polygon","coordinates":[[[102.0635239078697,17.202289034735223],[102.08189059527129,17.170246376097403],[102.09293164492597,17.174756389968923],[102.10613577370097,17.15876731245429],[102.12897397243377,17.149227185722594],[102.12046722312832,17.118689674106356],[102.1106831867608,17.11360732255474],[102.10583500886375,17.102435782675236],[102.1171586675603,17.0579245539852],[102.10797062893235,17.0614150726919],[102.10185256494972,17.069720127275843],[102.10562405067051,17.082671257451068],[102.09996443517677,17.086985513123786],[102.09913067850869,17.101841094746902],[102.09202578476177,17.10317650185858],[102.09144705001046,17.110803162183203],[102.07252751783244,17.112359886902816],[102.06539100376328,17.120653794657823],[102.0481754626455,17.123804370999483],[102.03787433061802,17.130962435292837],[102.02302350438767,17.131250554932702],[102.01639306324215,17.13985157911581],[102.02056924850754,17.15404710263679],[102.03834430908047,17.157897540084015],[102.04491319107757,17.165019352431074],[102.03230577103137,17.173472919919192],[102.03000525568318,17.19209802098453],[102.017407383905,17.202051920776587],[102.02779426590412,17.204654362437637],[102.03765731195514,17.220819799531398],[102.04074525089969,17.21101977787814],[102.0635239078697,17.202289034735223]]]}},{"type":"Feature","properties":{"tam_code":"390410","tam_th":"หนองแก","amp_th":"ศรีบุญเรือง","area_sqkm":62.98},"geometry":{"type":"Polygon","coordinates":[[[102.31922612469747,17.117800062489938],[102.33133478689031,17.084610374809845],[102.33024586390592,17.07033661627407],[102.32263263435327,17.053928857969268],[102.32733189188187,17.043574800438325],[102.30023472974882,17.0414196194201],[102.27718684001164,17.027935065477042],[102.26685350956512,17.064155344488817],[102.26599460773464,17.08263560423101],[102.25600929812221,17.09922834837112],[102.2552326358238,17.112860835500523],[102.27457581096586,17.13476114294748],[102.28213828288418,17.127240713863063],[102.31922612469747,17.117800062489938]]]}},{"type":"Feature","properties":{"tam_code":"390411","tam_th":"ทรายทอง","amp_th":"ศรีบุญเรือง","area_sqkm":60.63},"geometry":{"type":"Polygon","coordinates":[[[102.36075577303046,16.87303027327349],[102.39088870812785,16.868014697672873],[102.38628473173505,16.862561011402263],[102.3906179496588,16.84722449310787],[102.40534374375349,16.826849470104897],[102.40568711579894,16.813751046856964],[102.39160642938086,16.81043886212991],[102.3780873898228,16.817349144314164],[102.37759953590871,16.810545486850078],[102.3612652877558,16.81646181962972],[102.35063206114566,16.83031563965073],[102.34653514385492,16.81719204855093],[102.33832994843615,16.823890371348487],[102.33595993180715,16.831218107285068],[102.33966727161662,16.83711215825257],[102.32330450677273,16.84651201556626],[102.33169674593577,16.848569389419197],[102.33028510128825,16.855209053867604],[102.31604889226573,16.855032500402405],[102.3246019457773,16.867431282019034],[102.31109670508064,16.86800093883702],[102.30193423450305,16.877497546236185],[102.30717893919036,16.88416967123083],[102.29065389872774,16.885050989409475],[102.29612856591999,16.89086553250036],[102.30968881251331,16.896867407200695],[102.31745496316431,16.907620250223136],[102.33920871650426,16.902831650131674],[102.36075577303046,16.87303027327349]]]}},{"type":"Feature","properties":{"tam_code":"390412","tam_th":"หันนางาม","amp_th":"ศรีบุญเรือง","area_sqkm":29.93},"geometry":{"type":"Polygon","coordinates":[[[102.2639365429373,17.004005910868422],[102.27210569311812,16.938661504687996],[102.2488050993284,16.949487542227068],[102.23450665280025,16.964597855043632],[102.22376495213881,16.967695240994765],[102.22167333698657,16.991603100876137],[102.22910542046687,17.001381842872256],[102.22609638273838,17.00592081884718],[102.25270295219136,17.020388928901063],[102.2639365429373,17.004005910868422]]]}},{"type":"Feature","properties":{"tam_code":"390501","tam_th":"นาสี","amp_th":"สุวรรณคูหา","area_sqkm":59.82},"geometry":{"type":"Polygon","coordinates":[[[102.31819203253731,17.678789638804727],[102.32672946680346,17.592214552288915],[102.33364904156169,17.578696939559435],[102.32545397810718,17.58069901709955],[102.31901616477083,17.588943600764907],[102.31127515288092,17.58336420770515],[102.30739100847522,17.587911014011087],[102.29860771949409,17.58458375099217],[102.28683156109909,17.590670048862236],[102.26477279256355,17.56463996487668],[102.25835538156664,17.563795726750268],[102.25664585979834,17.56742680917388],[102.24635798830975,17.561304104584885],[102.24991608786583,17.585671845112525],[102.26357194101035,17.59937306041509],[102.2686953876835,17.61067801627071],[102.28094915283077,17.61843288687012],[102.26894044667571,17.664847833043783],[102.27536780733348,17.667597936083013],[102.29657851458546,17.662207879699192],[102.2868024925343,17.673720309861856],[102.31819203253731,17.678789638804727]]]}},{"type":"Feature","properties":{"tam_code":"390502","tam_th":"บ้านโคก","amp_th":"สุวรรณคูหา","area_sqkm":97.6},"geometry":{"type":"Polygon","coordinates":[[[102.26357194101035,17.59937306041509],[102.24991608786583,17.585671845112525],[102.24635798830975,17.561304104584885],[102.25664585979834,17.56742680917388],[102.25835538156664,17.563795726750268],[102.26477279256355,17.56463996487668],[102.25751994727646,17.53893094580831],[102.25027547838003,17.534990068204003],[102.24323519580342,17.522906412921113],[102.23773984788538,17.504278350295014],[102.22638361234146,17.504693617889952],[102.22107656016777,17.497005080628725],[102.20550340876143,17.494696891285567],[102.20703119307866,17.471581086761276],[102.19865731971144,17.47408131054178],[102.17800332237614,17.492016802374632],[102.16119356899067,17.492805506161954],[102.15828167361502,17.485820335146013],[102.15011448939788,17.48676035246572],[102.13331733340857,17.49781802287861],[102.15255688142398,17.50818979626541],[102.14730163097936,17.516585689660012],[102.1535604536338,17.516685952802842],[102.15480037373678,17.524216859998536],[102.16333452495535,17.529253694528897],[102.1671711368486,17.52639830955561],[102.16796333188314,17.536790083065757],[102.18096769479581,17.5577197514458],[102.18362750211148,17.576374203132403],[102.21051863615365,17.583908085364843],[102.24067561027074,17.60448277534433],[102.26357194101035,17.59937306041509]]]}},{"type":"Feature","properties":{"tam_code":"390503","tam_th":"นาดี","amp_th":"สุวรรณคูหา","area_sqkm":95.41},"geometry":{"type":"Polygon","coordinates":[[[102.2945775796689,17.513383494037672],[102.3068565453283,17.512764935129187],[102.30680568596127,17.487094939112023],[102.31532113183951,17.461747053214737],[102.31126763091994,17.446633967924853],[102.31643455940396,17.431454142171756],[102.31633242681303,17.419821573080206],[102.30971203058283,17.409609627055683],[102.29487871067506,17.413357882722266],[102.28395439961415,17.427149746420426],[102.27614988736912,17.417627351209273],[102.25630990804721,17.426477698964465],[102.25566569938805,17.440578463602765],[102.23929323806765,17.458607943460876],[102.22039102334351,17.465393349508112],[102.2090321211618,17.462747003463857],[102.20703119307866,17.471581086761276],[102.20550340876143,17.494696891285567],[102.22107656016777,17.497005080628725],[102.22638361234146,17.504693617889952],[102.23773984788538,17.504278350295014],[102.24323519580342,17.522906412921113],[102.28648798209244,17.526995999901754],[102.2945775796689,17.513383494037672]]]}},{"type":"Feature","properties":{"tam_code":"390504","tam_th":"นาด่าน","amp_th":"สุวรรณคูหา","area_sqkm":75.86},"geometry":{"type":"Polygon","coordinates":[[[102.36874272150509,17.499731546696957],[102.3851099940561,17.45151284455345],[102.39929284365193,17.414609314286515],[102.37601978393693,17.415534281932214],[102.36684284518343,17.424195776483874],[102.35303548323033,17.425965528908197],[102.34647859698269,17.432080702962377],[102.33685853369553,17.42876024133506],[102.3292428601264,17.433959571352375],[102.31643455940396,17.431454142171756],[102.31126763091994,17.446633967924853],[102.31532113183951,17.461747053214737],[102.30680568596127,17.487094939112023],[102.3068565453283,17.512764935129187],[102.3090060081408,17.526465423974283],[102.33686398607976,17.516140087639624],[102.3483949440966,17.5290530541801],[102.36874272150509,17.499731546696957]]]}},{"type":"Feature","properties":{"tam_code":"390505","tam_th":"ดงมะไฟ","amp_th":"สุวรรณคูหา","area_sqkm":105.28},"geometry":{"type":"Polygon","coordinates":[[[102.21743390272938,17.66060998713054],[102.24613341371776,17.66588893036928],[102.26276655752045,17.65999113653962],[102.26894044667571,17.664847833043783],[102.28094915283077,17.61843288687012],[102.2686953876835,17.61067801627071],[102.26357194101035,17.59937306041509],[102.24067561027074,17.60448277534433],[102.21051863615365,17.583908085364843],[102.18362750211148,17.576374203132403],[102.18240147865832,17.583256038388274],[102.16068290057116,17.60857877788253],[102.14374473071372,17.620723237191758],[102.13721898023897,17.635872111242865],[102.13788223464837,17.648678851608306],[102.1452226658747,17.66168026617906],[102.16022721945211,17.666240362829445],[102.17227066920621,17.662007830505416],[102.18418179993216,17.66784696980661],[102.21743390272938,17.66060998713054]]]}},{"type":"Feature","properties":{"tam_code":"390506","tam_th":"สุวรรณคูหา","amp_th":"สุวรรณคูหา","area_sqkm":22.46},"geometry":{"type":"Polygon","coordinates":[[[102.28683156109909,17.590670048862236],[102.2972001801924,17.571130331115388],[102.29700957849789,17.54850232025825],[102.28648798209244,17.526995999901754],[102.24323519580342,17.522906412921113],[102.25027547838003,17.534990068204003],[102.25751994727646,17.53893094580831],[102.26477279256355,17.56463996487668],[102.28683156109909,17.590670048862236]]]}},{"type":"Feature","properties":{"tam_code":"390507","tam_th":"บุญทัน","amp_th":"สุวรรณคูหา","area_sqkm":73.89},"geometry":{"type":"Polygon","coordinates":[[[102.13788223464837,17.648678851608306],[102.13721898023897,17.635872111242865],[102.14374473071372,17.620723237191758],[102.16068290057116,17.60857877788253],[102.18240147865832,17.583256038388274],[102.18362750211148,17.576374203132403],[102.18096769479581,17.5577197514458],[102.16796333188314,17.536790083065757],[102.1671711368486,17.52639830955561],[102.16333452495535,17.529253694528897],[102.15480037373678,17.524216859998536],[102.1535604536338,17.516685952802842],[102.14730163097936,17.516585689660012],[102.15255688142398,17.50818979626541],[102.13331733340857,17.49781802287861],[102.1272855910542,17.498309293452845],[102.1259960610594,17.50933704170768],[102.13478295543788,17.50948157630006],[102.13927232464567,17.522753829170934],[102.1399963788887,17.530342734315575],[102.13346036299399,17.542099071334487],[102.134922947716,17.55234068324086],[102.13436638913804,17.559507525774887],[102.11601541513907,17.576633678013188],[102.11493560317462,17.590002069293437],[102.1058485190171,17.608349238824328],[102.09575479914118,17.615669456164582],[102.08281826257803,17.635008580911467],[102.1042253137834,17.646978955853626],[102.10949343268706,17.638874421107868],[102.1210372519572,17.633071976660336],[102.12916781237368,17.636159247470218],[102.13177803997773,17.64730786217041],[102.13788223464837,17.648678851608306]]]}},{"type":"Feature","properties":{"tam_code":"390508","tam_th":"กุดผึ้ง","amp_th":"สุวรรณคูหา","area_sqkm":34.32},"geometry":{"type":"Polygon","coordinates":[[[102.29860771949409,17.58458375099217],[102.30739100847522,17.587911014011087],[102.31127515288092,17.58336420770515],[102.31901616477083,17.588943600764907],[102.32545397810718,17.58069901709955],[102.33364904156169,17.578696939559435],[102.33229730812957,17.5545818029531],[102.3483949440966,17.5290530541801],[102.33686398607976,17.516140087639624],[102.3090060081408,17.526465423974283],[102.3068565453283,17.512764935129187],[102.2945775796689,17.513383494037672],[102.28648798209244,17.526995999901754],[102.29700957849789,17.54850232025825],[102.2972001801924,17.571130331115388],[102.28683156109909,17.590670048862236],[102.29860771949409,17.58458375099217]]]}},{"type":"Feature","properties":{"tam_code":"390601","tam_th":"นาเหล่า","amp_th":"นาวัง","area_sqkm":46.51},"geometry":{"type":"Polygon","coordinates":[[[102.08991603919867,17.331135807154286],[102.0884334324237,17.31369323568962],[102.09917587863319,17.302437071677982],[102.08788297496358,17.262581578903855],[102.08889638816768,17.24846580514682],[102.09390765709938,17.25077558571703],[102.10081380959276,17.213230657869655],[102.09488396844101,17.19446489623603],[102.08552457771145,17.210903790495223],[102.08176917811242,17.231286784729708],[102.0844377878762,17.236614438409052],[102.06953489428999,17.257050791438076],[102.05273080063486,17.251578218638365],[102.04281979486728,17.26108239737338],[102.04536675934382,17.276223366216584],[102.05744130599207,17.297549361733072],[102.05505525216937,17.320010669122613],[102.06530362517643,17.331602437086158],[102.06009109464121,17.339639815418785],[102.08991603919867,17.331135807154286]]]}},{"type":"Feature","properties":{"tam_code":"390602","tam_th":"นาแก","amp_th":"นาวัง","area_sqkm":88.22},"geometry":{"type":"Polygon","coordinates":[[[102.11179690490417,17.48183271732555],[102.12026035885461,17.46725834289668],[102.11052441914426,17.448923553605123],[102.10076916213953,17.444437619535314],[102.09674224092443,17.435907682364633],[102.10323151249308,17.41780993395044],[102.1158581920626,17.403961121278133],[102.11120298750507,17.393416666041166],[102.10725123235838,17.393271751918736],[102.10987456034066,17.39027525159733],[102.1073514623801,17.384630167825847],[102.11522616693728,17.3481903360986],[102.10215052632194,17.347194046197654],[102.08991603919867,17.331135807154286],[102.06009109464121,17.339639815418785],[102.04879665291045,17.346924655190957],[102.0500755004731,17.368242123765977],[102.01792789482705,17.37395824523236],[102.00724070017628,17.38544743993096],[102.03769117299609,17.390010678095607],[102.0471194299529,17.396509719521827],[102.06294833476906,17.427464194851172],[102.06245788368352,17.443680191376604],[102.08277833524464,17.461674758217587],[102.0916945355594,17.464270717677515],[102.09621685861282,17.472227570313944],[102.11179690490417,17.48183271732555]]]}},{"type":"Feature","properties":{"tam_code":"390603","tam_th":"วังทอง","amp_th":"นาวัง","area_sqkm":54.91},"geometry":{"type":"Polygon","coordinates":[[[102.0500755004731,17.368242123765977],[102.04879665291045,17.346924655190957],[102.06009109464121,17.339639815418785],[102.06530362517643,17.331602437086158],[102.05505525216937,17.320010669122613],[102.05744130599207,17.297549361733072],[102.04536675934382,17.276223366216584],[102.04281979486728,17.26108239737338],[102.02989380850902,17.270673521016192],[102.02678486601654,17.281157810092907],[102.01475243988273,17.279532096305736],[102.01673262760642,17.286786422682788],[102.00270667061649,17.29575960712961],[101.98607266352916,17.32334379228032],[101.9922636264762,17.33499252126414],[102.00970763683144,17.333590929794493],[102.02061619262022,17.34124665547687],[102.01337325713914,17.36220482001543],[102.01840994270026,17.36683395220422],[102.01792789482705,17.37395824523236],[102.0500755004731,17.368242123765977]]]}},{"type":"Feature","properties":{"tam_code":"390604","tam_th":"วังปลาป้อม","amp_th":"นาวัง","area_sqkm":54.21},"geometry":{"type":"Polygon","coordinates":[[[102.08277833524464,17.461674758217587],[102.06245788368352,17.443680191376604],[102.06294833476906,17.427464194851172],[102.0471194299529,17.396509719521827],[102.03769117299609,17.390010678095607],[102.00724070017628,17.38544743993096],[101.98922023424493,17.40364201178803],[101.98487247867274,17.41486031740628],[101.99310427858046,17.41951204492978],[101.9845692522904,17.442656309403375],[101.99193050129867,17.459546223433122],[101.99889209159659,17.45639631731836],[102.03244407669774,17.45888496483352],[102.05213432766453,17.44951668913933],[102.08277833524464,17.461674758217587]]]}},{"type":"Feature","properties":{"tam_code":"390605","tam_th":"เทพคีรี","amp_th":"นาวัง","area_sqkm":21.87},"geometry":{"type":"Polygon","coordinates":[[[102.11522616693728,17.3481903360986],[102.11644271855712,17.337848754126703],[102.10657156286605,17.331828111521066],[102.11998051339472,17.32233621599333],[102.1207092938874,17.305070856697697],[102.12595940038446,17.303674276713824],[102.10588042509401,17.28623352564061],[102.10521829113497,17.263103056176504],[102.09390765709938,17.25077558571703],[102.08889638816768,17.24846580514682],[102.08788297496358,17.262581578903855],[102.09917587863319,17.302437071677982],[102.0884334324237,17.31369323568962],[102.08991603919867,17.331135807154286],[102.10215052632194,17.347194046197654],[102.11522616693728,17.3481903360986]]]}}]}, ST=[{"id": "MO01", "river": "ลำน้ำมอ", "no": 1, "name": "อ่างเก็บน้ำมอ", "village": "บ้านฝายหิน", "amphoe": "ศรีบุญเรือง", "lat": 17.16608, "lon": 102.18177, "bank": 242.0, "warn": 241.5, "crit": 242.0, "cur": 240.2, "km": 0, "st": "normal", "gap": 1.8, "pct": 70.0}, {"id": "MO02", "river": "ลำน้ำมอ", "no": 2, "name": "บ้านวังคูณ", "village": "บ้านวังคูณ", "amphoe": "ศรีบุญเรือง", "lat": 17.03214, "lon": 102.2492, "bank": 211.0, "warn": 210.5, "crit": 211.0, "cur": 209.3, "km": 16.5, "st": "normal", "gap": 1.7, "pct": 71.7}, {"id": "MO03", "river": "ลำน้ำมอ", "no": 3, "name": "บ้านโนนสูงเปลือย", "village": "บ้านโนนสูงเปลือย", "amphoe": "ศรีบุญเรือง", "lat": 16.96934, "lon": 102.27002, "bank": 202.0, "warn": 201.5, "crit": 202.0, "cur": 200.4, "km": 23.9, "st": "normal", "gap": 1.6, "pct": 73.3}], FG=[];
+const SB={normal:{c:'#16a34a',l:'ปกติ'},warn:{c:'#f59e0b',l:'เฝ้าระวัง'},crit:{c:'#dc2626',l:'วิกฤติ'}};
+/* ── ช่วงสเกลของแต่ละจุด — คำนวณจากข้อมูลจริง ไม่ใช่ค่าตายตัว ──
+   เดิมสมมติความลึกลำน้ำ 6 ม. ทำให้จุดที่น้ำต่ำกว่าตลิ่งเกิน 6 ม. ตกนอกช่วงและถูกบีบเป็น 0 */
+let SCALE=6;                       /* ความลึกอ้างอิงร่วมทั้งลำน้ำ (เมตร) */
+function recalcScale(){
+  let d=1.5;
+  ST.forEach(s=>{ if(s.cur!=null&&s.bank!=null&&!isNaN(s.cur)) d=Math.max(d,(+s.bank-+s.cur)); });
+  SCALE=Math.min(Math.ceil((d+1)*2)/2,25);   /* เผื่อขอบบน 1 ม. ปัดเป็น 0.5 */
+}
+/* เกจแบบแบ่งโซนตามเกณฑ์ — สัดส่วนโซนคงที่เสมอ จึงเห็นเกณฑ์ชัดทุกสถานี
+   ปกติ 0–62% · เฝ้าระวัง 62–86% · วิกฤติ 86–100%
+   ป้ายเกณฑ์: วิกฤติอยู่ซ้าย เฝ้าระวังอยู่ขวา — ไม่ทับกัน */
+const Z_OK=62, Z_WARN=86;
+function zonePos(s,v){
+  const bank=+s.bank, warn=(s.warn!=null?+s.warn:bank-0.5), crit=(s.crit!=null?+s.crit:bank);
+  const floor=bank-SCALE;
+  if(v<=floor) return 0;
+  if(v<warn)  return (v-floor)/Math.max(.001,(warn-floor))*Z_OK;
+  if(v<crit)  return Z_OK+(v-warn)/Math.max(.001,(crit-warn))*(Z_WARN-Z_OK);
+  return Math.min(100, Z_WARN+(v-crit)/Math.max(.001,SCALE*0.12)*(100-Z_WARN));
+}
+function posOf(s,v){ return Math.max(0,Math.min(100,zonePos(s,v))); }
+/* ── % แบบเดียวกับระบบเดิม: ระดับน้ำ ÷ ระดับตลิ่ง × 100 ── */
+function pctBankBar(s){ return (s.bank&&s.cur!=null)? Math.max(0,Math.min(100,s.cur/s.bank*100)) : 0; }
+function gaugeZone(s,color){
+  const p=posOf(s,s.cur);
+  const L=`<span class="gtk gl" style="bottom:${Z_WARN}%"><em>วิกฤติ/ตลิ่ง</em><b>${nf(s.crit,2)}</b><i style="background:#dc2626"></i></span>`;
+  const R=`<span class="gtk gr" style="bottom:${Z_OK}%"><i style="background:#f59e0b"></i><em>เฝ้าระวัง</em><b>${nf(s.warn,2)}</b></span>`;
+  return `<div class="gg zone">
+    <div class="gticks gL">${L}</div>
+    <div class="gtube">
+      <span class="gz" style="bottom:0;height:${Z_OK}%;background:#dcfce7"></span>
+      <span class="gz" style="bottom:${Z_OK}%;height:${Z_WARN-Z_OK}%;background:#fef3c7"></span>
+      <span class="gz" style="bottom:${Z_WARN}%;height:${100-Z_WARN}%;background:#fee2e2"></span>
+      <div class="gfill" style="height:${p}%;background:linear-gradient(180deg,${color}dd,${color}88)"></div>
+      <span class="gline" style="bottom:${Z_OK}%;background:#f59e0b"></span>
+      <span class="gline" style="bottom:${Z_WARN}%;background:#dc2626"></span>
+      <span class="gnow" style="bottom:${p}%"></span>
+    </div>
+    <div class="gticks gR">${R}</div>
+  </div>`;
+}
+/* ความลึกภาพตัดตามยาว — ลึกพอครอบคลุมทุกสถานีเสมอ */
+function profDepth(){ recalcScale(); return SCALE; }
+function stOf(s){return s.cur>s.crit?'crit':(s.cur>=s.warn?'warn':'normal');}
+function nf(v,d){return (v==null||isNaN(v))?'—':Number(v).toFixed(d);}
+async function J(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
+let LIVE=false,DATE='',SEL=ST[0].id,SORT='no',PROF='lv',DAYS=7,LTAB='st',map,ptLayer,trendC,HIST={},RAIN={};
+const TIPS={};
+
+/* ===== tooltip engine ===== */
+(function(){const tip=document.getElementById('tipbox');
+ function pos(e){const r=tip.getBoundingClientRect();let x=e.clientX+15,y=e.clientY+15;
+  if(x+r.width>innerWidth-8)x=Math.max(8,e.clientX-r.width-15);
+  if(y+r.height>innerHeight-8)y=Math.max(8,e.clientY-r.height-15);
+  tip.style.left=x+'px';tip.style.top=y+'px';}
+ document.addEventListener('mouseover',e=>{const t=e.target.closest&&e.target.closest('[data-tip],[data-tipid]');if(!t)return;
+  const html=t.dataset.tipid?TIPS[t.dataset.tipid]:('<div class="simple">'+t.dataset.tip+'</div>');
+  if(html){tip.innerHTML=html;tip.style.display='block';pos(e);}});
+ document.addEventListener('mousemove',e=>{if(tip.style.display==='block')pos(e);});
+ document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('[data-tip],[data-tipid]'))tip.style.display='none';});
+})();
+function gauge(pct,color,marks,label){
+ const p=Math.max(0,Math.min(100,pct));
+ const mk=(marks||[]).map(m=>`<span class="gmk ${m.k||''}" style="bottom:${m.v}%"></span>`).join('');
+ return `<div class="gg"><div class="gtube"><div class="gfill" style="height:${p}%;background:linear-gradient(180deg,${color},${color}bb)"></div>${mk}</div>
+  <div class="gpct" style="color:${color}">${pct.toFixed(0)}%</div><div class="glbl">${label}</div></div>`;}
+/* เกจแบบมีแถบเกณฑ์ (ปกติ/เฝ้าระวัง/วิกฤติ) + ป้ายค่าเกณฑ์ */
+function gaugeZ(pct,color,zones,ticks,label){
+ const p=Math.max(0,Math.min(100,pct));
+ const bg=zones.map(z=>`<span class="gz" style="bottom:${z.f}%;height:${Math.max(0,z.t-z.f)}%;background:${z.c}"></span>`).join('');
+ const ln=ticks.map(t=>`<span class="gline" style="bottom:${t.v}%;background:${t.c}"></span>`).join('');
+ const lb=ticks.map(t=>`<span class="gtk" style="bottom:${t.v}%"><i style="background:${t.c}"></i><em>${t.l}</em></span>`).join('');
+ return `<div class="gg wide"><div class="grow"><div class="gtube">${bg}<div class="gfill" style="height:${p}%;background:linear-gradient(180deg,${color}dd,${color}88)"></div>${ln}
+   <span class="gnow" style="bottom:${p}%"></span></div><div class="gticks">${lb}</div></div>
+  <div class="gpct" style="color:${color}">${pct.toFixed(0)}%</div><div class="glbl">${label}</div></div>`;}
+function row(l,v){return `<div class="row"><span>${l}</span><b>${v}</b></div>`;}
+function sepRow(t){return `<div class="seprow">${t}</div>`;}
+function tipSt(s){const k=stOf(s),b=SB[k];
+ const P=v=>posOf(s,v);
+ const pct=P(s.cur), wmk=P(s.warn), cmk=P(s.crit);
+ const fb=(s.bank-s.cur);
+ return `<div class="tth" style="background:${b.c}">${s.name}<small>สถานีที่ ${s.no} · ${RIVER} · ${b.l}</small></div>
+ <div class="body">${gaugeZone(s,b.c)}
+ <div class="dt">${row('รหัสสถานี',s.id)}${row('ที่ตั้ง',(s.village?s.village+' · ':'')+'อ.'+s.amphoe)}
+ ${row('ระยะจากต้นน้ำ',nf(s.km,1)+' กม.')}
+ ${row('ระดับน้ำปัจจุบัน','<span style="color:'+b.c+'">'+nf(s.cur,2)+' ม.รทก.</span>')}
+ ${row('ระดับสันตลิ่ง',nf(s.bank,2)+' ม.รทก.')}
+ ${row('ต่ำกว่าสันตลิ่ง','<span style="color:'+b.c+'">'+(fb<=0?'เกินตลิ่ง '+nf(-fb,2):nf(fb,2))+' ม.</span>')}
+ ${row('% เทียบระดับตลิ่ง',(s.bank?(s.cur/s.bank*100).toFixed(1):'—')+'%')}
+ ${sepRow('เกณฑ์เฝ้าระวัง (ม.รทก.)')}
+ ${row('<span style="color:var(--ok)">● ปกติ</span>','ต่ำกว่า '+nf(s.warn,2))}
+ ${row('<span style="color:var(--warn)">● เฝ้าระวัง</span>',nf(s.warn,2)+' – '+nf(s.crit,2))}
+ ${row('<span style="color:var(--crit)">● วิกฤติ / ล้นตลิ่ง</span>','สูงกว่า '+nf(s.crit,2))}
+ ${row('เหลือถึงตลิ่ง','<span style="color:'+b.c+'">'+(s.gap<=0?'เกินตลิ่ง '+nf(-s.gap,2):nf(s.gap,2))+' ม.</span>')}
+ ${row('ฝนคาด 7 วัน',RAIN[s.id]!=null?nf(RAIN[s.id],0)+' มม.':'—')}
+ ${row('สถานะ','<span style="color:'+b.c+'">'+b.l+'</span>')}
+ <div class="seprow">อ่านแถบวัดอย่างไร</div>
+ <div style="font-size:10.5px;color:var(--muted);line-height:1.55;padding-top:2px">
+   หลอดซ้ายคือ<b>ความสูงของน้ำในลำน้ำ</b> เทียบกับความลึกอ้างอิงร่วมของทั้ง${RIVER} (${SCALE} ม.)
+   — ยิ่งสูงยิ่งใกล้ล้นตลิ่ง จุดนี้อยู่ที่ <b style="color:${b.c}">${pct.toFixed(0)}%</b>
+   ${fb>0?('คือยังห่างจากการล้นตลิ่งอีก <b>'+nf(fb,2)+' ม.</b>'):('<b style="color:var(--crit)">น้ำล้นตลิ่งแล้ว</b>')}
+ </div></div></div>`;}
+function buildTips(){
+  recalcScale();ST.forEach(s=>TIPS[s.id]=tipSt(s));
+ FG.forEach(g=>{const k=g.level>g.warn?'crit':(g.level>=g.normal?'warn':'normal'),b=SB[k];
+  const span=(g.warn-g.normal)||1,glo=g.normal-span*2,ghi=g.warn+span,GR=ghi-glo;
+  const GP=v=>Math.max(0,Math.min(100,(v-glo)/GR*100));
+  const p=GP(g.level),gw=GP(g.normal),gc=GP(g.warn);
+  const gz=[{f:0,t:gw,c:'#dcfce7'},{f:gw,t:gc,c:'#fef3c7'},{f:gc,t:100,c:'#fee2e2'}];
+  const gt=[{v:gw,c:'#f59e0b',l:'เฝ้าระวัง '+nf(g.normal,2)},{v:gc,c:'#dc2626',l:'วิกฤติ '+nf(g.warn,2)}];
+  TIPS[g.id]=`<div class="tth" style="background:${b.c}">${g.name}<small>รหัส ${g.id} · ${b.l}</small></div>
+  <div class="body">${gaugeZ(p,b.c,gz,gt,'ระดับน้ำ<br>เทียบเกณฑ์')}
+  <div class="dt">${row('ที่ตั้ง','อ.'+g.amphoe+' · '+g.river)}${row('ประเภท','ประตูระบายน้ำ (ปตร.)')}
+  ${row('ระดับน้ำ',nf(g.level,2)+' ม.รทก.')}
+  ${sepRow('เกณฑ์เฝ้าระวัง (ม.รทก.)')}
+  ${row('<span style="color:var(--ok)">● ปกติ</span>','ต่ำกว่า '+nf(g.normal,2))}
+  ${row('<span style="color:var(--warn)">● เฝ้าระวัง</span>',nf(g.normal,2)+' – '+nf(g.warn,2))}
+  ${row('<span style="color:var(--crit)">● วิกฤติ</span>','สูงกว่า '+nf(g.warn,2))}
+  ${row('บานประตู',g.open+' / '+g.gates+' บาน')}${row('อัตราระบาย',nf(g.q,1)+' ลบ.ม./วิ')}
+  ${row('สถานะ','<span style="color:'+b.c+'">'+(g.open>0?'เปิดระบาย · ':'ปิดบาน · ')+b.l+'</span>')}</div></div>`;});}
+
+/* ===== ฉากลำน้ำ (longitudinal profile) ===== */
+function drawProfile(){
+  const svg=document.getElementById('prof');if(!svg)return;
+  const W=svg.clientWidth||760,H=svg.clientHeight||300;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const P={l:44,r:14,t:16,b:38};
+  const iw=W-P.l-P.r, ih=H-P.t-P.b;
+  const VS=ST.filter(s=>!AMPF||s.amphoe===AMPF);
+  const n=VS.length;
+  const xs=VS.map((s,i)=>P.l+(n===1?iw/2:i*iw/(n-1)));
+  let lo,hi,bedArr,topArr,curArr;
+  const PD=profDepth();
+  if(PROF==='lv'){
+    bedArr=VS.map(s=>s.bank-PD);topArr=VS.map(s=>s.bank);curArr=VS.map(s=>s.cur);
+    lo=Math.min(...bedArr)-3;hi=Math.max(...topArr)+4;
+  }else{
+    bedArr=VS.map(()=>0);topArr=VS.map(()=>PD);curArr=VS.map(s=>Math.max(0,Math.min(PD,PD-s.gap)));
+    lo=0;hi=PD+.6;
+  }
+  const y=v=>P.t+ih-((v-lo)/(hi-lo))*ih;
+  const path=(arr,close)=>{let d=`M ${xs[0]} ${y(arr[0])}`;
+    for(let i=1;i<n;i++){const cx=(xs[i-1]+xs[i])/2;d+=` C ${cx} ${y(arr[i-1])}, ${cx} ${y(arr[i])}, ${xs[i]} ${y(arr[i])}`;}
+    return close?d:d;};
+  const area=(top,bot)=>{let d=path(top);for(let i=n-1;i>=0;i--){d+=(i===n-1?` L ${xs[i]} ${y(bot[i])}`:` L ${xs[i]} ${y(bot[i])}`);}return d+' Z';};
+  /* grid */
+  let g='';const steps=5;
+  for(let i=0;i<=steps;i++){const v=lo+(hi-lo)*i/steps,yy=y(v);
+    g+=`<line x1="${P.l}" y1="${yy}" x2="${W-P.r}" y2="${yy}" stroke="#eef2f7" stroke-width="1"/>
+        <text x="${P.l-6}" y="${yy+3.5}" text-anchor="end" font-size="9" fill="#94a3b8" font-family="Sarabun">${v.toFixed(PROF==='lv'?0:1)}</text>`;}
+  /* bed + water */
+  const bedD=area(topArr.map((v,i)=>bedArr[i]),ST.map(()=>lo));
+  const waterD=area(curArr,bedArr);
+  let s='';
+  s+=`<path d="${bedD}" fill="#e7dccb"/>`;
+  s+=`<path d="${waterD}" fill="url(#wg)" opacity=".92"/>`;
+  s+=`<path d="${path(curArr)}" fill="none" stroke="${RCOL}" stroke-width="2.4"/>`;
+  s+=`<path d="${path(topArr)}" fill="none" stroke="#8a6d3b" stroke-width="1.8" stroke-dasharray="6 4"/>`;
+  /* stations */
+  VS.forEach((st,i)=>{const k=stOf(st),b=SB[k];const x=xs[i];
+    s+=`<line x1="${x}" y1="${y(topArr[i])}" x2="${x}" y2="${y(bedArr[i])}" stroke="#94a3b8" stroke-width="1" opacity=".55"/>`;
+    s+=`<circle cx="${x}" cy="${y(curArr[i])}" r="${SEL===st.id?6.5:5}" fill="${b.c}" stroke="#fff" stroke-width="2"/>`;
+    if(k!=='normal')s+=`<circle cx="${x}" cy="${y(curArr[i])}" r="10" fill="none" stroke="${b.c}" stroke-width="1.4" opacity=".45"/>`;
+    const lbl=PROF==='lv'?nf(st.cur,1):nf(st.gap,2);
+    s+=`<text x="${x}" y="${y(curArr[i])-11}" text-anchor="middle" font-size="9" font-weight="700" fill="${b.c}" font-family="Kanit">${lbl}</text>`;
+    const short=st.name.length>9?st.name.slice(0,9)+'…':st.name;
+    s+=`<text x="${x}" y="${H-P.b+15}" text-anchor="middle" font-size="8.5" fill="${SEL===st.id?'#0a1e3c':'#64748b'}" font-weight="${SEL===st.id?'700':'400'}" font-family="Sarabun">${short}</text>`;
+    s+=`<text x="${x}" y="${H-P.b+26}" text-anchor="middle" font-size="7.5" fill="#94a3b8" font-family="Sarabun">${nf(st.km,0)} กม.</text>`;
+    s+=`<rect x="${x-16}" y="${P.t}" width="32" height="${ih}" fill="transparent" style="cursor:pointer" data-tipid="${st.id}" onclick="select('${st.id}')"/>`;});
+  s+=`<text x="${P.l}" y="${H-4}" font-size="8.5" fill="#94a3b8" font-family="Sarabun">▲ ต้นน้ำ</text>
+      <text x="${W-P.r}" y="${H-4}" text-anchor="end" font-size="8.5" fill="#94a3b8" font-family="Sarabun">ปลายน้ำ ▼</text>`;
+  svg.innerHTML=`<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${RCOL}" stop-opacity=".55"/><stop offset="100%" stop-color="${RCOL}" stop-opacity=".18"/></linearGradient></defs>`+g+s;
+  document.getElementById('profLg').innerHTML=
+   `<span class="lg" data-tip="ระดับสันตลิ่ง — ถ้าน้ำสูงถึงเส้นนี้คือน้ำล้นตลิ่ง"><span class="sw" style="background:#8a6d3b"></span>ระดับตลิ่ง</span>
+    <span class="lg" data-tip="ระดับผิวน้ำที่ตรวจวัดได้จริงในปัจจุบัน"><span class="sw" style="background:${RCOL}"></span>ระดับน้ำปัจจุบัน</span>
+    <span class="lg" data-tip="ท้องน้ำโดยประมาณ (ตลิ่งลบ ${PD} ม. — คำนวณให้ครอบคลุมทุกสถานีจากข้อมูลจริง)"><span class="sw" style="background:#e7dccb"></span>ท้องน้ำ</span>
+    ${Object.keys(SB).map(k=>`<span class="lg" data-tip="สถานีสถานะ${SB[k].l}"><span class="dot" style="background:${SB[k].c}"></span>${SB[k].l}</span>`).join('')}
+    <span class="note">ความยาวลำน้ำในเขตจังหวัด <b>${nf(VS.length?VS[VS.length-1].km:0,1)}</b> กม.</span>`;
+  const _ps=document.getElementById('cardSub');
+  if(_ps)_ps.textContent=PROF==='lv'?'ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.':'ต้นน้ำ → ปลายน้ำ · ระยะเหลือถึงตลิ่ง (ม.)';
+}
+let VIEW='card';
+function setView(v){
+  VIEW=v;
+  document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('.hideprof').forEach(b=>b.style.display=(v==='prof'?'':'none'));
+  const cards=document.getElementById('stcards'), svg=document.getElementById('prof'), lg=document.getElementById('profLg');
+  if(cards) cards.style.display=(v==='card'?'':'none');
+  if(svg)   svg.style.display=(v==='prof'?'':'none');
+  if(lg)    lg.style.display=(v==='prof'?'':'none');
+  const sub=document.getElementById('cardSub');
+  if(v==='card'){ renderCards(); }
+  else { if(sub)sub.textContent='ต้นน้ำ → ปลายน้ำ · หน่วย ม.รทก.'; drawProfile(); }
+}
+function setProf(p){PROF=p;document.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===p));drawProfile();}
+
+
+/* ═══════ การ์ดสถานี — ภาพตัดลำน้ำ ระดับน้ำขยับตามข้อมูลจริง ═══════ */
+function stationCardSvg(s,b){
+  const W=200,H=74, bedY=64, topY=10;           /* ท้องน้ำ / ขอบบน */
+  const p=posOf(s,s.cur);                        /* ตำแหน่งตามโซนเกณฑ์ */
+  const yOf=v=>bedY-(v/100)*(bedY-topY);
+  const wy=yOf(p), warnY=yOf(Z_OK), critY=yOf(Z_WARN);
+  const wave=(y,op,cls,amp)=>{
+    let d=`M -80 ${y}`;
+    for(let x=-80;x<=W+80;x+=40) d+=` q 10 ${-amp} 20 0 t 20 0`;
+    d+=` L ${W+80} ${bedY+6} L -80 ${bedY+6} Z`;
+    return `<path class="${cls}" d="${d}" fill="${b.c}" opacity="${op}"/>`;
+  };
+  const over=s.gap<=0;
+  return `<svg class="stc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <clipPath id="ch${s.id}"><path d="M 0 ${bedY} L 26 ${topY-2} L ${W-26} ${topY-2} L ${W} ${bedY} Z"/></clipPath>
+      <linearGradient id="sky${s.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f2f8ff"/><stop offset="100%" stop-color="#e6f1fb"/></linearGradient>
+    </defs>
+    <path d="M 0 ${bedY} L 26 ${topY-2} L ${W-26} ${topY-2} L ${W} ${bedY} Z" fill="url(#sky${s.id})"/>
+    <g clip-path="url(#ch${s.id})">
+      <rect x="0" y="${critY}" width="${W}" height="${bedY-critY}" fill="#fee2e2" opacity=".55"/>
+      <rect x="0" y="${warnY}" width="${W}" height="${critY-warnY}" fill="#fef3c7" opacity=".7"/>
+      <rect x="0" y="${critY}" width="${W}" height="0" fill="none"/>
+      ${wave(wy+3,.35,'wv2',2.2)}
+      ${wave(wy,.85,'wv1',2.8)}
+    </g>
+    <line x1="0" y1="${critY}" x2="${W}" y2="${critY}" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3"/>
+    <line x1="0" y1="${warnY}" x2="${W}" y2="${warnY}" stroke="#f59e0b" stroke-width="1.1" stroke-dasharray="4 3" opacity=".9"/>
+    <text x="4" y="${critY-3}" font-size="7.5" fill="#dc2626" font-family="Kanit">ตลิ่ง ${nf(s.crit,2)}</text>
+    <text x="${W-4}" y="${warnY-3}" font-size="7.5" fill="#b45309" font-family="Kanit" text-anchor="end">เฝ้าระวัง ${nf(s.warn,2)}</text>
+    <path d="M 0 ${bedY} L 26 ${topY-2}" stroke="#8a6d3b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M ${W} ${bedY} L ${W-26} ${topY-2}" stroke="#8a6d3b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M 0 ${bedY} L ${W} ${bedY} L ${W} ${H} L 0 ${H} Z" fill="#e7dccb"/>
+    <circle cx="${W/2}" cy="${wy}" r="3.2" fill="#fff" stroke="${b.c}" stroke-width="2"/>
+    ${over?`<text x="${W/2}" y="${wy-7}" font-size="8" fill="#dc2626" font-family="Kanit" text-anchor="middle" class="rise-up">▲ ล้นตลิ่ง</text>`:''}
+  </svg>`;
+}
+function renderCards(){
+  const box=document.getElementById('stcards'); if(!box) return;
+  const list=ST.filter(s=>!AMPF||s.amphoe===AMPF).sort((a,b)=>a.no-b.no);
+  const sub=document.getElementById('cardSub');
+  if(sub) sub.textContent=list.length+' สถานี · ระดับน้ำในภาพขยับตามข้อมูลจริง';
+  box.innerHTML=list.map(s=>{
+    const k=stOf(s), b=SB[k];
+    const rain=RAIN[s.id];
+    return `<div class="stc ${k==='normal'?'':k} ${SEL===s.id?'sel':''}" data-tipid="${s.id}" onclick="select('${s.id}')">
+      <div class="stc-h"><span class="stc-no">${s.no}</span>
+        <span style="flex:1;min-width:0"><span class="stc-n">${s.name}</span>
+          <span class="stc-a">อ.${s.amphoe} · กม.${nf(s.km,1)}</span></span>
+        <span class="stc-pill" style="background:${b.c}">${b.l}</span></div>
+      <div class="stc-lv"><b style="color:${b.c}">${nf(s.cur,2)}</b><span>ม.รทก.</span></div>
+      ${stationCardSvg(s,b)}
+      <div class="stc-f">
+        <div><div class="k">${s.gap<=0?'เกินตลิ่ง':'เหลือถึงตลิ่ง'}</div>
+             <div class="v" style="color:${b.c}">${nf(Math.abs(s.gap),2)} ม.</div></div>
+        <div><div class="k">ฝนคาด 7 วัน</div>
+             <div class="v" style="color:var(--info)">${rain!=null?nf(rain,0)+' มม.':'—'}</div></div>
+      </div></div>`;}).join('');
+}
+
+/* ===== map ===== */
+function initMap(){
+  const c0=[ST.reduce((a,x)=>a+x.lat,0)/ST.length,ST.reduce((a,x)=>a+x.lon,0)/ST.length];
+  map=L.map('map',{zoomControl:true,attributionControl:false}).setView(c0,10);window._m=map;
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  L.geoJSON(TAM,{style:{fillColor:'#dbeafe',fillOpacity:.7,color:'#fff',weight:1},interactive:false}).addTo(map);
+  buildMarkers();
+  map.fitBounds(L.latLngBounds(ST.map(s=>[s.lat,s.lon])).pad(.22));
+  document.getElementById('mapSub').textContent=ST.length+' สถานี · '+FG.length+' ปตร.';
+  document.getElementById('mapLg').innerHTML=Object.keys(SB).map(k=>`<span class="lg" data-tip="สถานีที่มีสถานะ${SB[k].l}"><span class="dot" style="background:${SB[k].c}"></span>${SB[k].l}</span>`).join('')
+   +`<span class="lg" data-tip="ประตูระบายน้ำในลำน้ำนี้">🚪 ปตร.</span><span class="note">เรียงตามลำน้ำ ต้นน้ำ→ปลายน้ำ</span>`;
+}
+function buildMarkers(){
+  const mk=ST.map(s=>{const b=SB[stOf(s)];
+    const m=L.circleMarker([s.lat,s.lon],{radius:stOf(s)==='normal'?6:8,fillColor:b.c,color:'#fff',weight:2,fillOpacity:1});
+    m.bindTooltip(TIPS[s.id],{className:'lft',sticky:true,opacity:1});m._id=s.id;
+    m.on('click',()=>select(s.id));return m;});
+  FG.forEach(g=>{const k=g.level>g.warn?'crit':(g.level>=g.normal?'warn':'normal');
+    const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'',html:`<div style="width:22px;height:22px;border-radius:6px;background:${SB[k].c};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transform:translate(-11px,-11px);color:#fff;font-size:11px">🚪</div>`})});
+    m.bindTooltip(TIPS[g.id],{className:'lft',sticky:true,opacity:1});mk.push(m);});
+  ptLayer=L.layerGroup(mk).addTo(map);
+  map.on('click',closeTips);
+}
+function closeTips(){try{if(ptLayer)ptLayer.eachLayer(m=>m.closeTooltip&&m.closeTooltip());}catch(e){}}
+function select(id){SEL=id;renderList();try{VIEW==='card'?renderCards():drawProfile();}catch(e){}renderTrend();try{renderLadder();}catch(e){}
+  closeTips();
+  if(ptLayer)ptLayer.eachLayer(m=>{if(m._id===id){map.flyTo(m.getLatLng(),12,{duration:.6});setTimeout(()=>{closeTips();m.openTooltip&&m.openTooltip();},620);}});}
+
+/* ===== list ===== */
+function setSort(s){SORT=s;document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===s));renderList();}
+function setLTab(t){LTAB=t;document.querySelectorAll('[data-l]').forEach(b=>b.classList.toggle('on',b.dataset.l===t));
+  const h=document.getElementById('listH');
+  h.innerHTML=(t==='st'?'<span class="hi">📍</span>สถานีตรวจวัด':'<span class="hi">🚪</span>ประตูระบายน้ำ')+'<span class="sub" id="listSub"></span>';
+  document.getElementById('sortSeg').style.display=t==='st'?'':'none';
+  renderList();}
+function renderList(){
+  recalcScale();
+  const sub=document.getElementById('listSub');
+  if(LTAB==='fg'){
+    if(sub)sub.textContent=FG.length?FG.length+' แห่ง · กรมชลประทาน':'ไม่มีในลำน้ำนี้';
+    document.getElementById('rlist').innerHTML=FG.length?FG.map(g=>{const k=g.level>g.warn?'crit':(g.level>=g.normal?'warn':'normal'),b=SB[k],open=g.open>0;
+      const span=(g.warn-g.normal)||1,p=Math.max(0,Math.min(100,((g.level-(g.normal-span*2))/(span*3))*100));
+      return `<div class="ri" data-tipid="${g.id}" onclick="focusFg('${g.id}')">
+       <div class="rt"><div><div class="rn"><span class="no">${g.id}</span>${g.name}</div><div class="ra">อ.${g.amphoe} · ${open?'เปิด '+g.open+'/'+g.gates+' บาน · '+nf(g.q,1)+' ลบ.ม./วิ':'ปิดบาน'}</div></div>
+       <div class="rp" style="color:${b.c}">${nf(g.level,2)}<small>ม.รทก. · ${b.l}</small></div></div>
+       <div class="rb"><i style="width:${pctBankBar(s)}%;background:${b.c}"></i><span class="mk" style="left:66.7%"></span><span class="mk" style="left:33.3%;background:rgba(245,158,11,.7)"></span></div></div>`;}).join('')
+      :'<div class="act o" style="margin:6px"><span class="ai">ℹ️</span><div><b>ไม่มีประตูระบายน้ำ</b><span class="an">'+RIVER+'ไม่มีอาคารควบคุมการระบายน้ำในเขตจังหวัด</span></div></div>';
+    return;}
+  const sel=document.getElementById('ampF');
+  if(sel&&!sel.options.length){
+    sel.innerHTML='<option value="">ทุกอำเภอ ('+ST.length+')</option>'+
+      [...new Set(ST.map(s=>s.amphoe))].filter(Boolean).sort()
+        .map(a=>`<option value="${a}">อ.${a} (${ST.filter(s=>s.amphoe===a).length})</option>`).join('');
+  }
+  const list=[...ST].filter(s=>!AMPF||s.amphoe===AMPF).sort((a,b)=>SORT==='no'?a.no-b.no:a.gap-b.gap);
+  if(sub)sub.textContent=(AMPF?('อ.'+AMPF+' · '+list.length+' สถานี'):(ST.length+' สถานี'))+' · เลื่อนดูได้ในกรอบ';
+  document.getElementById('rlist').innerHTML=list.map(s=>{const k=stOf(s),b=SB[k];
+    const p=pctBankBar(s);
+    return `<div class="ri ${SEL===s.id?'sel':''}" data-tipid="${s.id}" onclick="select('${s.id}')">
+     <div class="rt"><div><div class="rn"><span class="no">${s.no}</span>${s.name}</div><div class="ra">อ.${s.amphoe} · กม.${nf(s.km,1)}</div></div>
+     <div class="rp" style="color:${b.c}">
+       <span style="display:inline-flex;align-items:center;justify-content:flex-end">${nf(s.cur,2)}
+         <span class="mini-i" onclick="event.stopPropagation();openTable('${s.id}')" title="ดูรายละเอียดในตารางสรุป">i</span></span>
+       <small>${s.gap<=0?'เกินตลิ่ง '+nf(-s.gap,2):'เหลือ '+nf(s.gap,2)} ม.${HIST[s.id]&&HIST[s.id].length>1?' · '+sparkSvg(HIST[s.id],b.c,40,13):''}</small></div></div>
+     <div class="rb"><i style="width:${p}%;background:${b.c}"></i><span class="mk" style="left:${s.bank?s.warn/s.bank*100:0}%;background:rgba(245,158,11,.85)"></span><span class="mk" style="left:100%"></span></div></div>`;}).join('');
+}
+function focusFg(id){const g=FG.find(x=>x.id===id);if(!g||!map)return;map.flyTo([g.lat,g.lon],12,{duration:.6});}
+/* ===== kpi / acts / floodgate ===== */
+function renderKPI(){
+  const c={normal:0,warn:0,crit:0};ST.forEach(s=>c[stOf(s)]++);
+  const near=[...ST].sort((a,b)=>a.gap-b.gap)[0];
+  const rainAvg=Object.keys(RAIN).length?Object.values(RAIN).reduce((a,b)=>a+b,0)/Object.keys(RAIN).length:null;
+  const cards=[
+   ['b1','📍','สถานีตรวจวัด',ST.length,' สถานี',nf(ST[ST.length-1].km,1)+' กม. · '+[...new Set(ST.map(s=>s.amphoe))].length+' อำเภอ','จำนวนจุดตรวจวัดระดับน้ำตลอด'+RIVER+'ในเขตจังหวัด'],
+   ['b2','✅','สถานีปกติ',c.normal,'/'+ST.length,'ระดับน้ำต่ำกว่าเกณฑ์เฝ้าระวัง','สถานีที่ระดับน้ำยังต่ำกว่าเกณฑ์เฝ้าระวัง ถือว่าปลอดภัย'],
+   [c.warn?'b4':'b3','⚠️','เฝ้าระวัง',c.warn,' สถานี',c.warn?'ถึงเกณฑ์เฝ้าระวัง':'ไม่มีสถานีเข้าเกณฑ์','สถานีที่ระดับน้ำถึงเกณฑ์เฝ้าระวังแล้ว แต่ยังไม่ล้นตลิ่ง — ต้องติดตามถี่ขึ้น'],
+   [c.crit?'b5':'b3','🚨','เกินตลิ่ง',c.crit,' สถานี',c.crit?'น้ำล้นตลิ่ง เร่งดำเนินการ':'ไม่มีสถานีน้ำล้นตลิ่ง','สถานีที่ระดับน้ำสูงกว่าสันตลิ่ง — น้ำเริ่มไหลออกนอกลำน้ำ'],
+   ['b3','📏','ใกล้ตลิ่งที่สุด',nf(near.gap,2),' ม.',near.name+' · อ.'+near.amphoe,'สถานีที่มีระยะเหลือถึงสันตลิ่งน้อยที่สุด — จุดที่ควรจับตาก่อนใคร'],
+  ];
+  document.getElementById('kpis').innerHTML=cards.map(c2=>`<div class="k ${c2[0]}" data-tip="${c2[6]}"><div class="kh"><div class="ki">${c2[1]}</div><div class="kt">${c2[2]}</div></div><div class="kv">${c2[3]}<small>${c2[4]}</small></div><div class="kd">${c2[5]}</div></div>`).join('');
+  const cs=document.getElementById('cSt'); if(cs)cs.textContent=ST.length;
+  const cf=document.getElementById('cFg'); if(cf)cf.textContent=FG.length;
+  document.getElementById('tsub').textContent=ST.length+' สถานี · '+nf(ST[ST.length-1].km,1)+' กม.'+(rainAvg!=null?' · ฝนคาด 7 วัน '+nf(rainAvg,0)+' มม.':'');
+}
+function renderActs(){
+  const acts=[];
+  const cr=ST.filter(s=>stOf(s)==='crit'),wn=ST.filter(s=>stOf(s)==='warn');
+  if(cr.length)acts.push(['c','🚨','น้ำล้นตลิ่ง '+cr.length+' สถานี',cr.map(s=>s.name+' เกิน '+nf(-s.gap,2)+' ม.').join(' · ')+' — แจ้งเตือนพื้นที่ท้ายน้ำ']);
+  if(wn.length)acts.push(['w','⚠️','ถึงเกณฑ์เฝ้าระวัง '+wn.length+' สถานี',wn.map(s=>s.name+' (เหลือ '+nf(s.gap,2)+' ม.)').join(' · ')+' — เพิ่มความถี่การอ่านค่า']);
+  const near=[...ST].sort((a,b)=>a.gap-b.gap)[0];
+  if(!cr.length&&!wn.length)acts.push(['o','✅','ทุกสถานีอยู่ในเกณฑ์ปกติ','ใกล้ตลิ่งสุดคือ '+near.name+' เหลือ '+nf(near.gap,2)+' ม.']);
+  const dn=ST[ST.length-1],up=ST[0];
+  acts.push(['i','🌊','ทิศทางการไหล',up.name+' (ต้นน้ำ '+nf(up.bank,0)+' ม.รทก.) → '+dn.name+' (ปลายน้ำ '+nf(dn.bank,0)+' ม.รทก.) · ลาดชันรวม '+nf(up.bank-dn.bank,0)+' ม.']);
+  const rt=Object.entries(RAIN).map(([id,v])=>({s:ST.find(x=>x.id===id),v})).filter(x=>x.s).sort((a,b)=>b.v-a.v)[0];
+  if(rt&&rt.v>=30)acts.push(['i','🌧️','ฝนคาดสูงสุดในลำน้ำ',rt.s.name+' '+nf(rt.v,0)+' มม./7วัน — เฝ้าระวังน้ำเพิ่มท้ายน้ำ']);
+  const op=FG.filter(g=>g.open>0);
+  if(op.length)acts.push(['i','🚪','ปตร. เปิดระบายอยู่',op.map(g=>g.name+' '+g.open+'/'+g.gates+' บาน').join(' · ')]);
+  document.getElementById('acts').innerHTML=acts.slice(0,5).map(a=>`<div class="act ${a[0]}"><span class="ai">${a[1]}</span><div><b>${a[2]}</b><span class="an">${a[3]}</span></div></div>`).join('');
+}
+/* ===== trend ===== */
+function mkHist(s,days){
+  const out=[];let v=s.cur;const seed=s.no*7.13;
+  for(let i=0;i<days;i++){const t=(i+seed);
+    v=v-(Math.sin(t*0.7)*0.06+Math.cos(t*0.31)*0.04);out.unshift(+v.toFixed(2));}
+  out[out.length-1]=s.cur;return out;}
+function setDays(d){DAYS=d;document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));renderTrend();}
+function renderTrend(){
+  const s=ST.find(x=>x.id===SEL)||ST[0];
+  const data=(HIST[s.id]&&HIST[s.id].length>=DAYS)?HIST[s.id].slice(-DAYS):mkHist(s,DAYS);
+  const labels=[];const now=new Date();
+  for(let i=DAYS-1;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);labels.push(d.getDate()+'/'+(d.getMonth()+1));}
+  document.getElementById('trendSub').textContent=s.name+' · ย้อนหลัง '+DAYS+' วัน (ม.รทก.)';
+  if(trendC)trendC.destroy();
+  const b=SB[stOf(s)];
+  trendC=new Chart(document.getElementById('trend'),{data:{labels,datasets:[
+    {type:'line',order:1,label:'ระดับน้ำ',data,borderColor:RCOL,backgroundColor:RCOL+'22',fill:true,tension:.35,pointRadius:2,borderWidth:2.5},
+    {type:'line',order:1,label:'ระดับตลิ่ง',data:labels.map(()=>s.bank),borderColor:'#dc2626',borderDash:[5,4],pointRadius:0,borderWidth:1.8,fill:false},
+    {type:'line',order:1,label:'เกณฑ์เฝ้าระวัง',data:labels.map(()=>s.warn),borderColor:'#f59e0b',borderDash:[4,4],pointRadius:0,borderWidth:1.6,fill:false}]},
+   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'Kanit',size:9.5},boxWidth:10,padding:6}},
+    tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y.toFixed(2)+' ม.รทก.',
+      afterBody:it=>['เหลือถึงตลิ่ง '+(s.bank-it[0].parsed.y).toFixed(2)+' ม.']}}},
+   scales:{y:{grid:{color:'#f1f5f9'},ticks:{font:{size:9}},title:{display:true,text:'ม.รทก.',font:{size:8.5}}},
+     x:{grid:{display:false},ticks:{font:{size:8.5},maxTicksLimit:10}}}}});
+}
+function refreshMarkers(){ if(!ptLayer||!map)return;
+  try{map.removeLayer(ptLayer);}catch(e){}
+  buildMarkers();
+}
+/* ===== แถบเกณฑ์ทุกสถานี ===== */
+function renderLadder(){
+  recalcScale();
+  const box=document.getElementById('ladder');if(!box)return;
+  const sub=document.getElementById('ldSub');if(sub)sub.textContent=ST.length+' สถานี · หน่วย ม.รทก.';
+  const LS=[...ST].filter(s=>!AMPF||s.amphoe===AMPF);
+  if(sub)sub.textContent=LS.length+' สถานี · หน่วย ม.รทก.';
+  box.innerHTML=LS.sort((a,b)=>a.no-b.no).map(s=>{
+    const P=v=>(s.bank? Math.max(0,Math.min(100,v/s.bank*100)) : 0);
+    const w=P(s.warn),c=100,p=P(s.cur),b=SB[stOf(s)];
+    return `<div class="ld ${SEL===s.id?'sel':''}" data-tipid="${s.id}" onclick="select('${s.id}')">
+      <div class="ldn"><span class="no">${s.no}</span>${s.name}</div>
+      <div class="ldb"><span class="z" style="left:0;width:${w}%;background:#bbf7d0"></span>
+        <span class="z" style="left:${w}%;width:${c-w}%;background:#fde68a"></span>
+        <span class="z" style="left:${c}%;width:${100-c}%;background:#fecaca"></span>
+        <span class="pin" style="left:${p}%"></span></div>
+      <div class="ldv" style="color:${b.c}">${nf(s.cur,2)}<small>${s.gap<=0?'เกิน '+nf(-s.gap,2):'เหลือ '+nf(s.gap,2)} ม.</small></div></div>`;}).join('');
+}
+
+/* ═══════ ตารางสรุป + ตัวกรองอำเภอ + สปาร์คไลน์ ═══════ */
+let SORT_K='no', SORT_D=1, AMPF='';
+function ampList(){return [...new Set(ST.map(s=>s.amphoe))].filter(Boolean).sort();}
+function setAmpF(v){AMPF=v;renderList();try{renderLadder();}catch(e){}try{VIEW==='card'?renderCards():drawProfile();}catch(e){}}
+function pctBank(s){return s.bank?(s.cur/s.bank*100):0;}
+function sparkSvg(arr,color,w=54,h=18){
+  if(!arr||arr.length<2)return '<span class="sm">—</span>';
+  const mn=Math.min(...arr),mx=Math.max(...arr),rg=(mx-mn)||1;
+  const p=arr.map((v,i)=>`${(i/(arr.length-1)*w).toFixed(1)},${(h-2-((v-mn)/rg)*(h-4)).toFixed(1)}`).join(' ');
+  const last=arr[arr.length-1],first=arr[0];
+  const c=last>first?'#dc2626':(last<first?'#16a34a':color);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><polyline points="${p}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function trendOf(s){
+  const a=HIST[s.id]; if(!a||a.length<2)return null;
+  return +(a[a.length-1]-a[a.length-2]).toFixed(2);
+}
+const DTCOLS=[
+  {k:'no',   t:'#',            cls:'l', v:s=>s.no},
+  {k:'name', t:'ชื่อสถานี',    cls:'l', v:s=>s.name},
+  {k:'amphoe',t:'ที่ตั้ง',      cls:'l', v:s=>s.amphoe, sm:1},
+  {k:'km',   t:'กม.',          v:s=>s.km},
+  {k:'bank', t:'ตลิ่ง (ม.)',   v:s=>s.bank},
+  {k:'warn', t:'เฝ้าระวัง (ม.)',v:s=>s.warn, sm:1},
+  {k:'cur',  t:'ระดับน้ำ (ม.)',v:s=>s.cur},
+  {k:'pct',  t:'% ตลิ่ง',      v:s=>pctBank(s)},
+  {k:'gap',  t:'ต่ำกว่าตลิ่ง',  v:s=>s.gap},
+  {k:'trend',t:'แนวโน้ม',      v:s=>trendOf(s)??-999, sm:1},
+  {k:'st',   t:'สถานะ',        v:s=>({normal:1,warn:2,crit:3})[stOf(s)]}
+];
+function openTable(focusId){
+  const w=document.getElementById('dtwrap'); if(!w)return;
+  const sel=document.getElementById('dtAmp');
+  if(sel && sel.options.length<=1) ampList().forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent='อ.'+a;sel.appendChild(o);});
+  if(focusId){const s=ST.find(x=>x.id===focusId); if(s){document.getElementById('dtSearch').value=s.name;}}
+  w.classList.add('on'); renderTable();
+  setTimeout(()=>{const i=document.getElementById('dtSearch'); if(i&&!focusId)i.focus();},80);
+}
+function closeTable(){const w=document.getElementById('dtwrap'); if(w)w.classList.remove('on');
+  const i=document.getElementById('dtSearch'); if(i)i.value=''; }
+function sortTable(k){ if(SORT_K===k)SORT_D=-SORT_D; else {SORT_K=k;SORT_D=1;} renderTable(); }
+function dtRows(){
+  const q=(document.getElementById('dtSearch')||{}).value||'';
+  const amp=(document.getElementById('dtAmp')||{}).value||'';
+  const kw=q.trim().toLowerCase();
+  let rows=ST.filter(s=>(!amp||s.amphoe===amp) &&
+    (!kw || (s.name+' '+s.id+' '+s.amphoe+' '+(s.village||'')).toLowerCase().includes(kw)));
+  const col=DTCOLS.find(c=>c.k===SORT_K)||DTCOLS[0];
+  rows.sort((a,b)=>{const x=col.v(a),y=col.v(b);
+    if(typeof x==='string')return x.localeCompare(y,'th')*SORT_D;
+    return ((x??0)-(y??0))*SORT_D;});
+  return rows;
+}
+function renderTable(){
+  const rows=dtRows(), t=document.getElementById('dtTable'); if(!t)return;
+  document.getElementById('dtTitle').textContent='ตารางสรุปสถานีตรวจวัด — '+RIVER;
+  document.getElementById('dtSub').textContent=`แสดง ${rows.length} จาก ${ST.length} สถานี · หน่วยระดับน้ำเป็น ม.รทก. · คลิกหัวคอลัมน์เพื่อเรียงลำดับ`;
+  const head='<thead><tr>'+DTCOLS.map(c=>`<th class="${c.cls||''} ${c.sm?'hide-sm':''} ${SORT_K===c.k?'act':''}" onclick="sortTable('${c.k}')">${c.t}<span class="ar">${SORT_K===c.k?(SORT_D>0?'▲':'▼'):'⇅'}</span></th>`).join('')+'</tr></thead>';
+  const body='<tbody>'+rows.map(s=>{
+    const k=stOf(s),b=SB[k],p=posOf(s,s.cur),tr=trendOf(s);
+    return `<tr class="${k}" onclick="select('${s.id}');closeTable()" title="แตะเพื่อดูจุดนี้บนแผนที่และกราฟ">
+      <td class="l"><span class="code">${s.no}</span></td>
+      <td class="l"><span class="nm">${s.name}</span><div class="sm">${s.id}${s.village?' · '+s.village:''}</div></td>
+      <td class="l hide-sm">อ.${s.amphoe}</td>
+      <td class="num">${nf(s.km,1)}</td>
+      <td class="num">${nf(s.bank,2)}</td>
+      <td class="num hide-sm" style="color:var(--warn)">${nf(s.warn,2)}</td>
+      <td class="num" style="color:${b.c}">${nf(s.cur,2)}</td>
+      <td><span class="bar"><i style="width:${p}%;background:${b.c}"></i><span class="mk" style="left:${posOf(s,s.warn)}%"></span></span>
+          <span class="num" style="margin-left:6px;color:${b.c}">${pctBank(s).toFixed(1)}%</span></td>
+      <td class="num" style="color:${s.gap<=0?'var(--crit)':'var(--ok)'}">${s.gap<=0?'เกิน '+nf(-s.gap,2):nf(s.gap,2)}</td>
+      <td class="hide-sm">${sparkSvg(HIST[s.id],b.c)}${tr!=null?`<div class="sm" style="color:${tr>0?'#dc2626':tr<0?'#16a34a':'#64748b'}">${tr>0?'▲ +':tr<0?'▼ ':'– '}${tr!==0?Math.abs(tr).toFixed(2)+' ม.':'คงที่'}</div>`:''}</td>
+      <td><span class="pill" style="background:${b.c}">${b.l}</span></td></tr>`;}).join('')+'</tbody>';
+  t.innerHTML=head+body;
+  const c={normal:0,warn:0,crit:0}; rows.forEach(s=>c[stOf(s)]++);
+  document.getElementById('dtFoot').innerHTML=
+    Object.keys(SB).map(k=>`<span class="k"><span class="dot" style="background:${SB[k].c}"></span>${SB[k].l} ${c[k]}</span>`).join('')
+    +`<span class="k">แถบ % ตลิ่ง: ขีดเทา = เกณฑ์เฝ้าระวัง</span>`
+    +`<span class="r"><span>กด Esc เพื่อปิด</span></span>`;
+}
+function exportCSV(){
+  const rows=dtRows();
+  const head=['ลำดับ','รหัส','ชื่อสถานี','หมู่บ้าน','อำเภอ','ลำน้ำ','กม.จากต้นน้ำ','ระดับตลิ่ง(ม.รทก.)','เกณฑ์เฝ้าระวัง(ม.รทก.)','ระดับน้ำ(ม.รทก.)','%ตลิ่ง','ต่ำกว่าตลิ่ง(ม.)','เปลี่ยนแปลง(ม./วัน)','สถานะ'];
+  const body=rows.map(s=>[s.no,s.id,s.name,s.village||'',s.amphoe,s.river,nf(s.km,1),nf(s.bank,2),nf(s.warn,2),
+    nf(s.cur,2),pctBank(s).toFixed(1),nf(s.gap,2),(trendOf(s)??''),SB[stOf(s)].l]);
+  const csv='\ufeff'+[head].concat(body).map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`สถานีตรวจวัด_${RIVER}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeTable();
+  if(e.key==='/'&&!/input|select|textarea/i.test((e.target.tagName||''))){e.preventDefault();openTable();}
+});
+
+/* ===== data ===== */
+function _n(v){if(v===null||v===undefined||v==='')return null;const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?null:x;}
+function _f(o,ks){for(const k of ks){const v=_n(o&&o[k]);if(v!==null)return v;}return null;}
+function _s(o,ks){for(const k of ks){const v=o&&o[k];if(v!==undefined&&v!==null&&v!=='')return String(v);}return '';}
+async function loadLive(){
+  const q=a=>GAS+'?action='+a+'&_t='+Date.now();
+  const settle=p=>p.then(v=>({ok:true,v})).catch(e=>({ok:false}));
+  const jf=async u=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
+    try{const r=await fetch(u,{cache:'no-store',signal:c.signal});clearTimeout(t);
+      if(!r.ok)throw 0;return await r.json();}finally{clearTimeout(t);}};
+  const [riv,wat,fgd]=await Promise.all([settle(jf(q(ACTION))),settle(jf(q('water')+'&days=30')),settle(jf(q('floodgate')))]);
+
+  /* 1) ระดับน้ำล่าสุดรายสถานี — endpoint คืน {river,stations:[...]} */
+  if(riv.ok&&riv.v&&Array.isArray(riv.v.stations)&&riv.v.stations.length){
+    let n=0;
+    riv.v.stations.forEach(it=>{
+      const id=_s(it,['id','station_id']).toUpperCase();
+      const x=ST.find(s=>s.id===id); if(!x)return;
+      const lv=_f(it,['cur','current','current_level','water_level','level']);
+      if(lv===null)return;
+      x.cur=lv;
+      const bk=_f(it,['bank','bank_level','crit','crit_level']); if(bk!==null)x.bank=bk;
+      const wn=_f(it,['warn','warn_level']);                     if(wn!==null)x.warn=wn;
+      const cr=_f(it,['crit','crit_level','bank','bank_level']); if(cr!==null)x.crit=cr;
+      x.gap=+(x.bank-x.cur).toFixed(2);
+      const lu=_s(it,['last_update']); if(lu&&lu>DATE)DATE=lu.slice(0,16);
+      n++;
+    });
+    if(n)LIVE=true;
+  }
+
+  /* 2) ประวัติย้อนหลังสำหรับกราฟแนวโน้ม — action=water คืนแถวดิบ (field: level) */
+  if(wat.ok&&Array.isArray(wat.v)&&wat.v.length){
+    const by={};
+    wat.v.forEach(r=>{const id=_s(r,['station_id','id']).toUpperCase();const lv=_f(r,['level','water_level','current']);
+      if(!id||lv===null)return;(by[id]=by[id]||[]).push({d:_s(r,['date']),v:lv});});
+    Object.keys(by).forEach(id=>{
+      HIST[id]=by[id].sort((a,b)=>String(a.d).localeCompare(String(b.d))).map(x=>x.v);
+      const x=ST.find(s=>s.id===id);
+      if(x&&!LIVE&&HIST[id].length){x.cur=HIST[id][HIST[id].length-1];x.gap=+(x.bank-x.cur).toFixed(2);LIVE=true;}
+    });
+  }
+
+  /* 3) ประตูระบายน้ำ — field: gate_id / water_level / gate_opening / flow_rate */
+  if(fgd.ok&&Array.isArray(fgd.v)&&fgd.v.length){
+    fgd.v.forEach(it=>{
+      const id=_s(it,['gate_id','id']).toUpperCase();
+      const x=FG.find(g=>g.id===id); if(!x)return;
+      const lv=_f(it,['water_level','level']); if(lv!==null)x.level=lv;
+      const nm=_f(it,['threshold_normal']);    if(nm!==null)x.normal=nm;
+      const wn=_f(it,['threshold_warn']);      if(wn!==null)x.warn=wn;
+      const op=_f(it,['gate_opening']);        if(op!==null)x.open=op;
+      const fr=_f(it,['flow_rate']);           if(fr!==null)x.q=fr;
+      const nmS=_s(it,['name']);               if(nmS)x.name=nmS;
+      const d=_s(it,['date']); if(d&&d>DATE)DATE=d;
+    });
+  }
+  if(!DATE&&LIVE)DATE=new Date().toISOString().slice(0,10);
+}
+async function loadRain(){
+  try{const d=await J(`https://api.open-meteo.com/v1/forecast?latitude=${ST.map(s=>s.lat).join(',')}&longitude=${ST.map(s=>s.lon).join(',')}&daily=precipitation_sum&timezone=Asia%2FBangkok&forecast_days=7`);
+    const arr=Array.isArray(d)?d:[d];
+    ST.forEach((s,i)=>{RAIN[s.id]=(arr[i]?.daily?.precipitation_sum||[]).reduce((a,b)=>a+(b||0),0);});
+  }catch(e){}
+}
+function srcChip(){const el=document.getElementById('src');
+  if(LIVE){el.className='chip live';el.textContent='● ข้อมูลจริง'+(DATE?' · '+DATE:'');el.dataset.tip='เชื่อมต่อระบบหลังบ้านสำเร็จ — แสดงข้อมูลล่าสุดที่เจ้าหน้าที่บันทึก';}
+  else{el.className='chip demo';el.textContent='● ชุดตัวอย่าง';el.dataset.tip='ยังเชื่อมต่อข้อมูลจริงไม่ได้ — ตัวเลขเป็นชุดตัวอย่างสำหรับทดสอบหน้าจอ';}}
+function safe(fn,name){try{return fn();}catch(e){console.error('['+name+']',e);
+  const el=document.getElementById('bootErr');if(el){el.style.display='flex';el.textContent='⚠ ส่วน '+name+' แสดงผลไม่ได้: '+e.message;}}}
+/* SAFETY_UNMASK — กันม่านค้างถ้าเครือข่ายค้างหรือโค้ดสะดุด */
+setTimeout(function(){try{hideLoad();}catch(e){}},8000);
+function hideLoad(){const m=document.getElementById('loadmask');if(m)m.classList.add('hide');}
+function loadSlow(){const w=document.getElementById('lmWarn');if(w)w.style.display='inline-block';}
+(async()=>{
+  /* รอข้อมูลจริงก่อนเสมอ แล้วค่อยวาดครั้งเดียว — ไม่ให้เห็นตัวเลขเก่าแวบขึ้นมา */
+  const slow=setTimeout(loadSlow,3000);
+  try{ await loadLive(); }catch(e){}
+  clearTimeout(slow); srcChip(); recalcScale();
+  safe(buildTips,'tips'); safe(renderKPI,'kpi'); safe(renderList,'list'); safe(renderLadder,'ladder');
+  safe(renderTrend,'trend'); safe(initMap,'map'); safe(renderCards,'cards'); safe(drawProfile,'profile'); safe(setView.bind(null,'card'),'view'); safe(renderActs,'acts');
+  hideLoad();
+  await loadRain();
+  safe(buildTips,'tips2'); safe(renderKPI,'kpi2'); safe(renderActs,'acts2'); safe(renderCards,'cards2');
+  window.addEventListener('resize',()=>safe(drawProfile,'profileR'));
+  setTimeout(()=>{try{map.invalidateSize();}catch(e){} safe(drawProfile,'profileT');},250);
 })();
 </script>
-<meta name="theme-color" content="#047857">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="มอ">
-</head>
-<body>
-<a href="#mainContent" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
-
-<header class="app-header">
-  <div class="hdr-inner">
-    <div class="hdr-brand">
-      <div class="hdr-logo">
-        <img src="logo-nbp.png" alt="ตราสัญลักษณ์จังหวัดหนองบัวลำภู" width="36" height="36" style="width:78%;height:78%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">
-      </div>
-      <div>
-        <div class="hdr-title">ลำน้ำมอ</div>
-        <div class="hdr-sub">Mo River · <span id="hdrStationCount">—</span> สถานีตรวจวัด · อำเภอศรีบุญเรือง</div>
-      </div>
-    </div>
-    <div class="hdr-right">
-      <div class="hdr-badge" id="statusBadge">
-        <span class="dot" id="statusDot"></span>
-        <span id="statusLabel">กำลังโหลด...</span>
-      </div>
-      <div class="hdr-time" id="liveTime">--:--:--</div>
-    
-      <div class="hdr-actions">
-        <button class="hdr-icon-btn" id="btnRefresh" onclick="manualRefresh()" title="รีเฟรชข้อมูล" aria-label="รีเฟรชข้อมูล">🔄</button>
-        <button class="hdr-icon-btn" id="btnTheme" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
-      </div>
-    </div>
-  </div>
-</header>
-
-<nav class="app-nav">
-  <div class="nav-inner">
-    <a href="index.html">🏠 หน้าหลัก</a>
-    <a href="daily_briefing.html">📊 รายงานประจำวัน</a>
-    <a href="paneang.html">🌊 ลำน้ำพะเนียง</a>
-    <a href="mong.html">🌿 ลำน้ำโมง</a>
-    <a href="mo.html" class="active" aria-current="page">🌊 ลำน้ำมอ</a>
-    <a href="phuay.html">🌊 ลำน้ำพวย</a>
-    <a href="rainfall.html">🌧️ ปริมาณฝน</a>
-    <a href="reservoir.html">🏞️ อ่างเก็บน้ำ</a>
-    <a href="input.html">📝 บันทึกข้อมูล</a>
-  </div>
-</nav>
-
-<!-- ═══ PATCH v2: Verdict — ลบ div นี้ + link/script verdict.* เพื่อถอด patch ═══ -->
-<div id="verdictZone" data-vd="river" data-river="ลำน้ำมอ"></div>
-
-
-<!-- Data status banner -->
-<div class="data-banner" id="dataBanner" role="alert" aria-live="polite">
-  <div class="data-banner-inner">
-    <span class="db-icon" id="dbIcon">⚠️</span>
-    <span id="dbText">—</span>
-    <button class="db-retry" onclick="manualRefresh()">ลองใหม่</button>
-  </div>
-</div>
-<main id="mainContent" tabindex="-1">
-
-<!-- Summary -->
-<div class="summary-row">
-  <div class="sc info">
-    <div class="sc-label">สถานีตรวจวัด</div>
-    <div class="sc-value" id="scStations">—</div>
-    <div class="sc-sub">ลำน้ำมอ</div>
-  </div>
-  <div class="sc normal">
-    <div class="sc-label">สถานะปกติ</div>
-    <div class="sc-value" id="scNormal">—</div>
-    <div class="sc-sub">ต่ำกว่าตลิ่ง</div>
-  </div>
-  <div class="sc warn">
-    <div class="sc-label">เฝ้าระวัง</div>
-    <div class="sc-value" id="scWarn">—</div>
-    <div class="sc-sub">ใกล้ตลิ่ง</div>
-  </div>
-  <div class="sc crit">
-    <div class="sc-label">วิกฤติ</div>
-    <div class="sc-value" id="scCrit">—</div>
-    <div class="sc-sub">น้ำเกินตลิ่ง</div>
-  </div>
-  <div class="sc info">
-    <div class="sc-label">ต่ำกว่าตลิ่ง เฉลี่ย</div>
-    <div class="sc-value" id="scAvg">—</div>
-    <div class="sc-sub">เมตร</div>
-  </div>
-</div>
-
-<!-- River Scene -->
-<div class="scene-wrap">
-  <div class="scene-head">
-    <h2>🌊 ฉากลำน้ำมอ — ระดับน้ำ Real-time ทั้ง <span id="sceneStationCount">—</span> สถานี</h2>
-    <div class="scene-meta" id="lastUpdate">—</div>
-  </div>
-
-  <div style="position:relative; background:linear-gradient(180deg,#ecfdf5,#a7f3d0 90%);">
-    <svg id="riverScene" class="river-scene-svg" viewBox="0 0 1200 240"
-         xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ecfdf5"/>
-          <stop offset="100%" stop-color="#a7f3d0"/>
-        </linearGradient>
-        <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#34d399" stop-opacity=".9"/>
-          <stop offset="100%" stop-color="#047857"/>
-        </linearGradient>
-        <linearGradient id="bankTopG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#22c55e"/>
-        </linearGradient>
-        <linearGradient id="bankBotG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/>
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2.5" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-
-      <!-- Sky -->
-      <rect width="1200" height="240" fill="url(#skyG)"/>
-
-      <!-- Sun -->
-      <circle cx="1100" cy="52" r="28" fill="#fef9c3" opacity=".7"/>
-      <circle cx="1100" cy="52" r="20" fill="#fef08a" opacity=".9"/>
-
-      <!-- Clouds -->
-      <g opacity=".55">
-        <ellipse cx="110" cy="38" rx="60" ry="22" fill="white"/>
-        <ellipse cx="82"  cy="50" rx="38" ry="16" fill="white"/>
-        <ellipse cx="150" cy="46" rx="46" ry="16" fill="white"/>
-        <ellipse cx="460" cy="28" rx="74" ry="26" fill="white"/>
-        <ellipse cx="428" cy="42" rx="48" ry="19" fill="white"/>
-        <ellipse cx="508" cy="40" rx="56" ry="19" fill="white"/>
-        <ellipse cx="820" cy="34" rx="62" ry="22" fill="white"/>
-        <ellipse cx="790" cy="46" rx="40" ry="16" fill="white"/>
-        <ellipse cx="862" cy="44" rx="48" ry="17" fill="white"/>
-      </g>
-
-      <!-- Background hills -->
-      <ellipse cx="300"  cy="192" rx="240" ry="80" fill="#4ade80" opacity=".15"/>
-      <ellipse cx="900"  cy="188" rx="260" ry="78" fill="#22c55e" opacity=".12"/>
-
-      <!-- Trees left -->
-      <g opacity=".75">
-        <rect x="25"  y="156" width="7" height="26" rx="2" fill="#15803d"/>
-        <ellipse cx="28.5" cy="152" rx="13" ry="15" fill="#16a34a"/>
-        <rect x="50"  y="160" width="6" height="22" rx="2" fill="#15803d"/>
-        <ellipse cx="53"   cy="156" rx="11" ry="13" fill="#22c55e"/>
-        <rect x="72"  y="154" width="7" height="28" rx="2" fill="#15803d"/>
-        <ellipse cx="75.5" cy="150" rx="13" ry="14" fill="#16a34a"/>
-      </g>
-      <!-- Trees right -->
-      <g opacity=".75">
-        <rect x="1112" y="155" width="7" height="27" rx="2" fill="#15803d"/>
-        <ellipse cx="1115.5" cy="151" rx="13" ry="15" fill="#16a34a"/>
-        <rect x="1138" y="160" width="6" height="22" rx="2" fill="#15803d"/>
-        <ellipse cx="1141"   cy="156" rx="11" ry="13" fill="#22c55e"/>
-        <rect x="1160" y="154" width="7" height="28" rx="2" fill="#15803d"/>
-        <ellipse cx="1163.5" cy="150" rx="13" ry="14" fill="#16a34a"/>
-      </g>
-
-      <!-- Top bank -->
-      <path d="M0,96 Q180,84 360,92 Q560,100 740,86 Q920,74 1100,88 L1200,92 L1200,70 L0,70 Z"
-            fill="url(#bankTopG)" opacity=".95"/>
-      <path d="M0,94 Q180,82 360,90 Q560,98 740,84 Q920,72 1100,86 L1200,90"
-            fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".5"/>
-
-      <!-- Bottom bank -->
-      <path d="M0,168 Q200,158 400,170 Q620,182 800,166 Q980,152 1200,162 L1200,240 L0,240 Z"
-            fill="url(#bankBotG)" opacity=".95"/>
-      <path d="M0,166 Q200,156 400,168 Q620,180 800,164 Q980,150 1200,160"
-            fill="none" stroke="#15803d" stroke-width="1.5" opacity=".5"/>
-
-      <!-- Water body -->
-      <path d="M0,94 Q180,82 360,90 Q560,98 740,84 Q920,72 1100,86 L1200,90
-               L1200,160 Q980,150 800,164 Q620,180 400,168 Q200,156 0,166 Z"
-            fill="url(#waterG)" opacity=".85"/>
-
-      <!-- Water ripples -->
-      <g opacity=".25">
-        <ellipse cx="240" cy="130" rx="40" ry="5" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="20" to="52" dur="3.5s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="3.5s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="600" cy="122" rx="35" ry="4" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="18" to="48" dur="4s" begin="1.2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="4s" begin="1.2s" repeatCount="indefinite"/>
-        </ellipse>
-        <ellipse cx="960" cy="128" rx="44" ry="5" fill="none" stroke="white" stroke-width="1.5">
-          <animate attributeName="rx" from="22" to="56" dur="3.2s" begin="2.5s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from=".5" to="0" dur="3.2s" begin="2.5s" repeatCount="indefinite"/>
-        </ellipse>
-      </g>
-
-      <!-- Flow arrow -->
-      <g fill="rgba(255,255,255,.55)">
-        <polygon points="1140,126 1158,131 1140,136"/>
-        <polygon points="1162,126 1180,131 1162,136"/>
-        <text x="1100" y="148" font-size="9" fill="rgba(255,255,255,.6)" font-family="Sarabun">ทิศทางน้ำ →</text>
-      </g>
-
-      <!-- River name -->
-      <text x="30" y="138" font-size="16" font-weight="bold" fill="rgba(255,255,255,.7)" font-family="Kanit">ลำน้ำมอ</text>
-
-      <!-- Station pins (JS rendered) -->
-      <g id="scenePins"></g>
-    </svg>
-
-    <div id="sceneTip"></div>
-  </div>
-
-  <!-- Gauge scroller -->
-  <div class="stations-scroll-wrap">
-    <div class="amphoe-filter-bar" id="amphoeFilterBar"></div>
-    <div style="overflow-x:auto;"><div class="stations-row" id="gaugesRow"></div></div>
-  </div>
-</div>
-<div class="gc-tip" id="gcTip"></div>
-
-<!-- Detail Panel -->
-<div class="detail-panel" id="detailPanel">
-  <div class="dp-head">
-    <h3 id="dpTitle">—</h3>
-    <button class="dp-close" onclick="closeDetail()">×</button>
-  </div>
-  <div class="dp-body">
-    <div class="dp-info-grid" id="dpInfo"></div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">แนวโน้มระดับน้ำ</div>
-      <div class="dp-chart-wrap"><canvas id="dpChart"></canvas></div>
-    </div>
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">ประวัติการตรวจวัด</div>
-      <div class="dp-trend" id="dpTrend"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Charts -->
-<div class="charts-row">
-  <div class="chart-panel">
-    <div class="cp-head"><h3>แนวโน้มระดับน้ำ 7 วันย้อนหลัง (ม.รทก.)</h3></div>
-    <div class="cp-body"><canvas id="trendChart"></canvas></div>
-  </div>
-  <div class="chart-panel">
-    <div class="cp-head"><h3>% ระดับน้ำเทียบตลิ่ง รายสถานี</h3></div>
-    <div class="cp-body"><canvas id="pctChart"></canvas></div>
-  </div>
-</div>
-
-<!-- Table -->
-<div class="table-panel">
-  <div class="tp-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3>ตารางสถานีตรวจวัดทั้งหมด — ลำน้ำมอ</h3><div class="tp-actions"><button class="tp-btn" onclick="exportCSV()" aria-label="ดาวน์โหลด CSV">📥 CSV</button><button class="tp-btn" onclick="window.print()" aria-label="พิมพ์">🖨️ พิมพ์</button></div></div>
-  <div style="overflow-x:auto;">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th><th>ชื่อสถานี</th><th>ที่ตั้ง</th>
-          <th style="text-align:right">ตลิ่ง (ม.)</th>
-          <th style="text-align:right">เฝ้าระวัง</th>
-          <th style="text-align:right">ระดับน้ำ</th>
-          <th>% ตลิ่ง</th>
-          <th style="text-align:right">ต่ำกว่าตลิ่ง</th>
-          <th>สถานะ</th>
-        </tr>
-      </thead>
-      <tbody id="stationTableBody"></tbody>
-    </table>
-  </div>
-</div>
-
-</main>
-
-<footer class="app-footer">
-  <strong>สำนักงานสถิติจังหวัดหนองบัวลำภู</strong><br>
-  ศาลากลางจังหวัดหนองบัวลำภู ชั้น 3 · จ.หนองบัวลำภู 39000 · © 2025
-</footer>
-
 <script>
-/* =============================================================
- *  DATA
- * ============================================================= */
-const API_URL = window.APP_CONFIG?.API_URL || "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec"; // ตั้งค่าใน config.js
-
-const STATIONS = [
-  {id:"MO01", no:1, name:"อ่างเก็บน้ำมอ",   village:"บ้านฝายหิน",      amphoe:"ศรีบุญเรือง", bank:242.0, warn:241.5, crit:242.0},
-  {id:"MO02", no:2, name:"บ้านวังคูณ",      village:"บ้านวังคูณ",      amphoe:"ศรีบุญเรือง", bank:211.0, warn:210.5, crit:211.0},
-  {id:"MO03", no:3, name:"บ้านโนนสูงเปลือย", village:"บ้านโนนสูงเปลือย", amphoe:"ศรีบุญเรือง", bank:202.0, warn:201.5, crit:202.0},
-];
-
-let stationData = {};
-
-
-function genDemo(s) {
-  const cur = +(s.bank - 1.4 + (Math.random() - 0.3) * 1.8).toFixed(2);
-  const hist = Array.from({length: 8}, () => +(cur + (Math.random() - 0.5) * 0.6).toFixed(2));
-  hist[hist.length - 1] = cur;
-  return { current: cur, history: hist };
-}
-function initDemo() { STATIONS.forEach(s => { stationData[s.id] = genDemo(s); }); }
-
-/* ===== TUBE FILL — dynamic range ===== */
-/* แท่ง = สัดส่วนค่าจริงเทียบตลิ่ง (0 → bank), bank อยู่ที่ 92% ของหลอด */
-const TUBE_BANK_RATIO = 0.92;
-function calcFill(lv, bank, tubeHeight){
-  if (lv===null || lv===undefined || !bank) return 0;
-  const pct = (lv / bank) * TUBE_BANK_RATIO;
-  return Math.round(Math.max(0,Math.min(1,pct))*tubeHeight);
-}
-function calcThreshPx(t, lv, bank, tubeHeight){
-  if (!bank) return 0;
-  const pct = (t / bank) * TUBE_BANK_RATIO;
-  return Math.round(Math.max(0,Math.min(1,pct))*tubeHeight);
-}
-
-function statusOf(s) {
-  const lv = stationData[s.id]?.current ?? s.bank - 2;
-  if (lv >= s.crit) return "crit";
-  if (lv >= s.warn) return "warn";
-  return "normal";
-}
-const ST_LABEL = { normal:"ปกติ", warn:"เฝ้าระวัง", crit:"วิกฤติ" };
-const ST_EMOJI = { normal:"🟢", warn:"🟡", crit:"🔴" };
-
-/* CLOCK */
-function tick() {
-  const t = new Date().toLocaleTimeString("th-TH", {hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false});
-  const el = document.getElementById("liveTime");
-  if (el) el.textContent = t;
-}
-setInterval(tick, 1000); tick();
-
-/* SUMMARY */
-function renderSummary() {
-  const c = { normal:0, warn:0, crit:0 };
-  let diffSum = 0;
-  STATIONS.forEach(s => {
-    c[statusOf(s)]++;
-    diffSum += s.bank - (stationData[s.id]?.current ?? s.bank - 2);
-  });
-  // อัปเดตจำนวนสถานีแบบ dynamic (กันเลข hardcode ผิด)
-  const _n = STATIONS.length;
-  const _sc = document.getElementById("scStations"); if(_sc) _sc.textContent = _n;
-  const _hc = document.getElementById("hdrStationCount"); if(_hc) _hc.textContent = _n;
-  const _ssc = document.getElementById("sceneStationCount"); if(_ssc) _ssc.textContent = _n;
-  document.getElementById("scNormal").textContent = c.normal;
-  document.getElementById("scWarn").textContent   = c.warn;
-  document.getElementById("scCrit").textContent   = c.crit;
-  document.getElementById("scAvg").textContent    = (diffSum / STATIONS.length).toFixed(2);
-
-  const worst = c.crit > 0 ? "crit" : c.warn > 0 ? "warn" : "normal";
-  const dot = document.getElementById("statusDot");
-  dot.className = "dot" + (worst !== "normal" ? " " + worst : "");
-  document.getElementById("statusLabel").textContent =
-    worst === "crit" ? "⚠ มีสถานีวิกฤติ" : worst === "warn" ? "เฝ้าระวัง" : "สถานการณ์ปกติ";
-  document.getElementById("lastUpdate").textContent =
-    "อัปเดต " + new Date().toLocaleTimeString("th-TH", {hour:"2-digit", minute:"2-digit"}) + " น.";
-}
-
-/* SCENE PINS */
-function renderScene() {
-  const g = document.getElementById("scenePins");
-  if (!g) return;
-  g.innerHTML = "";
-
-  const N = STATIONS.length;
-  const startX = 300, endX = 900;
-  const step = (endX - startX) / (N - 1);
-  const waterTopY = 90, waterBotY = 162;
-
-  STATIONS.forEach((s, i) => {
-    const x = startX + i * step;
-    const lv = stationData[s.id]?.current ?? s.bank - 2;
-    const st = statusOf(s);
-    const diff = s.bank - lv;
-    const pc = Math.max(0.02, Math.min(0.98, lv / s.bank));
-    const pinColor = st === "crit" ? "#dc2626" : st === "warn" ? "#f59e0b" : "#059669";
-    const staffH = waterBotY - waterTopY + 14;
-    const fillH  = staffH * pc;
-    const nm = s.name.length > 8 ? s.name.slice(0, 7) + "…" : s.name;
-
-    g.innerHTML += `
-      <g class="sp" data-id="${s.id}" onclick="openDetail('${s.id}')" style="cursor:pointer;">
-        <rect x="${x-3}" y="${waterTopY-6}" width="6" height="${staffH}"
-              rx="3" fill="rgba(255,255,255,.25)" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
-        <rect x="${x-3}" y="${waterBotY+8-fillH}" width="6" height="${fillH}"
-              rx="3" fill="${pinColor}" opacity=".9"/>
-        <circle cx="${x}" cy="${waterTopY-16}" r="10"
-                fill="${pinColor}" stroke="white" stroke-width="2" filter="url(#glow)"/>
-        <text x="${x}" y="${waterTopY-12}" text-anchor="middle"
-              font-size="8" font-weight="bold" fill="white" font-family="Sarabun">${s.no}</text>
-        <rect x="${x-22}" y="${waterTopY-38}" width="44" height="15" rx="5"
-              fill="${pinColor}" opacity=".9"/>
-        <text x="${x}" y="${waterTopY-27}" text-anchor="middle"
-              font-size="8.5" font-weight="700" fill="white" font-family="Courier New">${lv.toFixed(2)}</text>
-        <rect x="${x-30}" y="${waterBotY+18}" width="60" height="15" rx="4"
-              fill="rgba(255,255,255,.92)"/>
-        <text x="${x}" y="${waterBotY+29}" text-anchor="middle"
-              font-size="9" font-weight="700" fill="#064e3b" font-family="Sarabun">${nm}</text>
-        ${st === "crit" ? `
-          <circle cx="${x}" cy="${waterTopY-16}" r="10" fill="none" stroke="#dc2626" stroke-width="2">
-            <animate attributeName="r" from="10" to="22" dur="1.6s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" from=".6" to="0" dur="1.6s" repeatCount="indefinite"/>
-          </circle>` : ""}
-      </g>
-    `;
-
-    /* Distance badge between stations */
-    if (i < STATIONS.length - 1) {
-      const nx = startX + (i + 1) * step;
-      const mx = (x + nx) / 2;
-      g.innerHTML += `
-        <rect x="${mx-28}" y="138" width="56" height="16" rx="6" fill="rgba(255,255,255,.85)"/>
-        <text x="${mx}" y="150" text-anchor="middle" font-size="9.5" font-weight="700"
-              fill="#064e3b" font-family="Sarabun">↔ 6.5 กม.</text>
-      `;
-    }
-  });
-
-  /* Hover tooltip */
-  const svgWrap = document.getElementById("riverScene").parentElement;
-  const tip = document.getElementById("sceneTip");
-  g.querySelectorAll(".sp").forEach(pin => {
-    const id = pin.dataset.id;
-    const s = STATIONS.find(x => x.id === id);
-    if (!s) return;
-    pin.addEventListener("mouseenter", () => {
-      const lv = stationData[s.id]?.current ?? s.bank - 2;
-      const st = statusOf(s);
-      tip.style.display = "block";
-      tip.innerHTML = `
-        <div style="font-weight:800;margin-bottom:3px;">${s.name}</div>
-        <div style="color:#64748b;font-size:10.5px;margin-bottom:5px;">อ.${s.amphoe}</div>
-        <div style="display:flex;gap:10px;font-size:11px;">
-          <span>ระดับน้ำ: <strong>${lv.toFixed(2)} ม.</strong></span>
-          <span>ตลิ่ง: ${s.bank.toFixed(2)}</span>
-        </div>
-        <div style="margin-top:4px;font-size:11px;">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>`;
+/* ═══ ตัวบังคับให้ได้เวอร์ชันล่าสุดเสมอ ═══
+   ถ้าเบราว์เซอร์ยังใช้ Service Worker ตัวเก่าค้างอยู่ จะสั่งอัปเดตและรีโหลดให้อัตโนมัติ 1 ครั้ง */
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    navigator.serviceWorker.getRegistrations().then(function(rs){
+      rs.forEach(function(r){ try{ r.update(); }catch(e){} });
     });
-    pin.addEventListener("mousemove", e => {
-      const r = svgWrap.getBoundingClientRect();
-      tip.style.left = (e.clientX - r.left + 16) + "px";
-      tip.style.top  = (e.clientY - r.top  - 16) + "px";
-    });
-    pin.addEventListener("mouseleave", () => { tip.style.display = "none"; });
-  });
-}
-
-/* GAUGES */
-/* ===== AMPHOE FILTER ===== */
-let activeAmphoe = "ทั้งหมด";
-function getAmphoeList(){ const seen=[]; STATIONS.forEach(s=>{if(!seen.includes(s.amphoe))seen.push(s.amphoe);}); return seen; }
-function renderFilterBar(){
-  const bar=document.getElementById("amphoeFilterBar"); if(!bar) return;
-  let html=`<span class="af-label">กรองอำเภอ:</span>`;
-  html+=`<button class="af-btn ${activeAmphoe==="ทั้งหมด"?"active":""}" onclick="setAmphoeFilter('ทั้งหมด')">ทั้งหมด<span class="af-cnt">${STATIONS.length}</span></button>`;
-  getAmphoeList().forEach(am=>{
-    const cnt=STATIONS.filter(s=>s.amphoe===am).length;
-    html+=`<button class="af-btn ${activeAmphoe===am?"active":""}" onclick="setAmphoeFilter('${am}')">อ.${am}<span class="af-cnt">${cnt}</span></button>`;
-  });
-  bar.innerHTML=html;
-}
-function setAmphoeFilter(am){ activeAmphoe=am; renderFilterBar(); renderGauges(); }
-
-/* ===== GAUGE CARDS + tooltip ===== */
-function renderGauges() {
-  const row = document.getElementById("gaugesRow");
-  if (!row) return;
-  const list = activeAmphoe==="ทั้งหมด" ? STATIONS : STATIONS.filter(s=>s.amphoe===activeAmphoe);
-  row.innerHTML = list.map(s => {
-    const lv   = stationData[s.id]?.current ?? null;
-    const st   = statusOf(s);
-    const diff = lv !== null ? s.bank - lv : null;
-    const fillPx = calcFill(lv, s.bank, 110);
-    const warnPx = calcThreshPx(s.warn, lv, s.bank, 110);
-    const critPx = calcThreshPx(s.bank, lv, s.bank, 110);
-    const isLive = stationData[s.id]?._isLive;
-    return `
-      <div class="gauge-card ${st}" data-id="${s.id}" onclick="openDetail('${s.id}')">
-        <div class="gc-no">${s.id}</div>
-        <div class="gc-name">${s.name}</div>
-        <div class="gc-loc">อ.${s.amphoe}</div>
-        <div class="gc-tube-area">
-          <div class="gc-tube-inner">
-            <div class="gc-tube">
-              <div class="gc-ticks">${Array.from({length:22}, () => '<div class="gc-tick"></div>').join("")}</div>
-              <div class="gc-line warn-line" style="bottom:${warnPx}px;"></div>
-              <div class="gc-line crit-line" style="bottom:${critPx}px;"></div>
-              <div class="gc-fill ${st}" style="height:${fillPx}px;"></div>
-            </div>
-            <div class="gc-val-bbl">${lv!==null?lv.toFixed(2)+" ม.":"—"}</div>
-          </div>
-        </div>
-        <div class="gc-stats">
-          <div class="gc-stat"><div class="sv">${lv!==null?lv.toFixed(2):"—"}</div><div class="sl">ม.รทก.</div></div>
-          <div class="gc-stat"><div class="sv ${diff!==null&&diff<=0.5?"up":"ok"}">${diff!==null?(diff>=0?"-"+diff.toFixed(2):"+"+Math.abs(diff).toFixed(2)):"—"}</div><div class="sl">จากตลิ่ง</div></div>
-        </div>
-        <div class="gc-badge ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</div>
-        <div style="font-size:9px;color:${isLive?"#15803d":"#92400e"};text-align:center;margin-top:4px;font-weight:700;">${isLive?"🟢 LIVE":"🟡 DEMO"}</div>
-      </div>`;
-  }).join("");
-  bindGaugeTooltips();
-}
-
-function bindGaugeTooltips() {
-  const tip = document.getElementById("gcTip");
-  if (!tip) return;
-  document.querySelectorAll("#gaugesRow .gauge-card").forEach(card => {
-    const s = STATIONS.find(x => x.id === card.dataset.id);
-    if (!s) return;
-    card.addEventListener("mouseenter", () => {
-      const lv = stationData[s.id]?.current ?? null;
-      const st = statusOf(s);
-      const diff = lv !== null ? s.bank - lv : null;
-      const isLive = stationData[s.id]?._isLive;
-      tip.innerHTML = `
-        <div class="tip-head">${ST_EMOJI[st]} ${s.name}</div>
-        <div class="tip-sub">📍 ${s.village || ""} · อ.${s.amphoe}</div>
-        <div class="tip-row"><span class="k">ระดับน้ำปัจจุบัน</span><span class="v">${lv!==null?lv.toFixed(2)+" ม.":"—"}</span></div>
-        <div class="tip-row"><span class="k">ต่ำกว่าตลิ่ง</span><span class="v" style="color:${diff!==null&&diff<=0.5?'#fca5a5':'#86efac'}">${diff!==null?diff.toFixed(2)+" ม.":"—"}</span></div>
-        <div class="tip-row"><span class="k">สถานะ</span><span class="v">${ST_LABEL[st]}</span></div>
-        <div class="tip-div"></div>
-        <div style="font-size:10px;color:#94a3b8;font-weight:600;">เกณฑ์การเตือน (ม.รทก.)</div>
-        <div class="tip-th">
-          <div class="th-item th-ok">ปกติ<span class="thv">&lt; ${s.warn.toFixed(1)}</span></div>
-          <div class="th-item th-warn">เฝ้าระวัง<span class="thv">${s.warn.toFixed(1)}–${s.bank.toFixed(1)}</span></div>
-          <div class="th-item th-crit">ตลิ่ง<span class="thv">&gt; ${s.bank.toFixed(1)}</span></div>
-        </div>
-        <div style="margin-top:8px;font-size:9.5px;color:${isLive?'#86efac':'#fbbf24'};font-weight:700;">${isLive?"🟢 ข้อมูล LIVE":"🟡 ข้อมูล DEMO"}</div>`;
-      tip.classList.add("show");
-    });
-    card.addEventListener("mousemove", e => {
-      const tw=tip.offsetWidth, th=tip.offsetHeight;
-      let x=e.clientX+16, y=e.clientY+16;
-      if(x+tw>window.innerWidth-10) x=e.clientX-tw-16;
-      if(y+th>window.innerHeight-10) y=e.clientY-th-16;
-      tip.style.left=x+"px"; tip.style.top=y+"px";
-    });
-    card.addEventListener("mouseleave", () => tip.classList.remove("show"));
-  });
-}
-
-/* DETAIL PANEL */
-let dpChartInst = null;
-function openDetail(id) {
-  const s = STATIONS.find(x => x.id === id);
-  if (!s) return;
-  const d  = stationData[id];
-  const lv = d?.current ?? s.bank - 2;
-  const st = statusOf(s);
-  const diff = s.bank - lv;
-  const hist = d?.history ?? [];
-
-  document.getElementById("dpTitle").textContent = `${ST_EMOJI[st]} สถานี${s.name} — อ.${s.amphoe}`;
-
-  const stColor = st === "crit" ? "#dc2626" : st === "warn" ? "#f59e0b" : "#059669";
-  document.getElementById("dpInfo").innerHTML = `
-    <div class="dp-info-item">
-      <div class="label">ระดับน้ำปัจจุบัน</div>
-      <div class="value" style="color:${stColor}">${lv.toFixed(2)}<span class="unit">ม.รทก.</span></div>
-    </div>
-    <div class="dp-info-item">
-      <div class="label">ระดับตลิ่ง</div>
-      <div class="value">${s.bank.toFixed(2)}<span class="unit">ม.รทก.</span></div>
-    </div>
-    <div class="dp-info-item">
-      <div class="label">ต่ำกว่าตลิ่ง</div>
-      <div class="value" style="color:${diff<=0.5?"#dc2626":"#15803d"}">${diff.toFixed(2)}<span class="unit">ม.</span></div>
-    </div>
-    <div class="dp-info-item">
-      <div class="label">ระดับเฝ้าระวัง</div>
-      <div class="value" style="color:#f59e0b">${s.warn.toFixed(2)}<span class="unit">ม.รทก.</span></div>
-    </div>`;
-
-  const labels = hist.map((_, i) => i === hist.length-1 ? "ตอนนี้" : `-${hist.length-1-i}h`);
-  if (dpChartInst) dpChartInst.destroy();
-  dpChartInst = new Chart(document.getElementById("dpChart"), {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {label:"ระดับน้ำ", data:hist, borderColor:stColor, backgroundColor:stColor+"22", tension:.4, fill:true, pointRadius:4, pointBackgroundColor:stColor},
-        {label:"ตลิ่ง",    data:hist.map(()=>s.bank),  borderColor:"#dc2626", borderDash:[5,3], borderWidth:1.5, pointRadius:0},
-        {label:"เฝ้าระวัง", data:hist.map(()=>s.warn),  borderColor:"#f59e0b", borderDash:[4,3], borderWidth:1.5, pointRadius:0}
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:"bottom", labels:{ font:{family:"Sarabun",size:10}, boxWidth:10 } } },
-      scales:{
-        y:{ ticks:{ font:{family:"Sarabun",size:10}, callback:v=>v.toFixed(1) } },
-        x:{ ticks:{ font:{family:"Sarabun",size:10} } }
+    var done=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(done) return; done=true;
+      if(!sessionStorage.getItem('wnb_reload_v22')){
+        sessionStorage.setItem('wnb_reload_v22','1');
+        location.reload();
       }
-    }
-  });
-
-  const maxH = Math.max(...hist, 1);
-  document.getElementById("dpTrend").innerHTML = hist.slice(-6).map((v, i, arr) => {
-    const tl = i===arr.length-1 ? "ตอนนี้" : `-${arr.length-1-i}h`;
-    const w  = Math.round((v / maxH) * 100);
-    const c  = v >= s.crit ? "#dc2626" : v >= s.warn ? "#f59e0b" : "#059669";
-    return `<div class="dp-trend-item">
-      <span class="ti-time">${tl}</span>
-      <div class="ti-bar-wrap"><div class="ti-bar" style="width:${w}%;background:${c};"></div></div>
-      <span class="ti-val">${v.toFixed(2)}</span>
-    </div>`;
-  }).join("");
-
-  const panel = document.getElementById("detailPanel");
-  panel.classList.add("show");
-  panel.scrollIntoView({ behavior:"smooth", block:"start" });
-}
-function closeDetail() {
-  document.getElementById("detailPanel").classList.remove("show");
-  if (dpChartInst) { dpChartInst.destroy(); dpChartInst = null; }
-}
-
-/* TABLE */
-function renderTable() {
-  const body = document.getElementById("stationTableBody");
-  if (!body) return;
-  body.innerHTML = STATIONS.map(s => {
-    const lv   = stationData[s.id]?.current ?? s.bank - 2;
-    const st   = statusOf(s);
-    const diff = s.bank - lv;
-    const pct  = Math.round((lv / s.bank) * 100);
-    return `<tr onclick="openDetail('${s.id}')">
-      <td><strong style="color:var(--muted)">${s.id}</strong></td>
-      <td><strong>${s.name}</strong>${stationData[s.id]?._isLive ? '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#dcfce7;color:#15803d;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟢 LIVE</span>' : '<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px;">🟡 DEMO</span>'}</td>
-      <td>${s.village}<br><small style="color:var(--muted)">อ.${s.amphoe}</small></td>
-      <td style="text-align:right;font-family:monospace;">${s.bank.toFixed(2)}</td>
-      <td style="text-align:right;font-family:monospace;color:#f59e0b;">${s.warn.toFixed(2)}</td>
-      <td style="text-align:right;font-weight:800;font-family:monospace;color:${st==="crit"?"#dc2626":st==="warn"?"#d97706":"#064e3b"};">${lv.toFixed(2)}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div class="mini-bar-wrap"><div class="mini-bar ${st}" style="width:${Math.min(pct,100)}%;"></div></div>
-          <span style="font-size:11px;font-weight:600;">${pct}%</span>
-        </div>
-      </td>
-      <td style="text-align:right;font-weight:700;color:${diff<=0.5?"#dc2626":diff<=1.5?"#f59e0b":"#16a34a"};">${diff.toFixed(2)}</td>
-      <td><span class="pill ${st}">${ST_EMOJI[st]} ${ST_LABEL[st]}</span></td>
-    </tr>`;
-  }).join("");
-}
-
-/* CHARTS */
-let _tc = null, _pc = null;
-function renderCharts() {
-  const labels7 = [];
-  const now = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now); d.setDate(d.getDate() - i);
-    labels7.push(d.toLocaleDateString("th-TH", {day:"numeric", month:"short"}));
-  }
-
-  const colors = ["#10b981", "#059669"];
-  if (_tc) _tc.destroy();
-  _tc = new Chart(document.getElementById("trendChart"), {
-    type: "line",
-    data: {
-      labels: labels7,
-      datasets: STATIONS.map((s, i) => {
-        const c = stationData[s.id]?.current ?? s.bank - 2;
-        return {
-          label: s.name,
-          data: labels7.map(() => +(c + (Math.random() - 0.5) * 0.5).toFixed(2)),
-          borderColor: colors[i], backgroundColor: colors[i] + "18",
-          tension: .4, borderWidth: 2.5, pointRadius: 4, fill: false,
-          pointBackgroundColor: colors[i],
-        };
-      })
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:"bottom", labels:{ font:{family:"Sarabun",size:11}, boxWidth:12 } } },
-      scales:{
-        x:{ ticks:{ font:{family:"Sarabun",size:10} }, grid:{ display:false } },
-        y:{ ticks:{ font:{family:"Sarabun",size:10}, callback:v=>v.toFixed(1) } }
-      }
-    }
-  });
-
-  const pctData   = STATIONS.map(s => { const lv = stationData[s.id]?.current ?? s.bank-2; return Math.min(Math.round((lv/s.bank)*100), 108); });
-  const pctColors = STATIONS.map(s => { const st = statusOf(s); return st==="crit"?"#dc2626":st==="warn"?"#f59e0b":"#10b981"; });
-  if (_pc) _pc.destroy();
-  _pc = new Chart(document.getElementById("pctChart"), {
-    type: "bar",
-    data: {
-      labels: STATIONS.map(s => s.name),
-      datasets: [{ label:"% ระดับน้ำ/ตลิ่ง", data:pctData, backgroundColor:pctColors, borderRadius:6 }]
-    },
-    options: {
-      indexAxis:"y", responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ max:115, ticks:{ callback:v=>v+"%", font:{family:"Sarabun",size:11} } },
-        y:{ ticks:{ font:{family:"Sarabun",size:12} }, grid:{ display:false } }
-      }
-    }
-  });
-}
-
-/* MAIN */
-async function loadData(from, to) {
-  let gotData=false;
-  if (API_URL) {
-    try {
-      let url = API_URL + "?action=mo";
-      if (from) url += "&from=" + from;
-      if (to)   url += "&to="   + to;
-      url += (url.indexOf("?")>=0?"&":"?") + "_t=" + Date.now();
-      const ctrl=new AbortController();const tmo=setTimeout(()=>ctrl.abort(),12000);
-      const res  = await fetch(url, { cache: "no-store", signal:ctrl.signal });
-      clearTimeout(tmo);
-      const data = await res.json();
-      if (data.stations){ data.stations.forEach(item => {
-        if (stationData[item.id]) {
-          if (item.current != null) {
-            stationData[item.id].current = parseFloat(item.current);
-            stationData[item.id]._isLive = true;
-          } else { stationData[item.id]._isLive = false; }
-        }
-      }); gotData = data.stations.length>0; }
-    } catch(e) { console.warn("API unavailable, using demo data"); }
-  }
-  _dataIsLive=gotData;
-  if(!gotData) showBanner('demo','ไม่สามารถเชื่อมต่อข้อมูลล่าสุดได้ — กำลังแสดง "ข้อมูลตัวอย่าง (DEMO)" ไม่ใช่สถานการณ์จริง');
-  else hideBanner();
-  renderSummary();
-  renderFilterBar();
-  renderGauges();
-  renderScene();
-  renderTable();
-  renderCharts();
-}
- 
-
-/* ═══════════════════════════════════════════
- *  DARK MODE / REFRESH / BANNER / EXPORT
- * ═══════════════════════════════════════════ */
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme', t);
-  const b=document.getElementById('btnTheme'); if(b) b.textContent=(t==='dark')?'☀️':'🌙';
-  try{localStorage.setItem('nbl_theme',t);}catch(e){}
-  if(typeof renderCharts==='function'){try{renderCharts();}catch(e){}}
-}
-function toggleTheme(){
-  applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
-}
-(function(){let s=null;try{s=localStorage.getItem('nbl_theme');}catch(e){}applyTheme(s==='dark'?'dark':'light');})();
-
-let _dataIsLive=false;
-function showBanner(type,text){
-  const b=document.getElementById('dataBanner');if(!b)return;
-  b.className='data-banner show '+type;
-  document.getElementById('dbIcon').textContent=type==='stale'?'🕐':'⚠️';
-  document.getElementById('dbText').textContent=text;
-}
-function hideBanner(){const b=document.getElementById('dataBanner');if(b)b.className='data-banner';}
-
-let _refreshing=false;
-async function manualRefresh(){
-  if(_refreshing)return;_refreshing=true;
-  const b=document.getElementById('btnRefresh');if(b)b.classList.add('spinning');
-  try{await loadData();}finally{setTimeout(()=>{if(b)b.classList.remove('spinning');_refreshing=false;},600);}
-}
-
-function exportCSV(){
-  const headers=['ลำดับ','รหัส','สถานี','หมู่บ้าน','อำเภอ','ระดับน้ำ(ม.รทก.)','ตลิ่ง(ม.รทก.)','เฝ้าระวัง(ม.รทก.)','สถานะ'];
-  const rows=STATIONS.map((s,i)=>{
-    const lv=stationData[s.id]?.current ?? null;
-    const st=statusOf(s);
-    const stL=st==='crit'?'วิกฤติ':st==='warn'?'เฝ้าระวัง':'ปกติ';
-    return [i+1,s.id,s.name,s.village||'',s.amphoe||'',lv!==null?lv.toFixed(2):'-',s.bank,s.warn,stL];
-  });
-  const esc=v=>{const x=String(v??'');return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;};
-  const csv='\uFEFF'+[headers,...rows].map(r=>r.map(esc).join(',')).join('\r\n');
-  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  const a=document.createElement('a');
-  a.href=url;a.download='ลำน้ำมอ_หนองบัวลำภู_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-initDemo();
-loadData();
-setInterval(loadData, 5 * 60 * 1000);
- 
-/* DateRangePicker — init ครั้งเดียว ข้างนอก loadData */
-DateRangePicker.init({
-  container:   'main',
-  defaultDays: 7,
-  autoLoad:    false,
-  onChange: function({ from, to }) {
-    return loadData(from, to);
-  }
-});
+    });
+  }catch(e){}
+})();
 </script>
-<script>
-/* PWA: ลงทะเบียน Service Worker — เปิด offline ได้ + โหลดเร็วขึ้น */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function(){
-    navigator.serviceWorker.register("./sw.js").catch(function(){});
-  });
-}
-</script>
-<script src="verdict.js"></script>
-</body>
-</html>
+</body></html>
