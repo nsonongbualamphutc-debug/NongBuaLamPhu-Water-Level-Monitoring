@@ -1,0 +1,254 @@
+<!DOCTYPE html><html lang="th"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1e3c">
+<title>ตั้งค่าเกณฑ์เตือนภัยน้ำ · แอดมิน</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0a1e3c;--ink:#0f172a;--muted:#64748b;--bg:#eef2f7;--card:#fff;--line:#e4eaf2;
+  --gold:#c9a24b;--ok:#16a34a;--warn:#f59e0b;--crit:#dc2626;--info:#0ea5e9;--cyan:#0891b2;
+  --r:14px;--disp:'Kanit',sans-serif;--font:'Sarabun',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);padding:18px 14px 60px}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--navy);margin:0}
+h1 small{display:block;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;gap:7px;background:#0e3b6b;color:#cfe0f7;border:1px solid #1e4576;
+  padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;font-family:var(--disp)}
+.spacer{margin-left:auto}
+.btn{font-family:var(--disp);font-weight:600;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--navy);
+  border-radius:9px;padding:8px 14px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.primary:hover{filter:brightness(1.18)}
+.btn.gold{background:var(--gold);color:#20140a;border-color:var(--gold)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---- login ---- */
+.login{max-width:380px;margin:8vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 12px 40px rgba(15,40,80,.1);padding:26px 24px;text-align:center}
+.login .lock{font-size:40px}
+.login h2{font-family:var(--disp);font-size:17px;color:var(--navy);margin:10px 0 4px}
+.login p{font-size:12.5px;color:var(--muted);margin:0 0 18px;line-height:1.6}
+.login input{width:100%;font-family:var(--disp);font-size:20px;text-align:center;letter-spacing:6px;
+  border:1.5px solid var(--line);border-radius:11px;padding:12px;margin-bottom:12px;outline:none}
+.login input:focus{border-color:var(--gold)}
+.login .btn{width:100%;padding:12px}
+.err{color:var(--crit);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600}
+
+/* ---- section cards ---- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 6px 20px rgba(15,40,80,.06);
+  margin-bottom:16px;overflow:hidden}
+.card .ch{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#fff,#f7f9fc)}
+.card .ch .ic{width:30px;height:30px;border-radius:9px;background:#0e3b6b;color:#fff;display:grid;place-items:center;font-size:15px}
+.card .ch h3{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--navy);margin:0}
+.card .ch .cnt{font-size:11px;color:var(--muted);margin-left:auto;font-family:var(--disp)}
+.tblwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--disp);font-weight:600;font-size:11px;color:var(--muted);background:#f8fafc;position:sticky;top:0}
+td.nm{text-align:left;font-weight:600;color:var(--navy);white-space:normal;min-width:130px}
+td.nm small{display:block;color:var(--muted);font-weight:400;font-size:10.5px}
+input.num{width:78px;font-family:var(--disp);font-size:13px;text-align:center;border:1px solid var(--line);
+  border-radius:8px;padding:6px 4px;outline:none;background:#fff}
+input.num:focus{border-color:var(--gold);background:#fffdf7}
+input.num.dirty{border-color:var(--info);background:#eff8ff}
+.save{font-family:var(--disp);font-size:12px;font-weight:600;border:1px solid var(--navy);background:var(--navy);color:#fff;
+  border-radius:8px;padding:6px 12px;cursor:pointer;transition:.15s}
+.save:disabled{opacity:.4;cursor:default;background:#fff;color:var(--muted);border-color:var(--line)}
+.save.ok{background:var(--ok);border-color:var(--ok)}
+.upd{font-size:10px;color:var(--muted);font-family:var(--disp)}
+.hint{font-size:11px;color:var(--warn);font-weight:600}
+.legend{font-size:11.5px;color:var(--muted);padding:10px 16px;border-top:1px dashed var(--line);line-height:1.7}
+.loading{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+/* toast */
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);z-index:99;
+  background:var(--navy);color:#fff;font-family:var(--disp);font-size:13px;padding:11px 20px;border-radius:999px;
+  box-shadow:0 12px 34px rgba(6,20,45,.4);opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:var(--crit)}
+.nameField{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:var(--disp)}
+.nameField input{font-family:var(--font);font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:150px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ===== LOGIN ===== -->
+  <div id="loginView" class="login">
+    <div class="lock">🔐</div>
+    <h2>ตั้งค่าเกณฑ์เตือนภัยน้ำ</h2>
+    <p>เฉพาะผู้ดูแลระบบ<br>ใส่รหัสแอดมินใหญ่ หรือรหัสแอดมินน้ำ (water-admin)</p>
+    <input id="pin" type="password" inputmode="numeric" placeholder="••••••" autocomplete="off" maxlength="12">
+    <button class="btn primary" id="loginBtn">เข้าสู่ระบบ</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div id="mainView" style="display:none">
+    <div class="hd">
+      <h1>ตั้งค่าเกณฑ์เตือนภัยน้ำ<small>Alert Threshold Settings</small></h1>
+      <span class="badge">🔓 โหมดแอดมิน</span>
+      <div class="spacer"></div>
+      <label class="nameField">ผู้แก้ไข: <input id="editorName" placeholder="ชื่อ (ไม่บังคับ)"></label>
+      <button class="btn" id="reloadBtn">↻ โหลดใหม่</button>
+      <button class="btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+    <div id="content"><div class="loading">กำลังโหลดเกณฑ์…</div></div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;line-height:1.7;margin-top:18px">
+      แก้ตัวเลขในช่อง แล้วกด "บันทึก" ทีละแถว · การเปลี่ยนเกณฑ์มีผลกับสถานะธงทันที (ระบบล้าง cache ให้อัตโนมัติ)<br>
+      ข้อมูลเก็บในชีต "Thresholds" — ไม่ต้องแก้โค้ดอีกต่อไป
+    </p>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) ||
+  "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
+
+var PIN = "";
+var _cb = 0;
+
+/* ---- JSONP (ใช้ได้ทั้งอ่าน/เขียน ไม่ติด CORS) ---- */
+function jsonp(params){
+  return new Promise(function(resolve,reject){
+    var name = "__thcb_" + (++_cb) + "_" + Date.now();
+    var timer = setTimeout(function(){ cleanup(); reject(new Error("timeout")); }, 20000);
+    function cleanup(){ clearTimeout(timer); delete window[name]; if(sc.parentNode) sc.parentNode.removeChild(sc); }
+    window[name] = function(data){ cleanup(); resolve(data); };
+    var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+"="+encodeURIComponent(params[k]); }).join("&");
+    var sc = document.createElement("script");
+    sc.src = API_URL + "?" + qs + "&callback=" + name;
+    sc.onerror = function(){ cleanup(); reject(new Error("network")); };
+    document.body.appendChild(sc);
+  });
+}
+
+/* ---- toast ---- */
+var toastEl = document.getElementById("toast"), toastT;
+function toast(msg, bad){ toastEl.textContent=msg; toastEl.className = "show"+(bad?" bad":"");
+  clearTimeout(toastT); toastT=setTimeout(function(){ toastEl.className=""; }, 2600); }
+
+/* ---- login ---- */
+var loginBtn=document.getElementById("loginBtn"), pinInp=document.getElementById("pin"), loginErr=document.getElementById("loginErr");
+function doLogin(){
+  var pin=(pinInp.value||"").trim();
+  if(pin.length<3){ loginErr.textContent="กรุณาใส่รหัสแอดมิน"; return; }
+  loginBtn.disabled=true; loginBtn.textContent="กำลังตรวจสอบ…"; loginErr.textContent="";
+  jsonp({action:"listthresholds", adminpin:pin}).then(function(res){
+    loginBtn.disabled=false; loginBtn.textContent="เข้าสู่ระบบ";
+    if(!res || !res.ok){ loginErr.textContent=(res&&res.error)||"รหัสไม่ถูกต้อง"; return; }
+    PIN=pin;
+    document.getElementById("loginView").style.display="none";
+    document.getElementById("mainView").style.display="block";
+    render(res.thresholds||[]);
+  }).catch(function(){ loginBtn.disabled=false; loginBtn.textContent="เข้าสู่ระบบ"; loginErr.textContent="เชื่อมต่อไม่ได้ ลองใหม่"; });
+}
+loginBtn.onclick=doLogin;
+pinInp.addEventListener("keydown",function(e){ if(e.key==="Enter") doLogin(); });
+
+/* ---- โหลดใหม่ / ออกจากระบบ ---- */
+document.getElementById("reloadBtn").onclick=function(){
+  document.getElementById("content").innerHTML='<div class="loading">กำลังโหลดเกณฑ์…</div>';
+  jsonp({action:"listthresholds", adminpin:PIN}).then(function(res){
+    if(res&&res.ok) render(res.thresholds||[]); else toast((res&&res.error)||"โหลดไม่สำเร็จ", true);
+  });
+};
+document.getElementById("logoutBtn").onclick=function(){
+  PIN=""; pinInp.value="";
+  document.getElementById("mainView").style.display="none";
+  document.getElementById("loginView").style.display="block";
+};
+
+/* ---- นิยามคอลัมน์แต่ละชนิด ---- */
+var TYPES = {
+  station:  { icon:"🌊", title:"สถานีลำน้ำ", cols:[
+      {f:"normal",label:"ปกติ"},{f:"warn",label:"เฝ้าระวัง"},{f:"crit",label:"วิกฤติ"},{f:"bank",label:"ระดับตลิ่ง"}],
+      legend:"หน่วย ม.รทก. · ธงเหลืองเมื่อ ≥ เฝ้าระวัง · ธงแดงเมื่อ ≥ วิกฤติ (สถานีลำน้ำ: ถึงตลิ่งพอดี = วิกฤติ)" },
+  floodgate:{ icon:"🚪", title:"ประตูระบายน้ำ (ปตร.)", cols:[
+      {f:"normal",label:"ปกติ"},{f:"warn",label:"เฝ้าระวัง"},{f:"crit",label:"วิกฤติ"}],
+      legend:"หน่วย ม.รทก. · ปตร.: สูงกว่าเกณฑ์วิกฤติ = ธงแดง" },
+  hydro:    { icon:"📡", title:"สถานีอุทกวิทยา", cols:[
+      {f:"normal",label:"ปกติ (รทก.)"},{f:"warn",label:"เฝ้าระวัง (รทก.)"},{f:"crit",label:"วิกฤติ (รทก.)"},
+      {f:"normal_h",label:"ปกติ (สูง)"},{f:"warn_h",label:"เฝ้าระวัง (สูง)"},{f:"crit_h",label:"วิกฤติ (สูง)"}],
+      legend:"มี 2 ชุด: ระดับ ม.รทก. และ ความสูงจากท้องน้ำ (ม.) — ใช้ตัวที่วิกฤติกว่า" },
+  reservoir:{ icon:"🏞️", title:"อ่างเก็บน้ำ", cols:[
+      {f:"normal",label:"น้ำน้อยกว่า (%)"},{f:"warn",label:"เฝ้าระวังน้ำมาก (%)"},{f:"crit",label:"ล้นความจุ (%)"}],
+      legend:"หน่วย % ของความจุ · ต่ำกว่า \"น้ำน้อยกว่า\" = น้ำน้อย · ≥ เฝ้าระวัง = น้ำมาก · ≥ ล้นความจุ = ล้น" }
+};
+var ORDER = ["station","floodgate","hydro","reservoir"];
+
+function esc(v){ return (v==null?"":String(v)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function render(list){
+  var byType = {station:[],floodgate:[],hydro:[],reservoir:[]};
+  list.forEach(function(r){ if(byType[r.point_type]) byType[r.point_type].push(r); });
+  var html = "";
+  ORDER.forEach(function(tp){
+    var def=TYPES[tp], rows=byType[tp]; if(!rows.length) return;
+    html += '<div class="card"><div class="ch"><span class="ic">'+def.icon+'</span><h3>'+def.title+
+            '</h3><span class="cnt">'+rows.length+' จุด</span></div><div class="tblwrap"><table><thead><tr>'+
+            '<th style="text-align:left">จุด</th>';
+    def.cols.forEach(function(c){ html+='<th>'+c.label+'</th>'; });
+    html += '<th>แก้ล่าสุด</th><th></th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      html += '<tr data-id="'+esc(r.id)+'" data-type="'+tp+'"><td class="nm">'+esc(r.name||r.id)+
+              '<small>'+esc(r.id)+'</small></td>';
+      def.cols.forEach(function(c){
+        var val = (r[c.f]===null||r[c.f]===undefined)?"":r[c.f];
+        html += '<td><input class="num" type="number" step="0.01" data-f="'+c.f+'" value="'+esc(val)+'"></td>';
+      });
+      html += '<td class="upd">'+esc(r.updated_at||"—")+(r.updated_by?'<br>'+esc(r.updated_by):"")+'</td>'+
+              '<td><button class="save" disabled>บันทึก</button></td></tr>';
+    });
+    html += '</tbody></table></div><div class="legend">'+def.legend+'</div></div>';
+  });
+  document.getElementById("content").innerHTML = html || '<div class="loading">ไม่พบข้อมูลเกณฑ์</div>';
+  wire();
+}
+
+function wire(){
+  var rows = document.querySelectorAll("tr[data-id]");
+  rows.forEach(function(tr){
+    var inputs = tr.querySelectorAll("input.num");
+    var saveBtn = tr.querySelector(".save");
+    var orig = {}; inputs.forEach(function(i){ orig[i.dataset.f]=i.value; });
+    function checkDirty(){
+      var dirty=false;
+      inputs.forEach(function(i){ var d=i.value!==orig[i.dataset.f]; i.classList.toggle("dirty",d); if(d)dirty=true; });
+      saveBtn.disabled=!dirty; if(!dirty){ saveBtn.classList.remove("ok"); saveBtn.textContent="บันทึก"; }
+    }
+    inputs.forEach(function(i){ i.addEventListener("input",checkDirty); });
+    saveBtn.onclick=function(){
+      var params={ action:"setthreshold", adminpin:PIN, id:tr.dataset.id };
+      var nm=(document.getElementById("editorName").value||"").trim(); if(nm) params.updated_by=nm;
+      inputs.forEach(function(i){ if(i.value!==orig[i.dataset.f] && i.value!=="") params[i.dataset.f]=i.value; });
+      // soft check ลำดับ ปกติ ≤ เฝ้าระวัง ≤ วิกฤติ
+      var n=parseFloat(tr.querySelector('[data-f=normal]').value), w=parseFloat(tr.querySelector('[data-f=warn]').value), c=parseFloat(tr.querySelector('[data-f=crit]').value);
+      if(!isNaN(n)&&!isNaN(w)&&!isNaN(c)&&!(n<=w&&w<=c)){
+        if(!confirm("ลำดับเกณฑ์ผิดปกติ (ควร ปกติ ≤ เฝ้าระวัง ≤ วิกฤติ)\nยืนยันบันทึกต่อไหม?")) return;
+      }
+      saveBtn.disabled=true; saveBtn.textContent="กำลังบันทึก…";
+      jsonp(params).then(function(res){
+        if(res&&res.ok){
+          inputs.forEach(function(i){ orig[i.dataset.f]=i.value; i.classList.remove("dirty"); });
+          saveBtn.classList.add("ok"); saveBtn.textContent="✓ บันทึกแล้ว";
+          var upd=tr.querySelector(".upd"); if(upd) upd.innerHTML="เพิ่งแก้"+(nm?'<br>'+esc(nm):"");
+          toast("บันทึกเกณฑ์ "+tr.dataset.id+" แล้ว");
+          setTimeout(function(){ saveBtn.disabled=true; saveBtn.classList.remove("ok"); saveBtn.textContent="บันทึก"; }, 1500);
+        } else {
+          saveBtn.disabled=false; saveBtn.textContent="บันทึก";
+          toast((res&&res.error)||"บันทึกไม่สำเร็จ", true);
+        }
+      }).catch(function(){ saveBtn.disabled=false; saveBtn.textContent="บันทึก"; toast("เชื่อมต่อไม่ได้", true); });
+    };
+  });
+}
+
+setTimeout(function(){ pinInp.focus(); }, 200);
+})();
+</script>
+</body></html>
