@@ -70,10 +70,18 @@ input.num.dirty{border-color:var(--info);background:#eff8ff}
 #toast.bad{background:var(--crit)}
 .nameField{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:var(--disp)}
 .nameField input{font-family:var(--font);font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:150px}
+.topnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.topnav a{display:inline-flex;align-items:center;gap:6px;font-family:var(--disp);font-size:12.5px;font-weight:600;text-decoration:none;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 13px;transition:.15s}
+.topnav a:hover{background:var(--bg)}
+.ro-note{font-size:10.5px;color:var(--warn);font-weight:600;font-family:var(--disp);margin-right:10px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="topnav">
+    <a href="index.html">🏠 แดชบอร์ด</a>
+    <a href="input.html">✍️ กรอกข้อมูล</a>
+  </div>
   <!-- ===== LOGIN ===== -->
   <div id="loginView" class="login">
     <div class="lock">🔐</div>
@@ -88,7 +96,7 @@ input.num.dirty{border-color:var(--info);background:#eff8ff}
   <div id="mainView" style="display:none">
     <div class="hd">
       <h1>ตั้งค่าเกณฑ์เตือนภัยน้ำ<small>Alert Threshold Settings</small></h1>
-      <span class="badge">🔓 โหมดแอดมิน</span>
+      <span class="badge" id="roleBadge">🔓 โหมดแอดมิน</span>
       <div class="spacer"></div>
       <label class="nameField">ผู้แก้ไข: <input id="editorName" placeholder="ชื่อ (ไม่บังคับ)"></label>
       <button class="btn" id="reloadBtn">↻ โหลดใหม่</button>
@@ -110,6 +118,7 @@ var API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) ||
   "https://script.google.com/macros/s/AKfycbyNbwf9250krK8ObZwR83RYgg139pf72T7QMh1paVb2BI3OD5n1U4nIPEDCdIZGkU7F/exec";
 
 var PIN = "";
+var ROLE = null, SCOPE = null;
 var _cb = 0;
 
 /* ---- JSONP (ใช้ได้ทั้งอ่าน/เขียน ไม่ติด CORS) ---- */
@@ -141,7 +150,8 @@ function doLogin(){
   jsonp({action:"listthresholds", adminpin:pin}).then(function(res){
     loginBtn.disabled=false; loginBtn.textContent="เข้าสู่ระบบ";
     if(!res || !res.ok){ loginErr.textContent=(res&&res.error)||"รหัสไม่ถูกต้อง"; return; }
-    PIN=pin;
+    PIN=pin; ROLE=res.role||null; SCOPE=res.scope||null;
+    document.getElementById("roleBadge").textContent=roleLabel();
     document.getElementById("loginView").style.display="none";
     document.getElementById("mainView").style.display="block";
     render(res.thresholds||[]);
@@ -181,6 +191,8 @@ var TYPES = {
 };
 var ORDER = ["station","floodgate","hydro","reservoir"];
 
+function canEdit(tp){ if(ROLE==="super") return true; return Array.isArray(SCOPE) && SCOPE.indexOf(tp)!==-1; }
+function roleLabel(){ return ROLE==="super"?"🔓 แอดมินใหญ่ · แก้ได้ทุกชนิด":ROLE==="water"?"💧 แอดมินน้ำ · แก้สถานีลำน้ำ":ROLE==="reservoir"?"🏞️ แอดมินอ่าง/ปตร./อุทกฯ":"🔓 โหมดแอดมิน"; }
 function esc(v){ return (v==null?"":String(v)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
 function render(list){
@@ -189,8 +201,10 @@ function render(list){
   var html = "";
   ORDER.forEach(function(tp){
     var def=TYPES[tp], rows=byType[tp]; if(!rows.length) return;
-    html += '<div class="card"><div class="ch"><span class="ic">'+def.icon+'</span><h3>'+def.title+
-            '</h3><span class="cnt">'+rows.length+' จุด</span></div><div class="tblwrap"><table><thead><tr>'+
+    var editable = canEdit(tp);
+    html += '<div class="card"><div class="ch"><span class="ic">'+def.icon+'</span><h3>'+def.title+'</h3>'+
+            (editable?'':'<span class="ro-note">🔒 อ่านอย่างเดียว (นอกสิทธิ์)</span>')+
+            '<span class="cnt">'+rows.length+' จุด</span></div><div class="tblwrap"><table><thead><tr>'+
             '<th style="text-align:left">จุด</th>';
     def.cols.forEach(function(c){ html+='<th>'+c.label+'</th>'; });
     html += '<th>แก้ล่าสุด</th><th></th></tr></thead><tbody>';
@@ -199,10 +213,10 @@ function render(list){
               '<small>'+esc(r.id)+'</small></td>';
       def.cols.forEach(function(c){
         var val = (r[c.f]===null||r[c.f]===undefined)?"":r[c.f];
-        html += '<td><input class="num" type="number" step="0.01" data-f="'+c.f+'" value="'+esc(val)+'"></td>';
+        html += '<td><input class="num" type="number" step="0.01" data-f="'+c.f+'" value="'+esc(val)+'"'+(editable?'':' disabled')+'></td>';
       });
       html += '<td class="upd">'+esc(r.updated_at||"—")+(r.updated_by?'<br>'+esc(r.updated_by):"")+'</td>'+
-              '<td><button class="save" disabled>บันทึก</button></td></tr>';
+              '<td>'+(editable?'<button class="save" disabled>บันทึก</button>':'<span style="color:var(--muted);font-size:11px">—</span>')+'</td></tr>';
     });
     html += '</tbody></table></div><div class="legend">'+def.legend+'</div></div>';
   });
@@ -213,8 +227,10 @@ function render(list){
 function wire(){
   var rows = document.querySelectorAll("tr[data-id]");
   rows.forEach(function(tr){
+    if (!canEdit(tr.dataset.type)) return;
     var inputs = tr.querySelectorAll("input.num");
     var saveBtn = tr.querySelector(".save");
+    if (!saveBtn) return;
     var orig = {}; inputs.forEach(function(i){ orig[i.dataset.f]=i.value; });
     function checkDirty(){
       var dirty=false;
