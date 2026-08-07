@@ -1017,6 +1017,45 @@ html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
 }
 
 </style>
+
+<style id="RID-BAND-FIX">
+/* ── เกณฑ์ชลประทาน 5 ระดับ (b1-b5) + ไม่มีข้อมูล (nd) — แทนคีย์เก่า full/normal/warn/crit ── */
+/* solid: หลอด/แถบ/จุด */
+.res-bar.b1,.res-dot.b1,.pct-bar.b1{background:#f7ec4f}
+.res-bar.b2,.res-dot.b2,.pct-bar.b2{background:#50d88a}
+.res-bar.b3,.res-dot.b3,.pct-bar.b3{background:#5e9ee5}
+.res-bar.b4,.res-dot.b4,.pct-bar.b4{background:#e75254}
+.res-bar.b5,.res-dot.b5,.pct-bar.b5{background:#b74d4f}
+.res-bar.nd,.res-dot.nd,.pct-bar.nd{background:#d3d3d3}
+/* text: ตัวเลข % และปริมาตร */
+.res-vol.b1,.res-pct.b1{color:#a16207}
+.res-vol.b2,.res-pct.b2{color:#15803d}
+.res-vol.b3,.res-pct.b3{color:#1d4ed8}
+.res-vol.b4,.res-pct.b4{color:#b91c1c}
+.res-vol.b5,.res-pct.b5{color:#7f1d1d}
+.res-vol.nd,.res-pct.nd{color:#64748b}
+/* light bg + text: ป้ายเล็ก/pill/badge */
+.res-pct small.b1,.pill.b1,.gc-badge.b1{background:#fef9c3;color:#a16207}
+.res-pct small.b2,.pill.b2,.gc-badge.b2{background:#dcfce7;color:#15803d}
+.res-pct small.b3,.pill.b3,.gc-badge.b3{background:#dbeafe;color:#1e40af}
+.res-pct small.b4,.pill.b4,.gc-badge.b4{background:#fee2e2;color:#b91c1c}
+.res-pct small.b5,.pill.b5,.gc-badge.b5{background:#fde2e2;color:#7f1d1d}
+.res-pct small.nd,.pill.nd,.gc-badge.nd{background:#f1f5f9;color:#64748b}
+/* ขอบบนการ์ดเกจ */
+.gauge-card.b1{border-top:4px solid #eab308}
+.gauge-card.b2{border-top:4px solid #22c55e}
+.gauge-card.b3{border-top:4px solid #3b82f6}
+.gauge-card.b4{border-top:4px solid #dc2626}
+.gauge-card.b5{border-top:4px solid #991b1b;animation:cardPulse 2s ease-in-out infinite}
+.gauge-card.nd{border-top:4px solid #94a3b8}
+/* สีน้ำในหลอดเกจ (gradient) */
+.gc-fill.b1{background:linear-gradient(180deg,#fde68a,#eab308)}
+.gc-fill.b2{background:linear-gradient(180deg,#86efac,#22c55e)}
+.gc-fill.b3{background:linear-gradient(180deg,#93c5fd,#3b82f6)}
+.gc-fill.b4{background:linear-gradient(180deg,#fca5a5,#e11d48)}
+.gc-fill.b5{background:linear-gradient(180deg,#f87171,#991b1b)}
+.gc-fill.nd{background:linear-gradient(180deg,#e2e8f0,#94a3b8)}
+</style>
 </head>
 <body>
 <a href="#mainContent" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
