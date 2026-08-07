@@ -1079,7 +1079,7 @@ html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
     <div class="sc info"><div class="sc-label">ความจุรวม</div><div class="sc-value">31.56</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
     <div class="sc normal"><div class="sc-label">ปริมาณน้ำรวม</div><div class="sc-value" id="scVolume">—</div><div class="sc-sub">ล้าน ลบ.ม.</div></div>
     <div class="sc full"><div class="sc-label">% เก็บกักเฉลี่ย</div><div class="sc-value" id="scAvgPct">—</div><div class="sc-sub">% ของความจุ</div></div>
-    <div class="sc warn"><div class="sc-label">อ่างน้ำน้อย (&lt;30%)</div><div class="sc-value" id="scLow">—</div><div class="sc-sub">แห่ง</div></div>
+    <div class="sc warn"><div class="sc-label">น้ำน้อยวิกฤต (0–30%)</div><div class="sc-value" id="scLow">—</div><div class="sc-sub">แห่ง</div></div>
     <div class="sc normal"><div class="sc-label">อัปเดตล่าสุด</div><div class="sc-value" style="font-size:18px" id="scUpdate">—</div><div class="sc-sub">น.</div></div>
   </div>
 
@@ -1130,10 +1130,11 @@ html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
         <!-- ② Filter control -->
         <div class="map-filter" id="mapFilter">
           <div class="mf-btn active" data-filter="all" onclick="filterMap('all',this)"><div class="mf-dot" style="background:#64748b"></div> ทั้งหมด</div>
-          <div class="mf-btn" data-filter="crit" onclick="filterMap('crit',this)"><div class="mf-dot" style="background:#dc2626"></div> วิกฤติ</div>
-          <div class="mf-btn" data-filter="warn" onclick="filterMap('warn',this)"><div class="mf-dot" style="background:#f59e0b"></div> น้ำน้อย</div>
-          <div class="mf-btn" data-filter="normal" onclick="filterMap('normal',this)"><div class="mf-dot" style="background:#0d9488"></div> ปกติ</div>
-          <div class="mf-btn" data-filter="full" onclick="filterMap('full',this)"><div class="mf-dot" style="background:#2563eb"></div> สูง/เต็ม</div>
+          <div class="mf-btn" data-filter="b1" onclick="filterMap('b1',this)"><div class="mf-dot" style="background:#f7ec4f"></div> น้ำน้อยวิกฤต</div>
+          <div class="mf-btn" data-filter="b2" onclick="filterMap('b2',this)"><div class="mf-dot" style="background:#50d88a"></div> น้ำน้อย</div>
+          <div class="mf-btn" data-filter="b3" onclick="filterMap('b3',this)"><div class="mf-dot" style="background:#5e9ee5"></div> น้ำปานกลาง</div>
+          <div class="mf-btn" data-filter="b4" onclick="filterMap('b4',this)"><div class="mf-dot" style="background:#e75254"></div> น้ำมาก</div>
+          <div class="mf-btn" data-filter="b5" onclick="filterMap('b5',this)"><div class="mf-dot" style="background:#b74d4f"></div> เกินความจุ</div>
         </div>
 
         <!-- ③ Fit bounds button -->
@@ -1142,10 +1143,11 @@ html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
         <!-- ④ Legend -->
         <div class="map-legend" id="mapLegend">
           <div class="ml-title">⚫ สถานะอ่างเก็บน้ำ</div>
-          <div class="ml-item"><div class="ml-dot full"></div><div class="ml-label">สูง/เต็ม</div><div class="ml-range">≥80%</div></div>
-          <div class="ml-item"><div class="ml-dot normal"></div><div class="ml-label">ปกติ</div><div class="ml-range">40–79%</div></div>
-          <div class="ml-item"><div class="ml-dot warn"></div><div class="ml-label">น้ำน้อย</div><div class="ml-range">20–39%</div></div>
-          <div class="ml-item"><div class="ml-dot crit"></div><div class="ml-label">วิกฤติ</div><div class="ml-range">&lt;20%</div></div>
+          <div class="ml-item"><div class="ml-dot" style="background:#b74d4f"></div><div class="ml-label">เกินความจุ</div><div class="ml-range">100%+</div></div>
+          <div class="ml-item"><div class="ml-dot" style="background:#e75254"></div><div class="ml-label">น้ำมาก</div><div class="ml-range">81–100%</div></div>
+          <div class="ml-item"><div class="ml-dot" style="background:#5e9ee5"></div><div class="ml-label">น้ำปานกลาง</div><div class="ml-range">51–80%</div></div>
+          <div class="ml-item"><div class="ml-dot" style="background:#50d88a"></div><div class="ml-label">น้ำน้อย</div><div class="ml-range">31–50%</div></div>
+          <div class="ml-item"><div class="ml-dot" style="background:#f7ec4f"></div><div class="ml-label">น้ำน้อยวิกฤต</div><div class="ml-range">0–30%</div></div>
           <div class="ml-size-row">
             <div style="display:flex;flex-direction:column;align-items:center">
               <div class="ml-size-circle" style="width:20px;height:20px"></div>
@@ -1190,17 +1192,20 @@ html[data-theme="dark"] .rtt-foot{background:#0f1a2e}
         <div class="lt-btn active all" data-filter="all" onclick="setListFilter('all',this)">
           ทั้งหมด <span class="lt-cnt" id="ltc-all">0</span>
         </div>
-        <div class="lt-btn" data-filter="crit" onclick="setListFilter('crit',this)">
-          <span class="lt-dot" style="background:#dc2626"></span>วิกฤติ <span class="lt-cnt" id="ltc-crit">0</span>
+        <div class="lt-btn" data-filter="b1" onclick="setListFilter('b1',this)">
+          <span class="lt-dot" style="background:#f7ec4f"></span>น้ำน้อยวิกฤต <span class="lt-cnt" id="ltc-b1">0</span>
         </div>
-        <div class="lt-btn" data-filter="warn" onclick="setListFilter('warn',this)">
-          <span class="lt-dot" style="background:#f59e0b"></span>น้ำน้อย <span class="lt-cnt" id="ltc-warn">0</span>
+        <div class="lt-btn" data-filter="b2" onclick="setListFilter('b2',this)">
+          <span class="lt-dot" style="background:#50d88a"></span>น้ำน้อย <span class="lt-cnt" id="ltc-b2">0</span>
         </div>
-        <div class="lt-btn" data-filter="normal" onclick="setListFilter('normal',this)">
-          <span class="lt-dot" style="background:#0d9488"></span>ปกติ <span class="lt-cnt" id="ltc-normal">0</span>
+        <div class="lt-btn" data-filter="b3" onclick="setListFilter('b3',this)">
+          <span class="lt-dot" style="background:#5e9ee5"></span>น้ำปานกลาง <span class="lt-cnt" id="ltc-b3">0</span>
         </div>
-        <div class="lt-btn" data-filter="full" onclick="setListFilter('full',this)">
-          <span class="lt-dot" style="background:#2563eb"></span>สูง/เต็ม <span class="lt-cnt" id="ltc-full">0</span>
+        <div class="lt-btn" data-filter="b4" onclick="setListFilter('b4',this)">
+          <span class="lt-dot" style="background:#e75254"></span>น้ำมาก <span class="lt-cnt" id="ltc-b4">0</span>
+        </div>
+        <div class="lt-btn" data-filter="b5" onclick="setListFilter('b5',this)">
+          <span class="lt-dot" style="background:#b74d4f"></span>เกินความจุ <span class="lt-cnt" id="ltc-b5">0</span>
         </div>
         <div class="lt-sep"></div>
         <div class="lt-sort active" id="sortBtn" onclick="cycleSortMode()">
@@ -1453,14 +1458,18 @@ function pctOf(r) {
 }
 function statusOf(r) {
   const p = pctOf(r);
-  if (p >= 80) return 'full';
-  if (p >= 40) return 'normal';
-  if (p >= 20) return 'warn';
-  return 'crit';
+  if (p == null || isNaN(p)) return 'nd';
+  if (p > 100) return 'b5';
+  if (p >= 81) return 'b4';
+  if (p >= 51) return 'b3';
+  if (p >= 31) return 'b2';
+  return 'b1';
 }
-const ST_LABEL = {full:'สูง/เต็ม',normal:'ปกติ',warn:'น้ำน้อย',crit:'วิกฤติ'};
-const ST_EMOJI = {full:'💧',normal:'🟢',warn:'🟡',crit:'🔴'};
-const ST_COLOR = {full:'#2563eb',normal:'#0d9488',warn:'#f59e0b',crit:'#dc2626'};
+/* เกณฑ์กรมชลประทาน 5 ระดับ (+ ไม่มีข้อมูล) */
+const ST_LABEL = {b1:'น้ำน้อยวิกฤต',b2:'น้ำน้อย',b3:'น้ำปานกลาง',b4:'น้ำมาก',b5:'เกินความจุ',nd:'ไม่มีข้อมูล'};
+const ST_RANGE = {b1:'0–30%',b2:'31–50%',b3:'51–80%',b4:'81–100%',b5:'100%+',nd:'—'};
+const ST_EMOJI = {b1:'🟡',b2:'🟢',b3:'🔵',b4:'🔴',b5:'🟥',nd:'⚪'};
+const ST_COLOR = {b1:'#d4a017',b2:'#16a34a',b3:'#2563eb',b4:'#dc2626',b5:'#991b1b',nd:'#94a3b8'};
 
 /* ─── clock ─── */
 function tick() {
@@ -1478,7 +1487,7 @@ function renderSummary() {
   RESERVOIRS.forEach(r => {
     const cur = resData[r.id]?.current ?? r.capacity * 0.6;
     totalVol += cur;
-    if (pctOf(r) < 30) lowCount++;
+    if (pctOf(r) <= 30) lowCount++;
   });
   const avgPct = Math.round((totalVol / TOTAL_CAPACITY) * 100);
   document.getElementById('scVolume').textContent = totalVol.toFixed(2);
@@ -1916,7 +1925,7 @@ const SORT_MODES = [
 function setListFilter(f, el) {
   _listFilter = f;
   document.querySelectorAll('.lt-btn[data-filter]').forEach(b => {
-    b.classList.remove('active','all','crit','warn','normal','full');
+    b.classList.remove('active','all','b1','b2','b3','b4','b5','nd');
     if (b.dataset.filter === f) b.classList.add('active', f);
   });
   renderList();
@@ -1936,7 +1945,7 @@ function renderList() {
   const el = document.getElementById('resList');
 
   /* นับจำนวนแต่ละสถานะ */
-  const counts = { all:0, crit:0, warn:0, normal:0, full:0 };
+  const counts = { all:0, b1:0, b2:0, b3:0, b4:0, b5:0, nd:0 };
   RESERVOIRS.forEach(r => { counts.all++; counts[statusOf(r)]++; });
   Object.keys(counts).forEach(k => {
     const c = document.getElementById('ltc-' + k);
