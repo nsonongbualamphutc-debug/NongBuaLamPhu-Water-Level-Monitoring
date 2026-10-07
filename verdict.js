@@ -35,6 +35,7 @@
     return "วัน" + day + "ที่ " + n.toLocaleDateString("th-TH", {day:"numeric",month:"long",year:"numeric"}) +
            " · " + n.toLocaleTimeString("th-TH", {hour:"2-digit",minute:"2-digit",hour12:false}) + " น.";
   }
+  function ref(s) { return (s && s.fg_id) ? "เกณฑ์วิกฤติ ปตร." : "ตลิ่ง"; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
   function toast(msg) {
@@ -136,7 +137,7 @@
       (a.total > a.live.length ? " (รอข้อมูล " + (a.total - a.live.length) + ")" : ""));
     if (a.nearest) {
       L.push("• จุดใกล้ตลิ่งที่สุด: " + a.nearest.s.name + " (" + (a.nearest.s.id || "") + ") " +
-        (a.nearest.gap >= 0 ? "ต่ำกว่าตลิ่ง " + a.nearest.gap.toFixed(2) + " ม." : "‼️ เกินตลิ่ง " + Math.abs(a.nearest.gap).toFixed(2) + " ม."));
+        (a.nearest.gap >= 0 ? "ต่ำกว่า" + ref(a.nearest.s) + " " + a.nearest.gap.toFixed(2) + " ม." : "‼️ เกิน" + ref(a.nearest.s) + " " + Math.abs(a.nearest.gap).toFixed(2) + " ม."));
     }
     if (a.maxRain && a.maxRain.v > 0) L.push("• ฝนสะสมสูงสุด: อ." + a.maxRain.amphoe + " " + a.maxRain.v.toFixed(1) + " มม./24 ชม.");
     if (a.avgRain > 0) L.push("• ฝนเฉลี่ยทั้งจังหวัด " + a.avgRain.toFixed(1) + " มม./24 ชม.");
@@ -174,13 +175,13 @@
         '</div></div>';
     }
     return '<div class="vd-gauge-card">' +
-      '<div class="vd-gauge-head"><h2>📏 จุดที่ใกล้ตลิ่งที่สุด' + (MODE === "river" ? "ของลำน้ำนี้" : "ของจังหวัดตอนนี้") + '</h2>' +
+      '<div class="vd-gauge-head"><h2>📏 จุดที่ใกล้' + (n.s.fg_id ? "ระดับวิกฤติ" : "ตลิ่ง") + 'ที่สุด' + (MODE === "river" ? "ของลำน้ำนี้" : "ของจังหวัดตอนนี้") + '</h2>' +
       '<span class="st">' + esc(n.s.name) + (n.s.id ? " · " + esc(n.s.id) : "") + (n.s.amphoe ? " · อ." + esc(n.s.amphoe) : "") + '</span></div>' +
       '<div class="vd-gauge">' +
         '<div class="water" style="top:' + pctTop + '%"></div>' +
-        '<div class="bank"><span>🚩 ตลิ่ง ' + n.bank.toFixed(2) + ' ม.</span></div>' +
+        '<div class="bank"><span>🚩 ' + ref(n.s) + ' ' + n.bank.toFixed(2) + ' ม.</span></div>' +
         '<div class="dist' + (over ? " over" : "") + '" style="top:' + pctTop + '%"><b>' +
-          (over ? "‼️ เกินตลิ่ง " + Math.abs(gap).toFixed(2) + " ม." : "เหลือ " + gap.toFixed(2) + " ม.") + '</b></div>' +
+          (over ? "‼️ เกิน" + ref(n.s) + " " + Math.abs(gap).toFixed(2) + " ม." : "เหลือ " + gap.toFixed(2) + " ม.") + '</b></div>' +
       '</div>' +
       '<div class="vd-gauge-foot"><span>ระดับน้ำปัจจุบัน <b>' + n.cur.toFixed(2) + ' ม.รทก.</b></span>' +
       '<span>' + esc(n.s._lastUpdate || n.s.last_update || "") + '</span></div></div>';
@@ -250,7 +251,7 @@
     }
     var rainTxt = (a.maxRain && a.maxRain.v >= 35) ? "ฝนตกต่อเนื่องในเขต อ." + esc(a.maxRain.amphoe) + " ส่งผลให้" : "";
     return rainTxt + "สถานี " + names + " อยู่ในเกณฑ์" + levelWord(a.level) +
-      (a.nearest && a.nearest.gap >= 0 ? " เหลือต่ำกว่าตลิ่ง " + a.nearest.gap.toFixed(2) + " ม." : "") +
+      (a.nearest && a.nearest.gap >= 0 ? " เหลือต่ำกว่า" + ref(a.nearest.s) + " " + a.nearest.gap.toFixed(2) + " ม." : "") +
       " — สถานีที่เหลือ <b>อยู่ในเกณฑ์ปกติ</b>";
   }
 

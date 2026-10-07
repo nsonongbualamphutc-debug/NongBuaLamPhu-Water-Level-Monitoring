@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
+<link rel="stylesheet" href="verdict.css">
 <style>
 :root {
   --bg:#f0f6ff; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
@@ -490,6 +491,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
     <a href="input.html">📝 บันทึกข้อมูล</a>
   </div>
 </nav>
+
+<!-- ═══ PATCH v2: Verdict — ลบ div นี้ + link/script verdict.* เพื่อถอด patch ═══ -->
+<div id="verdictZone" data-vd="river" data-river="ลำน้ำพะเนียง"></div>
 
 <!-- Data status banner -->
 <div class="data-banner" id="dataBanner" role="alert" aria-live="polite">
@@ -1467,5 +1471,6 @@ initDemo();
 loadData();
 setInterval(loadData, 5*60*1000);
 </script>
+<script src="verdict.js"></script>
 </body>
 </html>
